@@ -1,0 +1,13 @@
+{
+  "name": "money-sync",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "dev": "npm run dev -w backend & npm run dev -w frontend",
+    "build": "npm run build -w frontend"
+  }
+}

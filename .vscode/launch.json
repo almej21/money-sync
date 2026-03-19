@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run Frontend (Vite)",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "frontend"],
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Backend",
+      "program": "${workspaceFolder}/backend/src/app.js",
+      "cwd": "${workspaceFolder}/backend",
+      "runtimeArgs": ["--inspect-brk"],
+      "envFile": "${workspaceFolder}/backend/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
