@@ -1,16 +1,16 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import express from "express";
 import cors from "cors";
+import express from "express";
 import serverless from "serverless-http";
 import { connectDB } from "./config/db.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { requestLogger } from "./middleware/requestLogger.js";
 import authRoutes from "./routes/authRoutes.js";
+import bankRoutes from "./routes/bankRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
-import bankRoutes from "./routes/bankRoutes.js";
-import { requestLogger } from "./middleware/requestLogger.js";
-import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 

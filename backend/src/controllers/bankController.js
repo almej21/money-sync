@@ -1,12 +1,22 @@
 import User from "../models/User.js";
 import { encryptValue } from "../services/credentialCrypto.js";
 
+function requiresNationalId(companyId = "") {
+  return String(companyId).trim() === "yahav";
+}
+
 function hasCredentials(user) {
-  return Boolean(
-    user?.bankCredentials?.companyId &&
+  const companyId = user?.bankCredentials?.companyId || "";
+  const hasBaseCreds = Boolean(
+    companyId &&
       user?.bankCredentials?.usernameEnc &&
-      user?.bankCredentials?.nationalIdEnc &&
       user?.bankCredentials?.passwordEnc,
+  );
+  if (!hasBaseCreds) return false;
+  if (!requiresNationalId(companyId)) return true;
+
+  return Boolean(
+    user?.bankCredentials?.nationalIdEnc,
   );
 }
 
@@ -23,9 +33,20 @@ export async function getBankCredentialStatus(req, res) {
 
 export async function setBankCredentials(req, res) {
   const { companyId, username, nationalID, password } = req.body;
-  if (!companyId || !username || !nationalID || !password) {
+  const normalizedCompanyId = String(companyId || "").trim();
+  const normalizedUsername = String(username || "").trim();
+  const normalizedNationalId = String(nationalID || "").trim();
+  const normalizedPassword = String(password || "").trim();
+
+  if (!normalizedCompanyId || !normalizedUsername || !normalizedPassword) {
     return res.status(400).json({
-      message: "companyId, username, nationalID and password are required",
+      message: "companyId, username and password are required",
+    });
+  }
+
+  if (requiresNationalId(normalizedCompanyId) && !normalizedNationalId) {
+    return res.status(400).json({
+      message: "nationalID is required for yahav",
     });
   }
 
@@ -33,10 +54,10 @@ export async function setBankCredentials(req, res) {
   if (!user) return res.status(404).json({ message: "User not found" });
 
   user.bankCredentials = {
-    companyId: String(companyId),
-    usernameEnc: encryptValue(String(username)),
-    nationalIdEnc: encryptValue(String(nationalID)),
-    passwordEnc: encryptValue(String(password)),
+    companyId: normalizedCompanyId,
+    usernameEnc: encryptValue(normalizedUsername),
+    nationalIdEnc: normalizedNationalId ? encryptValue(normalizedNationalId) : "",
+    passwordEnc: encryptValue(normalizedPassword),
     updatedAt: new Date(),
   };
   await user.save();

@@ -14,6 +14,15 @@ import {
 } from "@mui/material";
 import { api } from "../api";
 
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}
+
+function detailLine(label, value) {
+  return `${label}: ${value || "-"}`;
+}
+
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState([]);
   const [form, setForm] = useState({
@@ -120,9 +129,25 @@ export default function ExpensesPage() {
                     primary={exp.description}
                     secondary={
                       <>
-                {new Date(exp.date).toLocaleDateString()} · {exp.category}
+                        {new Date(exp.date).toLocaleDateString()} · {exp.category}
                         <br />
                         {exp.amount} {exp.currency}
+                        <br />
+                        {detailLine("Source", exp.source)}
+                        <br />
+                        {detailLine("Merchant", exp.merchant)}
+                        <br />
+                        {detailLine("External ID", exp.externalId)}
+                        <br />
+                        {detailLine("Reviewed", exp.isReviewed ? "Yes" : "No")}
+                        <br />
+                        {detailLine("Tags", Array.isArray(exp.tags) && exp.tags.length ? exp.tags.join(", ") : "")}
+                        <br />
+                        {detailLine("Notes", exp.notes)}
+                        <br />
+                        {detailLine("Created", formatDateTime(exp.createdAt))}
+                        <br />
+                        {detailLine("Updated", formatDateTime(exp.updatedAt))}
                       </>
                     }
                   />

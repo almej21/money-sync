@@ -6,35 +6,70 @@ import {
   List,
   ListItem,
   ListItemText,
-  Stack,
   Typography,
 } from "@mui/material";
 import { api } from "../api";
 
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString();
+}
+
+function detailLine(label, value) {
+  return `${label}: ${value || "-"}`;
+}
+
 export default function DashboardPage() {
-  const [summary, setSummary] = useState([]);
+  const [expenses, setExpenses] = useState([]);
 
   useEffect(() => {
-    api("/expenses/summary").then(setSummary).catch(console.error);
+    api("/expenses").then(setExpenses).catch(console.error);
   }, []);
 
   return (
     <Card>
       <CardContent>
         <Typography variant="h5" gutterBottom>
-          Expense summary
+          All expenses
         </Typography>
         <List disablePadding>
-          {summary.map((row, index) => (
-            <Stack key={row._id}>
+          {expenses.map((exp, index) => (
+            <div key={exp._id}>
               <ListItem disableGutters>
                 <ListItemText
-                  primary={row._id}
-                  secondary={`${row.total.toFixed(2)} ILS · ${row.count} items`}
+                  primary={exp.description}
+                  secondary={
+                    <>
+                      {new Date(exp.date).toLocaleDateString()} · {exp.category}
+                      <br />
+                      {exp.amount} {exp.currency}
+                      <br />
+                      {detailLine("Source", exp.source)}
+                      <br />
+                      {detailLine("Merchant", exp.merchant)}
+                      <br />
+                      {detailLine("External ID", exp.externalId)}
+                      <br />
+                      {detailLine("Reviewed", exp.isReviewed ? "Yes" : "No")}
+                      <br />
+                      {detailLine(
+                        "Tags",
+                        Array.isArray(exp.tags) && exp.tags.length
+                          ? exp.tags.join(", ")
+                          : "",
+                      )}
+                      <br />
+                      {detailLine("Notes", exp.notes)}
+                      <br />
+                      {detailLine("Created", formatDateTime(exp.createdAt))}
+                      <br />
+                      {detailLine("Updated", formatDateTime(exp.updatedAt))}
+                    </>
+                  }
                 />
               </ListItem>
-              {index < summary.length - 1 && <Divider />}
-            </Stack>
+              {index < expenses.length - 1 && <Divider />}
+            </div>
           ))}
         </List>
       </CardContent>

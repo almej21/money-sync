@@ -3,7 +3,7 @@ import { normalizeScrapedTransactions } from "./bankImporter.js";
 import { decryptValue } from "./credentialCrypto.js";
 
 function parseBoolean(value) {
-  return String(value).toLowerCase() === "true";
+  return String(value).trim().toLowerCase() === "true";
 }
 
 function isNodeVersionSupported() {
@@ -14,6 +14,8 @@ function isNodeVersionSupported() {
 function getConfig() {
   return {
     enabled: parseBoolean(process.env.BANK_SCRAPER_ENABLED),
+    showBrowser: parseBoolean(process.env.BANK_SCRAPER_SHOW_BROWSER),
+    verbose: parseBoolean(process.env.BANK_SCRAPER_VERBOSE),
     companyId: process.env.BANK_COMPANY_ID,
     username: process.env.BANK_USERNAME,
     nationalID: process.env.BANK_NATIONAL_ID,
@@ -21,21 +23,36 @@ function getConfig() {
   };
 }
 
+function sanitizeCredentials(creds) {
+  return {
+    companyId: String(creds.companyId || "").trim(),
+    username: String(creds.username || "").trim(),
+    nationalID: String(creds.nationalID || "").trim(),
+    password: String(creds.password || "").trim(),
+  };
+}
+
+function requiresNationalId(companyId = "") {
+  return String(companyId).trim() === "yahav";
+}
+
 function getUserCredentials(user) {
   const creds = user?.bankCredentials;
+  const companyId = String(creds?.companyId || "").trim();
+  const needsNationalId = requiresNationalId(companyId);
   if (
-    !creds?.companyId ||
+    !companyId ||
     !creds?.usernameEnc ||
-    !creds?.nationalIdEnc ||
-    !creds?.passwordEnc
+    !creds?.passwordEnc ||
+    (needsNationalId && !creds?.nationalIdEnc)
   ) {
     return null;
   }
 
   return {
-    companyId: creds.companyId,
+    companyId,
     username: decryptValue(creds.usernameEnc),
-    nationalID: decryptValue(creds.nationalIdEnc),
+    nationalID: creds.nationalIdEnc ? decryptValue(creds.nationalIdEnc) : "",
     password: decryptValue(creds.passwordEnc),
   };
 }
@@ -62,18 +79,20 @@ export async function syncLastMonthExpensesForUser(user) {
   }
 
   const userCreds = getUserCredentials(user);
-  const activeCreds = userCreds || {
+  const rawCreds = userCreds || {
     companyId: envCfg.companyId,
     username: envCfg.username,
     nationalID: envCfg.nationalID,
     password: envCfg.password,
   };
+  const activeCreds = sanitizeCredentials(rawCreds);
+  const needsNationalId = requiresNationalId(activeCreds.companyId);
 
   if (
     !activeCreds.companyId ||
     !activeCreds.username ||
-    !activeCreds.nationalID ||
-    !activeCreds.password
+    !activeCreds.password ||
+    (needsNationalId && !activeCreds.nationalID)
   ) {
     throw new Error("Missing bank credentials for this user");
   }
@@ -89,18 +108,24 @@ export async function syncLastMonthExpensesForUser(user) {
   const scraper = createScraper({
     companyId: activeCreds.companyId,
     startDate,
-    showBrowser: false,
+    showBrowser: envCfg.showBrowser,
+    verbose: envCfg.verbose,
   });
 
-  const scrapeResult = await scraper.scrape({
+  const scrapeCredentials = {
     username: activeCreds.username,
-    nationalID: activeCreds.nationalID,
     password: activeCreds.password,
-  });
+    ...(needsNationalId ? { nationalID: activeCreds.nationalID } : {}),
+  };
+
+  const scrapeResult = await scraper.scrape(scrapeCredentials);
 
   if (!scrapeResult?.success) {
+    const reason = [scrapeResult?.errorType, scrapeResult?.errorMessage]
+      .filter(Boolean)
+      .join(": ");
     throw new Error(
-      scrapeResult?.errorType || "Failed to scrape bank transactions",
+      reason || "Failed to scrape bank transactions",
     );
   }
 

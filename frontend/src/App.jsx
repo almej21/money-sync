@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
+import BankCredentialsPage from "./pages/BankCredentialsPage";
 
 function ProtectedRoutes() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ function ProtectedRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
+          <Route path="/bank" element={<BankCredentialsPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Container>

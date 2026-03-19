@@ -28,6 +28,9 @@ export default function NavBar() {
             <Button component={Link} to="/shopping-lists" color="inherit">
               Shopping Lists
             </Button>
+            <Button component={Link} to="/bank" color="inherit">
+              Bank
+            </Button>
             <Button variant="contained" color="primary" onClick={logout}>
               Logout
             </Button>
