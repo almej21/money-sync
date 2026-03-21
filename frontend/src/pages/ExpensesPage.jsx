@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -13,10 +13,12 @@ import {
   Typography,
 } from "@mui/material";
 import { api } from "../api";
+import { useLanguage } from "../context/LanguageContext";
+import { useExpenseBackgroundRefresh } from "../hooks/useExpenseBackgroundRefresh";
 
-function formatDateTime(value) {
+function formatDateTime(value, locale) {
   if (!value) return "-";
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString(locale);
 }
 
 function detailLine(label, value) {
@@ -24,22 +26,26 @@ function detailLine(label, value) {
 }
 
 export default function ExpensesPage() {
+  const { t, locale, direction } = useLanguage();
   const [expenses, setExpenses] = useState([]);
+  const defaultCategory = t("general");
   const [form, setForm] = useState({
     date: "",
     amount: "",
     description: "",
-    category: "General",
+    category: defaultCategory,
   });
 
-  async function load() {
+  const load = useCallback(async () => {
     const data = await api("/expenses");
     setExpenses(data);
-  }
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    load().catch(console.error);
+  }, [load]);
+
+  useExpenseBackgroundRefresh(load);
 
   async function createExpense(e) {
     e.preventDefault();
@@ -50,7 +56,7 @@ export default function ExpensesPage() {
         amount: Number(form.amount),
       }),
     });
-    setForm({ date: "", amount: "", description: "", category: "General" });
+    setForm({ date: "", amount: "", description: "", category: defaultCategory });
     load();
   }
 
@@ -67,38 +73,39 @@ export default function ExpensesPage() {
       <Card>
         <CardContent>
           <Typography variant="h5" gutterBottom>
-            Add expense
+            {t("addExpense")}
           </Typography>
           <Box component="form" onSubmit={createExpense}>
             <Stack spacing={2}>
               <TextField
             type="date"
+            label={t("date")}
             value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })}
             InputLabelProps={{ shrink: true }}
             fullWidth
           />
               <TextField
-            label="Amount"
+            label={t("amount")}
             type="number"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
             fullWidth
           />
               <TextField
-            label="Description"
+            label={t("description")}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             fullWidth
           />
               <TextField
-            label="Category"
+            label={t("category")}
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
             fullWidth
           />
-              <Button type="submit" variant="contained">
-                Save
+                <Button type="submit" variant="contained">
+                {t("save")}
               </Button>
             </Stack>
           </Box>
@@ -108,47 +115,61 @@ export default function ExpensesPage() {
       <Card>
         <CardContent>
           <Typography variant="h5" gutterBottom>
-            Expenses
+            {t("expenses")}
           </Typography>
           <List disablePadding>
             {expenses.map((exp, index) => (
               <Box key={exp._id}>
                 <ListItem
                   disableGutters
+                  sx={{
+                    "& .MuiListItemSecondaryAction-root": {
+                      right: direction === "rtl" ? "auto" : 16,
+                      left: direction === "rtl" ? 16 : "auto",
+                    },
+                  }}
                   secondaryAction={
                     <Button
                       onClick={() => markReviewed(exp._id, exp.isReviewed)}
                       variant={exp.isReviewed ? "outlined" : "contained"}
                       size="small"
                     >
-                      {exp.isReviewed ? "Reviewed" : "Mark reviewed"}
+                      {exp.isReviewed ? t("reviewed") : t("markReviewed")}
                     </Button>
                   }
                 >
                   <ListItemText
+                    sx={{
+                      "& .MuiListItemText-primary, & .MuiListItemText-secondary": {
+                        textAlign: direction === "rtl" ? "right" : "left",
+                      },
+                    }}
+                    primaryTypographyProps={{ dir: direction }}
+                    secondaryTypographyProps={{ component: "div", dir: direction }}
                     primary={exp.description}
                     secondary={
-                      <>
-                        {new Date(exp.date).toLocaleDateString()} · {exp.category}
+                        <Box dir={direction} sx={{ textAlign: direction === "rtl" ? "right" : "left" }}>
+                          {new Date(exp.date).toLocaleDateString(locale)} · {exp.category}
+                          <br />
+                          <Box
+                            component="span"
+                            sx={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}
+                          >
+                            {exp.amount} {exp.currency}
+                          </Box>
+                          <br />
+                          {detailLine(t("merchant"), exp.merchant)}
                         <br />
-                        {exp.amount} {exp.currency}
+                        {detailLine(t("reviewed"), exp.isReviewed ? t("yes") : t("no"))}
                         <br />
-                        {detailLine("Source", exp.source)}
+                        {detailLine(t("tags"), Array.isArray(exp.tags) && exp.tags.length ? exp.tags.join(", ") : "")}
                         <br />
-                        {detailLine("Merchant", exp.merchant)}
+                        {detailLine(t("notes"), exp.notes)}
                         <br />
-                        {detailLine("External ID", exp.externalId)}
+                        {detailLine(t("created"), formatDateTime(exp.createdAt, locale))}
                         <br />
-                        {detailLine("Reviewed", exp.isReviewed ? "Yes" : "No")}
-                        <br />
-                        {detailLine("Tags", Array.isArray(exp.tags) && exp.tags.length ? exp.tags.join(", ") : "")}
-                        <br />
-                        {detailLine("Notes", exp.notes)}
-                        <br />
-                        {detailLine("Created", formatDateTime(exp.createdAt))}
-                        <br />
-                        {detailLine("Updated", formatDateTime(exp.updatedAt))}
-                      </>
+                        {detailLine(t("updated"), formatDateTime(exp.updatedAt, locale))}
+                      </Box>
                     }
                   />
                 </ListItem>

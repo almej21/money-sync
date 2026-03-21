@@ -11,7 +11,15 @@ const userSchema = new mongoose.Schema(
       usernameEnc: { type: String, default: "" },
       nationalIdEnc: { type: String, default: "" },
       passwordEnc: { type: String, default: "" },
+      encryptedFields: {
+        type: Map,
+        of: String,
+        default: {},
+      },
       updatedAt: { type: Date },
+    },
+    expenseSyncMeta: {
+      lastBankFetchAt: { type: Date, default: null },
     },
   },
   { timestamps: true },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -11,20 +11,16 @@ import {
   Typography,
 } from "@mui/material";
 import { api } from "../api";
+import { useLanguage } from "../context/LanguageContext";
 
-const INITIAL_FORM = {
-  companyId: "visaCal",
-  username: "",
-  nationalID: "",
-  password: "",
-};
-
-function requiresNationalId(companyId) {
-  return companyId === "yahav";
+function buildEmptyCredentials(fields = []) {
+  return Object.fromEntries(fields.map((field) => [field.name, ""]));
 }
 
 export default function BankCredentialsPage() {
-  const [form, setForm] = useState(INITIAL_FORM);
+  const { t, locale } = useLanguage();
+  const [providers, setProviders] = useState([]);
+  const [form, setForm] = useState({ companyId: "", credentials: {} });
   const [connected, setConnected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,24 +28,67 @@ export default function BankCredentialsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function loadStatus() {
+  const selectedProvider = useMemo(
+    () => providers.find((provider) => provider.companyId === form.companyId) || null,
+    [providers, form.companyId],
+  );
+
+  async function loadBankConfig() {
     setLoading(true);
     setError("");
     try {
-      const data = await api("/bank/credentials");
-      setConnected(Boolean(data.connected));
-      setUpdatedAt(data.updatedAt || null);
-      setForm((prev) => ({ ...prev, companyId: data.companyId || "visaCal" }));
+      const [providersData, statusData] = await Promise.all([
+        api("/bank/providers"),
+        api("/bank/credentials"),
+      ]);
+
+      const nextProviders = Array.isArray(providersData.providers)
+        ? providersData.providers
+        : [];
+      const preferredCompanyId = String(statusData.companyId || "").trim();
+      const fallbackCompanyId = nextProviders[0]?.companyId || "";
+      const companyId = nextProviders.some(
+        (provider) => provider.companyId === preferredCompanyId,
+      )
+        ? preferredCompanyId
+        : fallbackCompanyId;
+      const provider = nextProviders.find((item) => item.companyId === companyId);
+
+      setProviders(nextProviders);
+      setConnected(Boolean(statusData.connected));
+      setUpdatedAt(statusData.updatedAt || null);
+      setForm({
+        companyId,
+        credentials: buildEmptyCredentials(provider?.fields || []),
+      });
     } catch (err) {
-      setError(err.message || "Failed to load bank connection status");
+      setError(err.message || t("failedLoadBankStatus"));
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadStatus();
+    loadBankConfig();
   }, []);
+
+  function onCompanyChange(nextCompanyId) {
+    const provider = providers.find((item) => item.companyId === nextCompanyId);
+    setForm({
+      companyId: nextCompanyId,
+      credentials: buildEmptyCredentials(provider?.fields || []),
+    });
+  }
+
+  function onFieldChange(fieldName, value) {
+    setForm((prev) => ({
+      ...prev,
+      credentials: {
+        ...prev.credentials,
+        [fieldName]: value,
+      },
+    }));
+  }
 
   async function saveCredentials(e) {
     e.preventDefault();
@@ -62,16 +101,22 @@ export default function BankCredentialsPage() {
         method: "PUT",
         body: JSON.stringify({
           companyId: form.companyId.trim(),
-          username: form.username.trim(),
-          nationalID: form.nationalID.trim(),
-          password: form.password,
+          credentials: Object.fromEntries(
+            Object.entries(form.credentials).map(([key, value]) => [key, value.trim()]),
+          ),
         }),
       });
-      setSuccess("Bank credentials saved.");
-      setForm((prev) => ({ ...prev, password: "" }));
-      await loadStatus();
+
+      setSuccess(t("bankCredentialsSaved"));
+      setForm((prev) => ({
+        ...prev,
+        credentials: Object.fromEntries(
+          Object.entries(prev.credentials).map(([key]) => [key, ""]),
+        ),
+      }));
+      await loadBankConfig();
     } catch (err) {
-      setError(err.message || "Failed to save bank credentials");
+      setError(err.message || t("failedSaveBankCredentials"));
     } finally {
       setSaving(false);
     }
@@ -85,10 +130,13 @@ export default function BankCredentialsPage() {
       await api("/bank/credentials", { method: "DELETE" });
       setConnected(false);
       setUpdatedAt(null);
-      setForm(INITIAL_FORM);
-      setSuccess("Bank credentials removed.");
+      setForm((prev) => ({
+        ...prev,
+        credentials: buildEmptyCredentials(selectedProvider?.fields || []),
+      }));
+      setSuccess(t("bankCredentialsRemoved"));
     } catch (err) {
-      setError(err.message || "Failed to remove bank credentials");
+      setError(err.message || t("failedRemoveBankCredentials"));
     } finally {
       setSaving(false);
     }
@@ -99,19 +147,21 @@ export default function BankCredentialsPage() {
       <Card>
         <CardContent>
           <Typography variant="h5" gutterBottom>
-            Bank credentials
+            {t("bankCredentials")}
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Configure credentials used by bank sync for your account.
+            {t("configureBankCredentials")}
           </Typography>
 
           <Stack spacing={1} sx={{ mb: 2 }}>
             <Typography>
-              Status: {loading ? "Loading..." : connected ? "Connected" : "Not connected"}
+              {`${t("status")}: ${
+                loading ? t("loading") : connected ? t("connected") : t("notConnected")
+              }`}
             </Typography>
             {!loading && updatedAt && (
               <Typography color="text.secondary">
-                Last updated: {new Date(updatedAt).toLocaleString()}
+                {t("lastUpdated")}: {new Date(updatedAt).toLocaleString(locale)}
               </Typography>
             )}
           </Stack>
@@ -119,46 +169,36 @@ export default function BankCredentialsPage() {
           <Box component="form" onSubmit={saveCredentials}>
             <Stack spacing={2}>
               <TextField
-                label="Company ID"
+                label={t("bankOrCreditCardCompany")}
                 select
                 value={form.companyId}
-                onChange={(e) => setForm({ ...form, companyId: e.target.value })}
+                onChange={(e) => onCompanyChange(e.target.value)}
                 required
                 fullWidth
               >
-                <MenuItem value="visaCal">visaCal</MenuItem>
-                <MenuItem value="yahav">yahav</MenuItem>
+                {providers.map((provider) => (
+                  <MenuItem key={provider.companyId} value={provider.companyId}>
+                    {provider.label} ({provider.companyId})
+                  </MenuItem>
+                ))}
               </TextField>
-              <TextField
-                label="Username"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                required
-                fullWidth
-              />
-              <TextField
-                label="National ID"
-                value={form.nationalID}
-                onChange={(e) => setForm({ ...form, nationalID: e.target.value })}
-                required={requiresNationalId(form.companyId)}
-                helperText={
-                  requiresNationalId(form.companyId)
-                    ? "Required for yahav"
-                    : "Not required for visaCal"
-                }
-                fullWidth
-              />
-              <TextField
-                label="Password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-                fullWidth
-              />
+
+              {(selectedProvider?.fields || []).map((field) => (
+                <TextField
+                  key={field.name}
+                  label={field.label || field.name}
+                  type={field.type || "text"}
+                  value={form.credentials[field.name] || ""}
+                  onChange={(e) => onFieldChange(field.name, e.target.value)}
+                  required={Boolean(field.required)}
+                  helperText={field.required ? t("required") : t("optional")}
+                  fullWidth
+                />
+              ))}
+
               <Stack direction="row" spacing={1}>
                 <Button type="submit" variant="contained" disabled={saving || loading}>
-                  Save credentials
+                  {t("saveCredentials")}
                 </Button>
                 <Button
                   type="button"
@@ -167,7 +207,7 @@ export default function BankCredentialsPage() {
                   onClick={disconnectBank}
                   disabled={saving || loading || !connected}
                 >
-                  Disconnect
+                  {t("disconnect")}
                 </Button>
               </Stack>
             </Stack>

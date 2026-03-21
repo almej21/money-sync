@@ -1,8 +1,12 @@
 import Expense from "../models/Expense.js";
 import { normalizeScrapedTransactions } from "../services/bankImporter.js";
-import { syncLastMonthExpensesForUser } from "../services/bankSyncService.js";
+import {
+  getExpenseSyncState,
+  triggerExpenseSyncForUser,
+} from "../services/expenseSyncCoordinator.js";
 
 export async function listExpenses(req, res) {
+  triggerExpenseSyncForUser(req.user, "list_expenses");
   const expenses = await Expense.find({
     householdId: req.user.householdId,
   }).sort({ date: -1, createdAt: -1 });
@@ -10,19 +14,15 @@ export async function listExpenses(req, res) {
   res.json(expenses);
 }
 
+export async function syncStatus(req, res) {
+  triggerExpenseSyncForUser(req.user, "sync_status");
+  res.json({
+    sync: getExpenseSyncState(req.user._id),
+  });
+}
+
 export async function summary(req, res) {
-  try {
-    const syncResult = await syncLastMonthExpensesForUser(req.user);
-    if (syncResult.reason !== "disabled") {
-      console.log(
-        `[SUCCESS] Bank sync for user ${req.user._id}: imported=${syncResult.imported || 0} updated=${syncResult.updated || 0} total=${syncResult.total || 0}`,
-      );
-    }
-  } catch (err) {
-    console.error(
-      `[ERROR] Bank sync failed for user ${req.user._id}: ${err.message}`,
-    );
-  }
+  triggerExpenseSyncForUser(req.user, "summary");
 
   const rows = await Expense.aggregate([
     { $match: { householdId: req.user.householdId } },

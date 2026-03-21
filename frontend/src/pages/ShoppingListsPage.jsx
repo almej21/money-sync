@@ -13,8 +13,10 @@ import {
   Typography,
 } from "@mui/material";
 import { api } from "../api";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ShoppingListsPage() {
+  const { t, direction } = useLanguage();
   const [lists, setLists] = useState([]);
   const [title, setTitle] = useState("");
 
@@ -34,8 +36,8 @@ export default function ShoppingListsPage() {
       body: JSON.stringify({
         title,
         items: [
-          { text: "Milk", quantity: 1 },
-          { text: "Bread", quantity: 1 },
+          { text: t("sampleMilk"), quantity: 1 },
+          { text: t("sampleBread"), quantity: 1 },
         ],
       }),
     });
@@ -55,18 +57,18 @@ export default function ShoppingListsPage() {
       <Card>
         <CardContent>
           <Typography variant="h5" gutterBottom>
-            Create shopping list
+            {t("createShoppingList")}
           </Typography>
           <Box component="form" onSubmit={createList} sx={{ display: "flex", gap: 1 }}>
             <TextField
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            label="Title"
-            placeholder="Weekly groceries"
+            label={t("title")}
+            placeholder={t("weeklyGroceries")}
             fullWidth
           />
             <Button type="submit" variant="contained">
-              Create
+              {t("create")}
             </Button>
           </Box>
         </CardContent>
@@ -83,13 +85,19 @@ export default function ShoppingListsPage() {
                 <Box key={item._id}>
                   <ListItem
                     disableGutters
+                    sx={{
+                      "& .MuiListItemSecondaryAction-root": {
+                        right: direction === "rtl" ? "auto" : 16,
+                        left: direction === "rtl" ? 16 : "auto",
+                      },
+                    }}
                     secondaryAction={
                       <Button
                         onClick={() => toggleItem(list._id, item._id)}
                         variant={item.completed ? "outlined" : "contained"}
                         size="small"
                       >
-                        {item.completed ? "Done" : "Mark done"}
+                        {item.completed ? t("done") : t("markDone")}
                       </Button>
                     }
                   >

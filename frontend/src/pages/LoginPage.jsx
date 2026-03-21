@@ -11,9 +11,11 @@ import {
   Typography,
 } from "@mui/material";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [error, setError] = useState("");
@@ -37,34 +39,34 @@ export default function LoginPage() {
       <Card>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" gutterBottom>
-            {mode === "login" ? "Login" : "Create account"}
+            {mode === "login" ? t("login") : t("createAccount")}
           </Typography>
           <Box component="form" onSubmit={submit}>
             <Stack spacing={2}>
         {mode === "register" && (
           <TextField
-            label="Name"
+            label={t("name")}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             fullWidth
           />
         )}
         <TextField
-          label="Email"
+          label={t("email")}
           type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           fullWidth
         />
         <TextField
-          label="Password"
+          label={t("password")}
           type="password"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           fullWidth
         />
               <Button type="submit" variant="contained" size="large">
-                {mode === "login" ? "Login" : "Register"}
+                {mode === "login" ? t("login") : t("register")}
               </Button>
             </Stack>
           </Box>
@@ -78,7 +80,7 @@ export default function LoginPage() {
         variant="text"
         onClick={() => setMode(mode === "login" ? "register" : "login")}
       >
-        Switch to {mode === "login" ? "register" : "login"}
+        {mode === "login" ? t("switchToRegister") : t("switchToLogin")}
           </Button>
         </CardContent>
       </Card>

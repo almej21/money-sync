@@ -2,6 +2,8 @@ import Expense from "../models/Expense.js";
 import { normalizeScrapedTransactions } from "./bankImporter.js";
 import { decryptValue } from "./credentialCrypto.js";
 
+const ONE_ZERO_REQUIRED_FIELDS = new Set(["email", "password", "otpLongTermToken"]);
+
 function parseBoolean(value) {
   return String(value).trim().toLowerCase() === "true";
 }
@@ -23,37 +25,50 @@ function getConfig() {
   };
 }
 
-function sanitizeCredentials(creds) {
-  return {
-    companyId: String(creds.companyId || "").trim(),
-    username: String(creds.username || "").trim(),
-    nationalID: String(creds.nationalID || "").trim(),
-    password: String(creds.password || "").trim(),
-  };
+function sanitizeCredentials(creds = {}) {
+  const output = {};
+  for (const [key, value] of Object.entries(creds)) {
+    const normalizedKey = String(key || "").trim();
+    if (!normalizedKey) continue;
+    output[normalizedKey] = typeof value === "string" ? value.trim() : value;
+  }
+  output.companyId = String(output.companyId || "").trim();
+  return output;
 }
 
-function requiresNationalId(companyId = "") {
-  return String(companyId).trim() === "yahav";
-}
+function getDecryptedUserCredentials(user) {
+  const bankCredentials = user?.bankCredentials;
+  const companyId = String(bankCredentials?.companyId || "").trim();
+  if (!companyId) return null;
 
-function getUserCredentials(user) {
-  const creds = user?.bankCredentials;
-  const companyId = String(creds?.companyId || "").trim();
-  const needsNationalId = requiresNationalId(companyId);
-  if (
-    !companyId ||
-    !creds?.usernameEnc ||
-    !creds?.passwordEnc ||
-    (needsNationalId && !creds?.nationalIdEnc)
-  ) {
-    return null;
+  const encryptedFields = bankCredentials?.encryptedFields;
+  const decrypted = {};
+
+  if (encryptedFields && typeof encryptedFields.entries === "function") {
+    for (const [field, encryptedValue] of encryptedFields.entries()) {
+      if (!encryptedValue) continue;
+      decrypted[field] = decryptValue(encryptedValue);
+    }
+  } else if (encryptedFields && typeof encryptedFields === "object") {
+    for (const [field, encryptedValue] of Object.entries(encryptedFields)) {
+      if (!encryptedValue) continue;
+      decrypted[field] = decryptValue(encryptedValue);
+    }
+  }
+
+  if (!decrypted.username && bankCredentials?.usernameEnc) {
+    decrypted.username = decryptValue(bankCredentials.usernameEnc);
+  }
+  if (!decrypted.password && bankCredentials?.passwordEnc) {
+    decrypted.password = decryptValue(bankCredentials.passwordEnc);
+  }
+  if (!decrypted.nationalID && bankCredentials?.nationalIdEnc) {
+    decrypted.nationalID = decryptValue(bankCredentials.nationalIdEnc);
   }
 
   return {
     companyId,
-    username: decryptValue(creds.usernameEnc),
-    nationalID: creds.nationalIdEnc ? decryptValue(creds.nationalIdEnc) : "",
-    password: decryptValue(creds.passwordEnc),
+    ...decrypted,
   };
 }
 
@@ -72,13 +87,31 @@ function flattenTransactions(scrapeResult) {
   return accounts.flatMap((a) => (Array.isArray(a.txns) ? a.txns : []));
 }
 
+function getRequiredFields(companyId, scrapers) {
+  const company = scrapers?.[companyId];
+  if (!company) return null;
+
+  const fields = company.loginFields.filter((field) => field !== "otpCodeRetriever");
+  if (companyId !== "oneZero") return fields;
+
+  return fields.filter((field) => ONE_ZERO_REQUIRED_FIELDS.has(field));
+}
+
+function buildScrapeCredentials(activeCreds) {
+  return Object.fromEntries(
+    Object.entries(activeCreds).filter(
+      ([key, value]) => key !== "companyId" && typeof value === "string" && value,
+    ),
+  );
+}
+
 export async function syncLastMonthExpensesForUser(user) {
   const envCfg = getConfig();
   if (!envCfg.enabled) {
     return { imported: 0, reason: "disabled" };
   }
 
-  const userCreds = getUserCredentials(user);
+  const userCreds = getDecryptedUserCredentials(user);
   const rawCreds = userCreds || {
     companyId: envCfg.companyId,
     username: envCfg.username,
@@ -86,14 +119,8 @@ export async function syncLastMonthExpensesForUser(user) {
     password: envCfg.password,
   };
   const activeCreds = sanitizeCredentials(rawCreds);
-  const needsNationalId = requiresNationalId(activeCreds.companyId);
 
-  if (
-    !activeCreds.companyId ||
-    !activeCreds.username ||
-    !activeCreds.password ||
-    (needsNationalId && !activeCreds.nationalID)
-  ) {
+  if (!activeCreds.companyId) {
     throw new Error("Missing bank credentials for this user");
   }
 
@@ -103,7 +130,19 @@ export async function syncLastMonthExpensesForUser(user) {
     );
   }
 
-  const { createScraper } = await import("israeli-bank-scrapers");
+  const { createScraper, SCRAPERS } = await import("israeli-bank-scrapers");
+  const requiredFields = getRequiredFields(activeCreds.companyId, SCRAPERS);
+  if (!requiredFields) {
+    throw new Error(`Unsupported companyId: ${activeCreds.companyId}`);
+  }
+
+  const missingFields = requiredFields.filter((field) => !activeCreds[field]);
+  if (missingFields.length > 0) {
+    throw new Error(
+      `Missing bank credentials for this user: ${missingFields.join(", ")}`,
+    );
+  }
+
   const { startDate } = oneMonthWindow();
   const scraper = createScraper({
     companyId: activeCreds.companyId,
@@ -112,21 +151,14 @@ export async function syncLastMonthExpensesForUser(user) {
     verbose: envCfg.verbose,
   });
 
-  const scrapeCredentials = {
-    username: activeCreds.username,
-    password: activeCreds.password,
-    ...(needsNationalId ? { nationalID: activeCreds.nationalID } : {}),
-  };
-
+  const scrapeCredentials = buildScrapeCredentials(activeCreds);
   const scrapeResult = await scraper.scrape(scrapeCredentials);
 
   if (!scrapeResult?.success) {
     const reason = [scrapeResult?.errorType, scrapeResult?.errorMessage]
       .filter(Boolean)
       .join(": ");
-    throw new Error(
-      reason || "Failed to scrape bank transactions",
-    );
+    throw new Error(reason || "Failed to scrape bank transactions");
   }
 
   const rawTransactions = flattenTransactions(scrapeResult);

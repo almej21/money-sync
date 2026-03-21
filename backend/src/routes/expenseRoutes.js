@@ -4,6 +4,7 @@ import {
   deleteExpense,
   importExpenses,
   listExpenses,
+  syncStatus,
   summary,
   updateExpense,
 } from "../controllers/expenseController.js";
@@ -13,6 +14,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.get("/", listExpenses);
+router.get("/sync-status", syncStatus);
 router.get("/summary", summary);
 router.post("/", createExpense);
 router.post("/import", importExpenses);

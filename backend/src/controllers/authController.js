@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Household from "../models/Household.js";
+import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
 import { signToken } from "../utils/jwt.js";
 
 export async function register(req, res) {
@@ -47,6 +48,7 @@ export async function login(req, res) {
   if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
   const token = signToken(user);
+  triggerExpenseSyncForUser(user, "login");
   res.json({
     token,
     user: {
@@ -59,6 +61,7 @@ export async function login(req, res) {
 }
 
 export async function me(req, res) {
+  triggerExpenseSyncForUser(req.user, "auth_me");
   res.json({
     user: {
       id: req.user._id,
