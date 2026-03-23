@@ -8,7 +8,10 @@ export function normalizeScrapedTransactions(scraped = []) {
     currency: "ILS",
     description: t.description || t.memo || "Bank transaction",
     merchant: t.description || "",
-    category: "Imported",
+    category:
+      typeof t.category === "string" && t.category.trim()
+        ? t.category.trim()
+        : "Imported",
     tags: [],
   }));
 }

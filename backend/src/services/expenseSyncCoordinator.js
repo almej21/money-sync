@@ -42,7 +42,9 @@ export function triggerExpenseSyncForUser(user, reason = "unknown") {
   if (withinCooldown) {
     state.lastResult = {
       reason: "cooldown",
-      nextFetchAt: new Date(lastBankFetchAt.getTime() + FETCH_COOLDOWN_MS).toISOString(),
+      nextFetchAt: new Date(
+        lastBankFetchAt.getTime() + FETCH_COOLDOWN_MS,
+      ).toISOString(),
     };
     return state;
   }

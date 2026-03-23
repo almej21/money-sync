@@ -149,6 +149,7 @@ export async function syncLastMonthExpensesForUser(user) {
     startDate,
     showBrowser: envCfg.showBrowser,
     verbose: envCfg.verbose,
+    additionalTransactionInformation: true,
   });
 
   const scrapeCredentials = buildScrapeCredentials(activeCreds);

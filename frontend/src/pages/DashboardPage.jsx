@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
   Card,
   CardContent,
+  Checkbox,
   Collapse,
   Divider,
+  FormControl,
+  InputLabel,
   List,
   ListItem,
   ListItemText,
+  MenuItem,
+  Select,
+  Stack,
   Typography,
 } from "@mui/material";
 import { api } from "../api";
@@ -27,6 +33,8 @@ function detailLine(label, value) {
 export default function DashboardPage() {
   const [expenses, setExpenses] = useState([]);
   const [expandedIds, setExpandedIds] = useState({});
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [sortBy, setSortBy] = useState("date_desc");
   const { t, locale, direction } = useLanguage();
 
   const loadExpenses = useCallback(async () => {
@@ -47,14 +55,79 @@ export default function DashboardPage() {
     }));
   }
 
+  const categoryOptions = useMemo(() => {
+    const values = new Set(
+      expenses
+        .map((exp) => String(exp.category || "").trim())
+        .filter(Boolean),
+    );
+    return Array.from(values).sort((a, b) => a.localeCompare(b, locale));
+  }, [expenses, locale]);
+
+  const displayedExpenses = useMemo(() => {
+    const filtered = expenses.filter((exp) => {
+      if (!selectedCategories.length) return true;
+      const normalizedCategory = String(exp.category || "").trim();
+      return selectedCategories.includes(normalizedCategory);
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === "date_asc") {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
+      if (sortBy === "amount_desc") {
+        return Number(a.amount || 0) - Number(b.amount || 0);
+      }
+      if (sortBy === "amount_asc") {
+        return Number(b.amount || 0) - Number(a.amount || 0);
+      }
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }, [expenses, selectedCategories, sortBy]);
+
   return (
     <Card>
       <CardContent>
         <Typography variant="h5" gutterBottom>
           {t("allExpenses")}
         </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel id="category-filter-label">{t("categoryFilter")}</InputLabel>
+            <Select
+              labelId="category-filter-label"
+              multiple
+              value={selectedCategories}
+              label={t("categoryFilter")}
+              onChange={(event) => setSelectedCategories(event.target.value)}
+              renderValue={(selected) => (selected.length ? selected.join(", ") : t("allCategories"))}
+            >
+              {categoryOptions.map((category) => (
+                <MenuItem key={category} value={category}>
+                  <Checkbox checked={selectedCategories.includes(category)} />
+                  <ListItemText primary={category} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel id="sort-by-label">{t("sortBy")}</InputLabel>
+            <Select
+              labelId="sort-by-label"
+              value={sortBy}
+              label={t("sortBy")}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
+              <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
+              <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
+              <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
         <List disablePadding>
-          {expenses.map((exp, index) => (
+          {displayedExpenses.map((exp, index) => (
             <div key={exp._id}>
               <ListItem disableGutters>
                 <ListItemText
@@ -71,7 +144,7 @@ export default function DashboardPage() {
                       dir={direction}
                       sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
                     >
-                      {new Date(exp.date).toLocaleDateString(locale)}
+                      {new Date(exp.date).toLocaleDateString(locale)} · {exp.category || "-"}
                       <br />
                       <Box
                         component="span"
@@ -115,7 +188,7 @@ export default function DashboardPage() {
                   </Typography>
                 </Collapse>
               </Box>
-              {index < expenses.length - 1 && <Divider />}
+              {index < displayedExpenses.length - 1 && <Divider />}
             </div>
           ))}
         </List>
