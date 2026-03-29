@@ -8,7 +8,6 @@ import { connectDB } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import authRoutes from "./routes/authRoutes.js";
-import bankRoutes from "./routes/bankRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
 
@@ -38,7 +37,25 @@ app.use(async (req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/shopping-lists", shoppingListRoutes);
-app.use("/api/bank", bankRoutes);
+
+let bankRoutesPromise;
+async function getBankRoutes() {
+  if (!bankRoutesPromise) {
+    bankRoutesPromise = import("./routes/bankRoutes.js").then(
+      (module) => module.default,
+    );
+  }
+  return bankRoutesPromise;
+}
+
+app.use("/api/bank", async (req, res, next) => {
+  try {
+    const bankRoutes = await getBankRoutes();
+    return bankRoutes(req, res, next);
+  } catch (err) {
+    return next(err);
+  }
+});
 
 app.use(errorHandler);
 
