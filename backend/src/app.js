@@ -27,8 +27,12 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use(async (req, res, next) => {
-  await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.use("/api/auth", authRoutes);
@@ -40,7 +44,9 @@ app.use(errorHandler);
 
 const port = process.env.PORT || 4000;
 
-if (process.env.NODE_ENV !== "production") {
+const isRunningInLambda = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+if (!isRunningInLambda) {
   app.listen(port, () => console.log(`API listening on ${port}`));
 }
 

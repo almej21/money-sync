@@ -1,5 +1,5 @@
 service: money-sync-api
-
+useDotenv: true
 frameworkVersion: "3"
 
 provider:
