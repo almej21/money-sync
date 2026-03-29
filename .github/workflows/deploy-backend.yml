@@ -10,6 +10,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      STAGE: prod
+      AWS_REGION: us-east-1
     defaults:
       run:
         working-directory: backend
@@ -25,10 +28,63 @@ jobs:
 
       - run: npm ci
 
-      - run: npx serverless@3 deploy --stage prod
+      - name: Recover stack if it is in a non-updatable state
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+
+          STACK_NAME="money-sync-api-${STAGE}"
+          STACK_STATUS="$(
+            aws cloudformation describe-stacks \
+              --stack-name "$STACK_NAME" \
+              --query "Stacks[0].StackStatus" \
+              --output text 2>/dev/null || true
+          )"
+
+          echo "Current CloudFormation status: ${STACK_STATUS:-<not-found>}"
+
+          case "$STACK_STATUS" in
+            DELETE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE)
+              echo "Stack is not updatable. Deleting stack before deploy..."
+              aws cloudformation update-termination-protection \
+                --stack-name "$STACK_NAME" \
+                --no-enable-termination-protection || true
+              aws cloudformation delete-stack \
+                --stack-name "$STACK_NAME" \
+                --deletion-mode FORCE_DELETE_STACK || \
+              aws cloudformation delete-stack --stack-name "$STACK_NAME"
+
+              if aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME"; then
+                echo "Stack deleted successfully."
+              else
+                REMAINING_STATUS="$(
+                  aws cloudformation describe-stacks \
+                    --stack-name "$STACK_NAME" \
+                    --query "Stacks[0].StackStatus" \
+                    --output text 2>/dev/null || true
+                )"
+                if [ -n "$REMAINING_STATUS" ]; then
+                  echo "Stack still exists after delete attempt: $REMAINING_STATUS"
+                  exit 1
+                fi
+                echo "Stack not found after delete wait; continuing."
+              fi
+              ;;
+            "")
+              echo "Stack does not exist yet. Continuing."
+              ;;
+            *)
+              echo "Stack is updatable. Continuing."
+              ;;
+          esac
+
+      - run: npx serverless@3 deploy --stage "${STAGE}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
