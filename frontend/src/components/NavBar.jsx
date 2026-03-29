@@ -85,9 +85,6 @@ export default function NavBar() {
             <Button component={Link} to="/" color="inherit">
               {t("dashboard")}
             </Button>
-            <Button component={Link} to="/expenses" color="inherit">
-              {t("expenses")}
-            </Button>
             <Button component={Link} to="/shopping-lists" color="inherit">
               {t("shoppingLists")}
             </Button>

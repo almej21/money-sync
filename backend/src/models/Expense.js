@@ -11,7 +11,7 @@ const expenseSchema = new mongoose.Schema(
     externalId: { type: String },
     date: { type: Date, required: true },
     amount: { type: Number, required: true },
-    currency: { type: String, default: "ILS" },
+    currency: { type: String, default: "₪" },
     description: { type: String, required: true },
     merchant: { type: String },
     category: { type: String, default: "Uncategorized" },

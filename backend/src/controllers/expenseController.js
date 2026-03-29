@@ -46,7 +46,7 @@ export async function createExpense(req, res) {
     externalId: req.body.externalId,
     date: req.body.date,
     amount: req.body.amount,
-    currency: req.body.currency || "ILS",
+    currency: req.body.currency || "₪",
     description: req.body.description,
     merchant: req.body.merchant || "",
     category: req.body.category || "General",

@@ -5,7 +5,7 @@ export function normalizeScrapedTransactions(scraped = []) {
       t.identifier || t.id || `${t.date}-${t.description}-${t.chargedAmount}`,
     date: t.date,
     amount: Number(t.chargedAmount || t.amount || 0),
-    currency: "ILS",
+    currency: "₪",
     description: t.description || t.memo || "Bank transaction",
     merchant: t.description || "",
     category:

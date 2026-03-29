@@ -10,7 +10,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: backend
@@ -20,16 +19,17 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.12.0
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
 
-      - run: npm install
-      - run: npm install -g serverless
+      - run: npm ci
 
-      - run: serverless deploy
+      - run: npx serverless deploy --stage prod
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRES_IN: 7d
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
           CLIENT_URL: ${{ secrets.CLIENT_URL }}
