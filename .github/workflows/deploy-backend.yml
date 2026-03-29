@@ -26,7 +26,15 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - run: npm ci
+      - name: Install backend runtime dependencies locally
+        env:
+          NPM_CONFIG_WORKSPACES: "false"
+        run: npm install --omit=dev --workspaces=false
+
+      - name: Verify packaged dependencies exist in backend
+        run: |
+          test -d node_modules/dotenv
+          test -d node_modules/express
 
       - name: Recover stack if it is in a non-updatable state
         env:
