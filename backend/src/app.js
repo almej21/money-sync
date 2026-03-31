@@ -12,20 +12,27 @@ import expenseRoutes from "./routes/expenseRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
 const app = express();
 
+function normalizeOrigin(value) {
+  return (value ?? "").trim().replace(/\/+$/, "").toLowerCase();
+}
+
 const allowedOrigins = (process.env.CLIENT_URL ?? "")
   .split(",")
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
 const corsOptions = {
   origin(origin, callback) {
+    const normalizedOrigin = normalizeOrigin(origin);
+
     // Allow non-browser tools (curl/Postman) and same-origin requests.
     if (!origin) return callback(null, true);
 
     // When no allow-list is configured, keep permissive behavior.
     if (!allowedOrigins.length) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOrigins.includes("*")) return callback(null, true);
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
     return callback(new Error("Origin not allowed by CORS"));
   },
 };
