@@ -95,7 +95,9 @@ export default function DashboardPage() {
       ]);
 
       const connections = Array.isArray(statusData?.connections)
-        ? statusData.connections.filter((connection) => String(connection?.id || "").trim())
+        ? statusData.connections.filter((connection) =>
+            String(connection?.id || "").trim(),
+          )
         : [];
 
       const providers = Array.isArray(providersData?.providers)
@@ -118,7 +120,9 @@ export default function DashboardPage() {
         if (allConnectionIds.length <= 1) return allConnectionIds;
         if (!prevSelected.length) return allConnectionIds;
 
-        const retained = prevSelected.filter((id) => allConnectionIds.includes(id));
+        const retained = prevSelected.filter((id) =>
+          allConnectionIds.includes(id),
+        );
         return retained.length ? retained : allConnectionIds;
       });
     } catch {
@@ -213,8 +217,11 @@ export default function DashboardPage() {
       bankConnections.map((connection) => {
         const companyId = String(connection.companyId || "").trim();
         const accountName = String(connection.connectionName || "").trim();
-        const providerLabel = providerLabels[companyId] || companyId || t("bank");
-        const label = accountName ? `${accountName} (${providerLabel})` : providerLabel;
+        const providerLabel =
+          providerLabels[companyId] || companyId || t("bank");
+        const label = accountName
+          ? `${accountName} (${providerLabel})`
+          : providerLabel;
 
         return {
           id: String(connection.id || "").trim(),
@@ -259,7 +266,10 @@ export default function DashboardPage() {
     const filtered = expenses.filter((exp) => {
       if (!matchesTimeRange(exp.date, timeRange)) return false;
       const normalizedCategory = String(exp.category || "").trim();
-      if (selectedCategories.length && !selectedCategories.includes(normalizedCategory)) {
+      if (
+        selectedCategories.length &&
+        !selectedCategories.includes(normalizedCategory)
+      ) {
         return false;
       }
 
@@ -368,8 +378,8 @@ export default function DashboardPage() {
       <Card sx={{ border: "none !important" }}>
         <CardContent
           sx={{
-            px: { xs: 2, sm: 3 },
-            py: { xs: 2, sm: 3 },
+            px: { xs: 1, sm: 3 },
+            py: { xs: 1, sm: 3 },
           }}
         >
           <Typography variant="h5" gutterBottom>
@@ -439,31 +449,42 @@ export default function DashboardPage() {
 
             {shouldShowAccountFilter && (
               <FormControl fullWidth>
-                <InputLabel id="account-filter-label">{t("accountFilter")}</InputLabel>
+                <InputLabel id="account-filter-label">
+                  {t("accountFilter")}
+                </InputLabel>
                 <Select
                   labelId="account-filter-label"
                   multiple
                   value={selectedConnectionIds}
                   label={t("accountFilter")}
-                  onChange={(event) => onAccountFilterChange(event.target.value)}
+                  onChange={(event) =>
+                    onAccountFilterChange(event.target.value)
+                  }
                   MenuProps={selectMenuProps}
                   renderValue={(selected) => {
                     const values = Array.isArray(selected) ? selected : [];
-                    if (!values.length || values.length === accountFilterOptions.length) {
+                    if (
+                      !values.length ||
+                      values.length === accountFilterOptions.length
+                    ) {
                       return t("allAccounts");
                     }
 
                     return values
                       .map(
                         (id) =>
-                          accountFilterOptions.find((option) => option.id === id)?.label || id,
+                          accountFilterOptions.find(
+                            (option) => option.id === id,
+                          )?.label || id,
                       )
                       .join(", ");
                   }}
                 >
                   {accountFilterOptions.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
-                      <Checkbox checked={selectedConnectionIds.includes(option.id)} />
+                      <Checkbox
+                        checked={selectedConnectionIds.includes(option.id)}
+                      />
                       <ListItemText primary={option.label} />
                     </MenuItem>
                   ))}

@@ -128,7 +128,7 @@ export default function ExpenseItem({
         <Box
           sx={{
             width: "100%",
-            p: 1.5,
+            p: 0.5,
             borderRadius: 1.2,
             bgcolor: "#f4f6f3",
             display: "flex",
@@ -138,9 +138,9 @@ export default function ExpenseItem({
         >
           <Box
             sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 0.7,
+              width: 38,
+              height: 38,
+              borderRadius: 0.9,
               bgcolor: "#cfe1b9",
               display: "grid",
               placeItems: "center",
@@ -151,12 +151,12 @@ export default function ExpenseItem({
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
-              variant="h7"
               dir={direction}
               sx={{
                 fontWeight: 700,
                 textAlign: direction === "rtl" ? "right" : "left",
                 lineHeight: 1.2,
+                fontSize: ".85rem",
               }}
             >
               {exp.description || "-"}
@@ -166,7 +166,7 @@ export default function ExpenseItem({
               sx={{
                 color: "text.secondary",
                 fontWeight: 600,
-                fontSize: ".8rem",
+                fontSize: ".7rem",
                 textAlign: direction === "rtl" ? "right" : "left",
               }}
             >
@@ -175,12 +175,12 @@ export default function ExpenseItem({
           </Box>
           <Stack sx={{ alignItems: "flex-end", minWidth: 120 }}>
             <Typography
-              variant="h8"
               sx={{
                 fontWeight: 800,
                 color: isPositiveAmount ? "#19a700c8" : "#2f3a24",
                 direction: "ltr",
                 unicodeBidi: "isolate",
+                fontSize: ".85rem",
               }}
             >
               {exp.amount} {exp.currency}
@@ -196,7 +196,7 @@ export default function ExpenseItem({
                 minWidth: 0,
                 color: "#718355",
                 fontWeight: 700,
-                fontSize: ".7rem",
+                fontSize: ".6rem",
                 fontFamily: "inherit",
                 "&:hover": { bgcolor: "transparent", color: "#215b3a" },
               }}
@@ -209,11 +209,11 @@ export default function ExpenseItem({
       <Box sx={{ pb: 1, px: 1 }}>
         <Collapse in={Boolean(isExpanded)}>
           <Typography
-            variant="body2"
             color="text.secondary"
             dir={direction}
             sx={{
               textAlign: direction === "rtl" ? "right" : "left",
+              fontSize: ".8rem",
               overflowWrap: "anywhere",
             }}
           >
