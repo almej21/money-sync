@@ -10,7 +10,6 @@ import { requestLogger } from "./middleware/requestLogger.js";
 import authRoutes from "./routes/authRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
-// 
 const app = express();
 
 app.use(
