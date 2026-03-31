@@ -11,12 +11,27 @@ import authRoutes from "./routes/authRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
 const app = express();
-//
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL?.split(",") || "*",
-  }),
-);
+
+const allowedOrigins = (process.env.CLIENT_URL ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser tools (curl/Postman) and same-origin requests.
+    if (!origin) return callback(null, true);
+
+    // When no allow-list is configured, keep permissive behavior.
+    if (!allowedOrigins.length) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Origin not allowed by CORS"));
+  },
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(requestLogger);
 
