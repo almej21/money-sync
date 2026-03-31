@@ -24,7 +24,12 @@ function ProtectedRoutes() {
   return (
     <>
       <NavBar />
-      <Container component="main" maxWidth="md" sx={{ py: 3 }} dir={direction}>
+      <Container
+        component="main"
+        maxWidth="md"
+        sx={{ py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 3 } }}
+        dir={direction}
+      >
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
@@ -131,7 +136,15 @@ function AppContent() {
       <CssBaseline />
       <AuthProvider>
         <BrowserRouter>
-          <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }} dir={direction}>
+          <Box
+            sx={{
+              minHeight: "100vh",
+              bgcolor: "background.default",
+              width: "100%",
+              overflowX: "hidden",
+            }}
+            dir={direction}
+          >
             <ProtectedRoutes />
           </Box>
         </BrowserRouter>

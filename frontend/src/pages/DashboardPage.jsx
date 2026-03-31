@@ -1,3 +1,5 @@
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Box,
   Button,
@@ -12,6 +14,7 @@ import {
   ListItem,
   ListItemText,
   MenuItem,
+  Skeleton,
   Select,
   Stack,
   TextField,
@@ -43,6 +46,7 @@ function detailLine(label, value) {
 
 export default function DashboardPage() {
   const [expenses, setExpenses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState({});
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [timeRange, setTimeRange] = useState("this_month");
@@ -52,8 +56,13 @@ export default function DashboardPage() {
   const { t, locale, direction } = useLanguage();
 
   const loadExpenses = useCallback(async () => {
-    const data = await api("/expenses");
-    setExpenses(data);
+    setIsLoading(true);
+    try {
+      const data = await api("/expenses");
+      setExpenses(data);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -181,7 +190,7 @@ export default function DashboardPage() {
 
   return (
     <Card>
-      <CardContent>
+      <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
         <Typography variant="h5" gutterBottom>
           {t("allExpenses")}
         </Typography>
@@ -282,11 +291,7 @@ export default function DashboardPage() {
             </Box>
           )}
         <Box sx={{ mb: 2 }}>
-          <Stack
-            direction="column"
-            alignItems="flex-start"
-            spacing={1}
-          >
+          <Stack direction="column" alignItems="flex-start" spacing={1}>
             <Typography
               variant="subtitle1"
               dir={direction}
@@ -295,9 +300,15 @@ export default function DashboardPage() {
               {t("summaryTotal")}:{" "}
               <Box
                 component="span"
-                sx={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}
+                sx={{
+                  direction: "ltr",
+                  unicodeBidi: "isolate",
+                  display: "inline-block",
+                  fontWeight: 800,
+                }}
               >
-                {displayedAmountTotal.toFixed(2)} {displayedExpenses[0]?.currency || "₪"}
+                {displayedAmountTotal.toFixed(2)}{" "}
+                {displayedExpenses[0]?.currency || "₪"}
               </Box>
             </Typography>
             <Typography
@@ -317,90 +328,110 @@ export default function DashboardPage() {
           </Stack>
         </Box>
         <List disablePadding>
-          {displayedExpenses.map((exp, index) => (
-            <div key={exp._id}>
-              <ListItem disableGutters>
-                <ListItemText
-                  sx={{
-                    "& .MuiListItemText-primary, & .MuiListItemText-secondary":
-                      {
-                        textAlign: direction === "rtl" ? "right" : "left",
-                      },
-                  }}
-                  primaryTypographyProps={{ dir: direction }}
-                  secondaryTypographyProps={{
-                    component: "div",
-                    dir: direction,
-                  }}
-                  primary={exp.description}
-                  secondary={
-                    <Box
-                      dir={direction}
-                      sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, index) => (
+                <Box key={`expense-skeleton-${index}`} sx={{ py: 1 }}>
+                  <Skeleton variant="text" width="55%" height={30} />
+                  <Skeleton variant="text" width="72%" height={24} />
+                  <Skeleton variant="rounded" width={120} height={30} sx={{ mt: 0.5 }} />
+                  {index < 5 && <Divider sx={{ mt: 1 }} />}
+                </Box>
+              ))
+            : displayedExpenses.map((exp, index) => (
+                <div key={exp._id}>
+                  <ListItem disableGutters>
+                    <ListItemText
+                      sx={{
+                        overflowWrap: "anywhere",
+                        "& .MuiListItemText-primary, & .MuiListItemText-secondary":
+                          {
+                            textAlign: direction === "rtl" ? "right" : "left",
+                            overflowWrap: "anywhere",
+                          },
+                      }}
+                      primaryTypographyProps={{ dir: direction }}
+                      secondaryTypographyProps={{
+                        component: "div",
+                        dir: direction,
+                      }}
+                      primary={exp.description}
+                      secondary={
+                        <Box
+                          dir={direction}
+                          sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
+                        >
+                          {formatDate(exp.date)} · {exp.category || "-"}
+                          <br />
+                          <Box
+                            component="span"
+                            sx={{
+                              direction: "ltr",
+                              unicodeBidi: "isolate",
+                              display: "inline-block",
+                            }}
+                          >
+                            {exp.amount} {exp.currency}
+                          </Box>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  <Box sx={{ pb: 1 }}>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => toggleExpanded(exp._id)}
+                      endIcon={
+                        expandedIds[exp._id] ? (
+                          <ExpandLessIcon />
+                        ) : (
+                          <ExpandMoreIcon />
+                        )
+                      }
                     >
-                      {formatDate(exp.date)} ·{" "}
-                      {exp.category || "-"}
-                      <br />
-                      <Box
-                        component="span"
+                      {expandedIds[exp._id] ? t("hideDetails") : t("showDetails")}
+                    </Button>
+                    <Collapse in={Boolean(expandedIds[exp._id])}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        dir={direction}
                         sx={{
-                          direction: "ltr",
-                          unicodeBidi: "isolate",
-                          display: "inline-block",
+                          textAlign: direction === "rtl" ? "right" : "left",
+                          overflowWrap: "anywhere",
                         }}
                       >
-                        {exp.amount} {exp.currency}
-                      </Box>
-                    </Box>
-                  }
-                />
-              </ListItem>
-              <Box sx={{ pb: 1 }}>
-                <Button
-                  size="small"
-                  variant="text"
-                  onClick={() => toggleExpanded(exp._id)}
-                >
-                  {expandedIds[exp._id] ? t("hideDetails") : t("showDetails")}
-                </Button>
-                <Collapse in={Boolean(expandedIds[exp._id])}>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    dir={direction}
-                    sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
-                  >
-                    {detailLine(t("merchant"), exp.merchant)}
-                    <br />
-                    {detailLine(
-                      t("reviewed"),
-                      exp.isReviewed ? t("yes") : t("no"),
-                    )}
-                    <br />
-                    {detailLine(
-                      t("tags"),
-                      Array.isArray(exp.tags) && exp.tags.length
-                        ? exp.tags.join(", ")
-                        : "",
-                    )}
-                    <br />
-                    {detailLine(t("notes"), exp.notes)}
-                    <br />
-                    {detailLine(
-                      t("created"),
-                      formatDateTime(exp.createdAt, locale),
-                    )}
-                    <br />
-                    {detailLine(
-                      t("updated"),
-                      formatDateTime(exp.updatedAt, locale),
-                    )}
-                  </Typography>
-                </Collapse>
-              </Box>
-              {index < displayedExpenses.length - 1 && <Divider />}
-            </div>
-          ))}
+                        {detailLine(t("merchant"), exp.merchant)}
+                        <br />
+                        {detailLine(
+                          t("reviewed"),
+                          exp.isReviewed ? t("yes") : t("no"),
+                        )}
+                        <br />
+                        {detailLine(
+                          t("tags"),
+                          Array.isArray(exp.tags) && exp.tags.length
+                            ? exp.tags.join(", ")
+                            : "",
+                        )}
+                        <br />
+                        {detailLine(t("notes"), exp.notes)}
+                        <br />
+                        {detailLine(
+                          t("created"),
+                          formatDateTime(exp.createdAt, locale),
+                        )}
+                        <br />
+                        {detailLine(
+                          t("updated"),
+                          formatDateTime(exp.updatedAt, locale),
+                        )}
+                      </Typography>
+                    </Collapse>
+                  </Box>
+                  {index < displayedExpenses.length - 1 && <Divider />}
+                </div>
+              ))}
         </List>
       </CardContent>
     </Card>

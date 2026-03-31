@@ -35,10 +35,14 @@ export default function LoginPage() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
+    <Container maxWidth="sm" sx={{ py: { xs: 3, sm: 8 }, px: { xs: 1.5, sm: 3 } }}>
       <Card>
-        <CardContent sx={{ p: 4 }}>
-          <Typography variant="h4" gutterBottom>
+        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+          >
             {mode === "login" ? t("login") : t("createAccount")}
           </Typography>
           <Box component="form" onSubmit={submit}>
@@ -65,7 +69,7 @@ export default function LoginPage() {
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           fullWidth
         />
-              <Button type="submit" variant="contained" size="large">
+              <Button type="submit" variant="contained" size="large" fullWidth>
                 {mode === "login" ? t("login") : t("register")}
               </Button>
             </Stack>
@@ -76,11 +80,11 @@ export default function LoginPage() {
             </Alert>
           )}
           <Button
-        sx={{ mt: 2 }}
-        variant="text"
-        onClick={() => setMode(mode === "login" ? "register" : "login")}
-      >
-        {mode === "login" ? t("switchToRegister") : t("switchToLogin")}
+            sx={{ mt: 2 }}
+            variant="text"
+            onClick={() => setMode(mode === "login" ? "register" : "login")}
+          >
+            {mode === "login" ? t("switchToRegister") : t("switchToLogin")}
           </Button>
         </CardContent>
       </Card>

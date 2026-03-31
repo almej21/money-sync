@@ -145,7 +145,7 @@ export default function BankCredentialsPage() {
   return (
     <Stack spacing={2}>
       <Card>
-        <CardContent>
+        <CardContent sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 } }}>
           <Typography variant="h5" gutterBottom>
             {t("bankCredentials")}
           </Typography>
@@ -196,8 +196,13 @@ export default function BankCredentialsPage() {
                 />
               ))}
 
-              <Stack direction="row" spacing={1}>
-                <Button type="submit" variant="contained" disabled={saving || loading}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={saving || loading}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
+                >
                   {t("saveCredentials")}
                 </Button>
                 <Button
@@ -206,6 +211,7 @@ export default function BankCredentialsPage() {
                   color="error"
                   onClick={disconnectBank}
                   disabled={saving || loading || !connected}
+                  sx={{ width: { xs: "100%", sm: "auto" } }}
                 >
                   {t("disconnect")}
                 </Button>
