@@ -1,7 +1,5 @@
 import BoltIcon from "@mui/icons-material/Bolt";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
@@ -11,14 +9,7 @@ import RestaurantIcon from "@mui/icons-material/Restaurant";
 import SchoolIcon from "@mui/icons-material/School";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import {
-  Box,
-  Button,
-  Collapse,
-  ListItem,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Collapse, ListItem, Stack, Typography } from "@mui/material";
 
 function formatDateTime(value, locale) {
   if (!value) return "-";
@@ -156,7 +147,7 @@ export default function ExpenseItem({
                 fontWeight: 700,
                 textAlign: direction === "rtl" ? "right" : "left",
                 lineHeight: 1.2,
-                fontSize: ".85rem",
+                fontSize: ".95rem",
               }}
             >
               {exp.description || "-"}
@@ -166,43 +157,25 @@ export default function ExpenseItem({
               sx={{
                 color: "text.secondary",
                 fontWeight: 600,
-                fontSize: ".7rem",
+                fontSize: ".8rem",
                 textAlign: direction === "rtl" ? "right" : "left",
               }}
             >
               {formatDate(exp.date)} {"\u2022"} {exp.category || "-"}
             </Typography>
           </Box>
-          <Stack sx={{ alignItems: "flex-end", minWidth: 120 }}>
+          <Stack sx={{ alignItems: "flex-end", width: 'fit-content' }}>
             <Typography
               sx={{
                 fontWeight: 800,
                 color: isPositiveAmount ? "#19a700c8" : "#2f3a24",
                 direction: "ltr",
                 unicodeBidi: "isolate",
-                fontSize: ".85rem",
+                fontSize: "1rem",
               }}
             >
               {exp.amount} {exp.currency}
             </Typography>
-            <Button
-              size="small"
-              variant="text"
-              onClick={() => onToggleExpanded(exp._id)}
-              endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              sx={{
-                mt: 0.25,
-                p: 0,
-                minWidth: 0,
-                color: "#718355",
-                fontWeight: 700,
-                fontSize: ".6rem",
-                fontFamily: "inherit",
-                "&:hover": { bgcolor: "transparent", color: "#215b3a" },
-              }}
-            >
-              {isExpanded ? t("hideDetails") : t("showDetails")}
-            </Button>
           </Stack>
         </Box>
       </ListItem>

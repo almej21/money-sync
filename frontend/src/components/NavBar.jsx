@@ -17,7 +17,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import israelFlagIcon from "../assets/icons/israel.png";
 import usaFlagIcon from "../assets/icons/united-states.png";
 import { useAuth } from "../context/AuthContext";
@@ -26,6 +26,7 @@ import { useLanguage } from "../context/LanguageContext";
 export default function NavBar() {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -79,6 +80,22 @@ export default function NavBar() {
   };
 
   const navIconSx = { fontSize: 26 };
+  const isRouteActive = (path) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  const getNavButtonSx = (path, isMobileNav = false) => {
+    const active = isRouteActive(path);
+    const base = isMobileNav ? mobileNavButtonSx : NavButtonSx;
+
+    return {
+      ...base,
+      bgcolor: active ? "rgba(47, 58, 36, .32)" : "transparent",
+      boxShadow: active ? "inset 0 0 0 1px rgba(255, 255, 255, 0.22)" : "none",
+      "&:hover": {
+        bgcolor: active ? "rgba(47, 58, 36, .32)" : "rgba(47, 58, 36, .2)",
+      },
+    };
+  };
 
   return (
     <>
@@ -144,7 +161,7 @@ export default function NavBar() {
                 to="/"
                 color="inherit"
                 aria-label={t("dashboard")}
-                sx={NavButtonSx}
+                sx={getNavButtonSx("/")}
               >
                 <FormatListBulletedIcon sx={navIconSx} />
               </Button>
@@ -153,7 +170,7 @@ export default function NavBar() {
                 to="/shopping-lists"
                 color="inherit"
                 aria-label={t("shoppingLists")}
-                sx={NavButtonSx}
+                sx={getNavButtonSx("/shopping-lists")}
               >
                 <AddShoppingCartIcon sx={navIconSx} />
               </Button>
@@ -162,7 +179,7 @@ export default function NavBar() {
                 to="/bank"
                 color="inherit"
                 aria-label={t("bank")}
-                sx={NavButtonSx}
+                sx={getNavButtonSx("/bank")}
               >
                 <WalletIcon sx={navIconSx} />
               </Button>
@@ -221,18 +238,18 @@ export default function NavBar() {
               transition: "top 180ms ease",
             }}
           >
-            <Button component={Link} to="/" sx={mobileNavButtonSx} aria-label={t("dashboard")}>
+            <Button component={Link} to="/" sx={getNavButtonSx("/", true)} aria-label={t("dashboard")}>
               <FormatListBulletedIcon sx={navIconSx} />
             </Button>
             <Button
               component={Link}
               to="/shopping-lists"
-              sx={mobileNavButtonSx}
+              sx={getNavButtonSx("/shopping-lists", true)}
               aria-label={t("shoppingLists")}
             >
               <AddShoppingCartIcon sx={navIconSx} />
             </Button>
-            <Button component={Link} to="/bank" sx={mobileNavButtonSx} aria-label={t("bank")}>
+            <Button component={Link} to="/bank" sx={getNavButtonSx("/bank", true)} aria-label={t("bank")}>
               <WalletIcon sx={navIconSx} />
             </Button>
           </Box>
