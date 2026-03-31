@@ -4,7 +4,7 @@ import { api } from "../api";
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLLS = 12;
 
-export function useExpenseBackgroundRefresh(loadExpenses) {
+export function useExpenseBackgroundRefresh(loadExpenses, onRunningChange = () => {}) {
   useEffect(() => {
     let active = true;
     let timer = null;
@@ -12,7 +12,16 @@ export function useExpenseBackgroundRefresh(loadExpenses) {
     async function run() {
       const initial = await api("/expenses/sync-status").catch(() => null);
       if (!active || !initial?.sync) return;
-      if (!initial.sync.running && initial.sync.lastResult?.reason === "cooldown") return;
+      onRunningChange(Boolean(initial.sync.running));
+      const initialReason = String(initial.sync.lastResult?.reason || "");
+      if (
+        !initial.sync.running &&
+        (initialReason === "cooldown" ||
+          initialReason === "all_connections_on_cooldown")
+      ) {
+        onRunningChange(false);
+        return;
+      }
 
       const startedAt = initial.sync.lastStartedAt;
       let polls = 0;
@@ -25,6 +34,7 @@ export function useExpenseBackgroundRefresh(loadExpenses) {
         if (!active || !status?.sync) return;
 
         const sync = status.sync;
+        onRunningChange(Boolean(sync.running));
         const hasCompletedAfterStart =
           Boolean(sync.lastCompletedAt) &&
           (!startedAt ||
@@ -33,10 +43,14 @@ export function useExpenseBackgroundRefresh(loadExpenses) {
 
         if (!sync.running && hasCompletedAfterStart) {
           await loadExpenses();
+          onRunningChange(false);
           return;
         }
 
-        if (polls >= MAX_POLLS) return;
+        if (polls >= MAX_POLLS) {
+          onRunningChange(false);
+          return;
+        }
         timer = setTimeout(poll, POLL_INTERVAL_MS);
       };
 
@@ -46,7 +60,8 @@ export function useExpenseBackgroundRefresh(loadExpenses) {
     run();
     return () => {
       active = false;
+      onRunningChange(false);
       if (timer) clearTimeout(timer);
     };
-  }, [loadExpenses]);
+  }, [loadExpenses, onRunningChange]);
 }

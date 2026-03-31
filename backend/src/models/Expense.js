@@ -9,6 +9,10 @@ const expenseSchema = new mongoose.Schema(
     },
     source: { type: String, default: "manual" },
     externalId: { type: String },
+    sourceCompanyId: { type: String, default: "" },
+    sourceConnectionKey: { type: String, default: "" },
+    sourceAccountId: { type: String, default: "" },
+    sourceAccountName: { type: String, default: "" },
     date: { type: Date, required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: "₪" },
@@ -26,5 +30,9 @@ const expenseSchema = new mongoose.Schema(
 
 expenseSchema.index({ householdId: 1, date: -1 });
 expenseSchema.index({ householdId: 1, externalId: 1 }, { unique: false });
+expenseSchema.index(
+  { householdId: 1, source: 1, externalId: 1, sourceConnectionKey: 1 },
+  { unique: false },
+);
 
 export default mongoose.model("Expense", expenseSchema);

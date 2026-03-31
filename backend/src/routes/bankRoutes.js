@@ -13,6 +13,7 @@ router.use(requireAuth);
 router.get("/providers", getBankProviders);
 router.get("/credentials", getBankCredentialStatus);
 router.put("/credentials", setBankCredentials);
+router.delete("/credentials/:connectionId", deleteBankCredentials);
 router.delete("/credentials", deleteBankCredentials);
 
 export default router;

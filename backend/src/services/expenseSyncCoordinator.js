@@ -1,8 +1,8 @@
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import { syncLastMonthExpensesForUser } from "./bankSyncService.js";
 
 const syncStateByUserId = new Map();
-const FETCH_COOLDOWN_MS = 60 * 60 * 1000;
 
 function toIso(value) {
   return value instanceof Date ? value.toISOString() : null;
@@ -29,43 +29,57 @@ export function triggerExpenseSyncForUser(user, reason = "unknown") {
   if (!userId) return null;
 
   const state = getOrCreateState(userId);
-  const lastBankFetchAt = user?.expenseSyncMeta?.lastBankFetchAt
-    ? new Date(user.expenseSyncMeta.lastBankFetchAt)
-    : null;
-  const now = Date.now();
-  const withinCooldown =
-    lastBankFetchAt instanceof Date &&
-    !Number.isNaN(lastBankFetchAt.getTime()) &&
-    now - lastBankFetchAt.getTime() < FETCH_COOLDOWN_MS;
 
   state.lastTriggerReason = reason;
-  if (withinCooldown) {
-    state.lastResult = {
-      reason: "cooldown",
-      nextFetchAt: new Date(
-        lastBankFetchAt.getTime() + FETCH_COOLDOWN_MS,
-      ).toISOString(),
-    };
-    return state;
-  }
   if (state.running) return state;
 
   state.running = true;
   state.lastStartedAt = new Date();
   state.lastError = null;
   const fetchStartedAt = state.lastStartedAt;
-  if (!user.expenseSyncMeta) {
-    user.expenseSyncMeta = {};
-  }
-  user.expenseSyncMeta.lastBankFetchAt = fetchStartedAt;
 
   Promise.resolve()
     .then(async () => {
-      await User.findByIdAndUpdate(userId, {
-        $set: { "expenseSyncMeta.lastBankFetchAt": fetchStartedAt },
-      });
       const result = await syncLastMonthExpensesForUser(user);
       state.lastResult = result || null;
+      const attemptedConnectionKeys = Array.isArray(
+        result?.attemptedConnectionKeys,
+      )
+        ? result.attemptedConnectionKeys.filter((value) =>
+            mongoose.isValidObjectId(String(value || "").trim()),
+          )
+        : [];
+      if (attemptedConnectionKeys.length > 0) {
+        const fetchedItemsCount = Number(result?.total || 0);
+        console.log(
+          `DONE FETCHING ITEMS! fetched ${fetchedItemsCount} items`,
+        );
+      }
+
+      if (attemptedConnectionKeys.length > 0) {
+        const attemptedObjectIds = attemptedConnectionKeys.map(
+          (value) => new mongoose.Types.ObjectId(String(value)),
+        );
+        await User.findByIdAndUpdate(
+          userId,
+          {
+            $set: {
+              "bankConnections.$[connection].lastBankFetchAt": fetchStartedAt,
+            },
+          },
+          {
+            arrayFilters: [{ "connection._id": { $in: attemptedObjectIds } }],
+          },
+        );
+
+        if (Array.isArray(user?.bankConnections)) {
+          for (const connection of user.bankConnections) {
+            const key = String(connection?._id || "");
+            if (!attemptedConnectionKeys.includes(key)) continue;
+            connection.lastBankFetchAt = fetchStartedAt;
+          }
+        }
+      }
     })
     .catch((err) => {
       state.lastError = err?.message || "Unknown sync error";

@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   Checkbox,
+  CircularProgress,
   Divider,
   FormControl,
   InputLabel,
@@ -34,8 +35,12 @@ function formatDate(value) {
 export default function DashboardPage() {
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncingExpenses, setIsSyncingExpenses] = useState(false);
   const [expandedIds, setExpandedIds] = useState({});
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [bankConnections, setBankConnections] = useState([]);
+  const [providerLabels, setProviderLabels] = useState({});
+  const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
   const [timeRange, setTimeRange] = useState("this_month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -82,11 +87,59 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadBankFilterOptions = useCallback(async () => {
+    try {
+      const [statusData, providersData] = await Promise.all([
+        api("/bank/credentials"),
+        api("/bank/providers"),
+      ]);
+
+      const connections = Array.isArray(statusData?.connections)
+        ? statusData.connections.filter((connection) => String(connection?.id || "").trim())
+        : [];
+
+      const providers = Array.isArray(providersData?.providers)
+        ? providersData.providers
+        : [];
+      const nextProviderLabels = Object.fromEntries(
+        providers.map((provider) => [
+          provider.companyId,
+          provider.label || provider.companyId,
+        ]),
+      );
+
+      const allConnectionIds = connections.map((connection) =>
+        String(connection.id).trim(),
+      );
+
+      setProviderLabels(nextProviderLabels);
+      setBankConnections(connections);
+      setSelectedConnectionIds((prevSelected) => {
+        if (allConnectionIds.length <= 1) return allConnectionIds;
+        if (!prevSelected.length) return allConnectionIds;
+
+        const retained = prevSelected.filter((id) => allConnectionIds.includes(id));
+        return retained.length ? retained : allConnectionIds;
+      });
+    } catch {
+      setBankConnections([]);
+      setProviderLabels({});
+      setSelectedConnectionIds([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadExpenses().catch(console.error);
   }, [loadExpenses]);
 
-  useExpenseBackgroundRefresh(loadExpenses);
+  useEffect(() => {
+    loadBankFilterOptions().catch(console.error);
+  }, [loadBankFilterOptions]);
+
+  const onSyncRunningChange = useCallback((running) => {
+    setIsSyncingExpenses(Boolean(running));
+  }, []);
+  useExpenseBackgroundRefresh(loadExpenses, onSyncRunningChange);
 
   function toggleExpanded(expenseId) {
     setExpandedIds((prev) => ({
@@ -155,12 +208,74 @@ export default function DashboardPage() {
     return Array.from(values).sort((a, b) => a.localeCompare(b, locale));
   }, [expenses, locale]);
 
+  const accountFilterOptions = useMemo(
+    () =>
+      bankConnections.map((connection) => {
+        const companyId = String(connection.companyId || "").trim();
+        const accountName = String(connection.connectionName || "").trim();
+        const providerLabel = providerLabels[companyId] || companyId || t("bank");
+        const label = accountName ? `${accountName} (${providerLabel})` : providerLabel;
+
+        return {
+          id: String(connection.id || "").trim(),
+          label,
+        };
+      }),
+    [bankConnections, providerLabels, t],
+  );
+  const loadingBankNames = useMemo(() => {
+    const connectedNames = bankConnections
+      .filter((connection) => Boolean(connection?.connected))
+      .map((connection) => {
+        const companyId = String(connection?.companyId || "").trim();
+        return providerLabels[companyId] || companyId;
+      })
+      .filter(Boolean);
+
+    const names = connectedNames.length
+      ? connectedNames
+      : accountFilterOptions.map((option) => option.label);
+    if (!names.length) return "";
+    return Array.from(new Set(names)).join(", ");
+  }, [accountFilterOptions, bankConnections, providerLabels]);
+
+  const shouldShowAccountFilter = accountFilterOptions.length > 1;
+  const shouldApplyAccountFilter =
+    shouldShowAccountFilter &&
+    selectedConnectionIds.length > 0 &&
+    selectedConnectionIds.length < accountFilterOptions.length;
+
+  function onAccountFilterChange(nextValues) {
+    const values = Array.isArray(nextValues) ? nextValues : [];
+    if (!values.length) {
+      setSelectedConnectionIds(accountFilterOptions.map((option) => option.id));
+      return;
+    }
+    setSelectedConnectionIds(values);
+  }
+
   const displayedExpenses = useMemo(() => {
+    const firstConnectionId = accountFilterOptions[0]?.id || "";
     const filtered = expenses.filter((exp) => {
       if (!matchesTimeRange(exp.date, timeRange)) return false;
-      if (!selectedCategories.length) return true;
       const normalizedCategory = String(exp.category || "").trim();
-      return selectedCategories.includes(normalizedCategory);
+      if (selectedCategories.length && !selectedCategories.includes(normalizedCategory)) {
+        return false;
+      }
+
+      if (!shouldApplyAccountFilter) return true;
+
+      const sourceConnectionKey = String(exp.sourceConnectionKey || "").trim();
+      if (sourceConnectionKey) {
+        return selectedConnectionIds.includes(sourceConnectionKey);
+      }
+
+      const source = String(exp.source || "").trim();
+      if (source === "israeli-bank-scrapers" && firstConnectionId) {
+        return selectedConnectionIds.includes(firstConnectionId);
+      }
+
+      return false;
     });
 
     return filtered.sort((a, b) => {
@@ -179,8 +294,11 @@ export default function DashboardPage() {
     customEndDate,
     customStartDate,
     expenses,
+    accountFilterOptions,
     selectedCategories,
+    selectedConnectionIds,
     sortBy,
+    shouldApplyAccountFilter,
     timeRange,
   ]);
 
@@ -257,6 +375,21 @@ export default function DashboardPage() {
           <Typography variant="h5" gutterBottom>
             {t("allExpenses")}
           </Typography>
+          {isSyncingExpenses && (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 2, color: "text.secondary" }}
+            >
+              <CircularProgress size={18} thickness={5} />
+              <Typography variant="body2">
+                {loadingBankNames
+                  ? `${t("loadingBankExpensesPrefix")} ${loadingBankNames} ${t("loadingBankExpensesSuffix")}`
+                  : t("loadingBankExpensesDefault")}
+              </Typography>
+            </Stack>
+          )}
           <Stack
             direction={{ xs: "column", sm: "row" }}
             useFlexGap
@@ -303,6 +436,40 @@ export default function DashboardPage() {
                 <MenuItem value="all_time">{t("allTime")}</MenuItem>
               </Select>
             </FormControl>
+
+            {shouldShowAccountFilter && (
+              <FormControl fullWidth>
+                <InputLabel id="account-filter-label">{t("accountFilter")}</InputLabel>
+                <Select
+                  labelId="account-filter-label"
+                  multiple
+                  value={selectedConnectionIds}
+                  label={t("accountFilter")}
+                  onChange={(event) => onAccountFilterChange(event.target.value)}
+                  MenuProps={selectMenuProps}
+                  renderValue={(selected) => {
+                    const values = Array.isArray(selected) ? selected : [];
+                    if (!values.length || values.length === accountFilterOptions.length) {
+                      return t("allAccounts");
+                    }
+
+                    return values
+                      .map(
+                        (id) =>
+                          accountFilterOptions.find((option) => option.id === id)?.label || id,
+                      )
+                      .join(", ");
+                  }}
+                >
+                  {accountFilterOptions.map((option) => (
+                    <MenuItem key={option.id} value={option.id}>
+                      <Checkbox checked={selectedConnectionIds.includes(option.id)} />
+                      <ListItemText primary={option.label} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
 
             <FormControl fullWidth>
               <InputLabel id="sort-by-label">{t("sortBy")}</InputLabel>
@@ -361,7 +528,12 @@ export default function DashboardPage() {
               </Box>
             )}
           <Box sx={{ mb: 2 }}>
-            <Stack direction="column" alignItems="flex-start" spacing={1}>
+            <Stack
+              direction="row"
+              alignItems="flex-start"
+              spacing={1}
+              justifyContent="space-between"
+            >
               <Typography
                 variant="subtitle1"
                 dir={direction}

@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Divider,
   MenuItem,
   Stack,
   TextField,
@@ -20,8 +21,13 @@ function buildEmptyCredentials(fields = []) {
 export default function BankCredentialsPage() {
   const { t, locale } = useLanguage();
   const [providers, setProviders] = useState([]);
-  const [form, setForm] = useState({ companyId: "", credentials: {} });
-  const [connected, setConnected] = useState(false);
+  const [connections, setConnections] = useState([]);
+  const [connectedCount, setConnectedCount] = useState(0);
+  const [form, setForm] = useState({
+    companyId: "",
+    connectionName: "",
+    credentials: {},
+  });
   const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,6 +38,16 @@ export default function BankCredentialsPage() {
     () => providers.find((provider) => provider.companyId === form.companyId) || null,
     [providers, form.companyId],
   );
+  const providerLabelById = useMemo(
+    () =>
+      Object.fromEntries(
+        providers.map((provider) => [provider.companyId, provider.label || provider.companyId]),
+      ),
+    [providers],
+  );
+  const statusText = loading
+    ? t("loading")
+    : `${t("connectedAccounts")} ${connectedCount}`;
 
   async function loadBankConfig() {
     setLoading(true);
@@ -45,7 +61,10 @@ export default function BankCredentialsPage() {
       const nextProviders = Array.isArray(providersData.providers)
         ? providersData.providers
         : [];
-      const preferredCompanyId = String(statusData.companyId || "").trim();
+      const nextConnections = Array.isArray(statusData.connections)
+        ? statusData.connections
+        : [];
+      const preferredCompanyId = String(form.companyId || "").trim();
       const fallbackCompanyId = nextProviders[0]?.companyId || "";
       const companyId = nextProviders.some(
         (provider) => provider.companyId === preferredCompanyId,
@@ -55,10 +74,14 @@ export default function BankCredentialsPage() {
       const provider = nextProviders.find((item) => item.companyId === companyId);
 
       setProviders(nextProviders);
-      setConnected(Boolean(statusData.connected));
+      setConnections(nextConnections);
+      setConnectedCount(
+        Number(statusData.connectedCount ?? nextConnections.filter((item) => item.connected).length),
+      );
       setUpdatedAt(statusData.updatedAt || null);
       setForm({
         companyId,
+        connectionName: "",
         credentials: buildEmptyCredentials(provider?.fields || []),
       });
     } catch (err) {
@@ -76,6 +99,7 @@ export default function BankCredentialsPage() {
     const provider = providers.find((item) => item.companyId === nextCompanyId);
     setForm({
       companyId: nextCompanyId,
+      connectionName: "",
       credentials: buildEmptyCredentials(provider?.fields || []),
     });
   }
@@ -101,15 +125,17 @@ export default function BankCredentialsPage() {
         method: "PUT",
         body: JSON.stringify({
           companyId: form.companyId.trim(),
+          connectionName: form.connectionName.trim(),
           credentials: Object.fromEntries(
             Object.entries(form.credentials).map(([key, value]) => [key, value.trim()]),
           ),
         }),
       });
 
-      setSuccess(t("bankCredentialsSaved"));
+      setSuccess(t("bankConnectionSaved"));
       setForm((prev) => ({
         ...prev,
+        connectionName: "",
         credentials: Object.fromEntries(
           Object.entries(prev.credentials).map(([key]) => [key, ""]),
         ),
@@ -122,19 +148,29 @@ export default function BankCredentialsPage() {
     }
   }
 
-  async function disconnectBank() {
+  async function removeConnection(connectionId) {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await api(`/bank/credentials/${connectionId}`, { method: "DELETE" });
+      setSuccess(t("bankConnectionRemoved"));
+      await loadBankConfig();
+    } catch (err) {
+      setError(err.message || t("failedRemoveBankConnection"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeAllConnections() {
     setSaving(true);
     setError("");
     setSuccess("");
     try {
       await api("/bank/credentials", { method: "DELETE" });
-      setConnected(false);
-      setUpdatedAt(null);
-      setForm((prev) => ({
-        ...prev,
-        credentials: buildEmptyCredentials(selectedProvider?.fields || []),
-      }));
-      setSuccess(t("bankCredentialsRemoved"));
+      setSuccess(t("allBankConnectionsRemoved"));
+      await loadBankConfig();
     } catch (err) {
       setError(err.message || t("failedRemoveBankCredentials"));
     } finally {
@@ -154,11 +190,7 @@ export default function BankCredentialsPage() {
           </Typography>
 
           <Stack spacing={1} sx={{ mb: 2 }}>
-            <Typography>
-              {`${t("status")}: ${
-                loading ? t("loading") : connected ? t("connected") : t("notConnected")
-              }`}
-            </Typography>
+            <Typography>{`${t("status")}: ${statusText}`}</Typography>
             {!loading && updatedAt && (
               <Typography color="text.secondary">
                 {t("lastUpdated")}: {new Date(updatedAt).toLocaleString(locale)}
@@ -166,8 +198,44 @@ export default function BankCredentialsPage() {
             )}
           </Stack>
 
+          <Stack spacing={1.5} sx={{ mb: 3 }}>
+            <Typography variant="subtitle1">{t("configuredAccounts")}</Typography>
+            {!connections.length && (
+              <Typography color="text.secondary">{t("noBankConnections")}</Typography>
+            )}
+            {connections.map((connection) => (
+              <Card key={connection.id} variant="outlined">
+                <CardContent sx={{ py: 1.5 }}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    justifyContent="space-between"
+                    spacing={1}
+                  >
+                    <Stack spacing={0.5} justifyContent="center">
+                      <Typography sx={{ fontWeight: 600 }}>
+                        {providerLabelById[connection.companyId] || connection.companyId}
+                      </Typography>
+                    </Stack>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      color="error"
+                      onClick={() => removeConnection(connection.id)}
+                      disabled={saving || loading}
+                    >
+                      {t("removeConnection")}
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+
+          <Divider sx={{ mb: 2 }} />
+
           <Box component="form" onSubmit={saveCredentials}>
             <Stack spacing={2}>
+              <Typography variant="subtitle1">{t("addConnection")}</Typography>
               <TextField
                 label={t("bankOrCreditCardCompany")}
                 select
@@ -182,6 +250,16 @@ export default function BankCredentialsPage() {
                   </MenuItem>
                 ))}
               </TextField>
+
+              <TextField
+                label={t("connectionName")}
+                value={form.connectionName}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, connectionName: e.target.value }))
+                }
+                helperText={t("optional")}
+                fullWidth
+              />
 
               {(selectedProvider?.fields || []).map((field) => (
                 <TextField
@@ -203,17 +281,17 @@ export default function BankCredentialsPage() {
                   disabled={saving || loading}
                   sx={{ width: { xs: "100%", sm: "auto" } }}
                 >
-                  {t("saveCredentials")}
+                  {t("addConnection")}
                 </Button>
                 <Button
                   type="button"
                   variant="outlined"
                   color="error"
-                  onClick={disconnectBank}
-                  disabled={saving || loading || !connected}
+                  onClick={removeAllConnections}
+                  disabled={saving || loading || connectedCount === 0}
                   sx={{ width: { xs: "100%", sm: "auto" } }}
                 >
-                  {t("disconnect")}
+                  {t("removeAllConnections")}
                 </Button>
               </Stack>
             </Stack>

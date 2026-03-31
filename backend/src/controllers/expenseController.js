@@ -15,7 +15,6 @@ export async function listExpenses(req, res) {
 }
 
 export async function syncStatus(req, res) {
-  triggerExpenseSyncForUser(req.user, "sync_status");
   res.json({
     sync: getExpenseSyncState(req.user._id),
   });

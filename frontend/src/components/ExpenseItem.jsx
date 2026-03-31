@@ -138,8 +138,8 @@ export default function ExpenseItem({
         >
           <Box
             sx={{
-              width: 56,
-              height: 56,
+              width: 40,
+              height: 40,
               borderRadius: 0.7,
               bgcolor: "#cfe1b9",
               display: "grid",
@@ -147,11 +147,11 @@ export default function ExpenseItem({
               flexShrink: 0,
             }}
           >
-            <CategoryIcon sx={{ color: "#2f3a24", fontSize: 30 }} />
+            <CategoryIcon sx={{ color: "#2f3a24", fontSize: 28 }} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
-              variant="h6"
+              variant="h7"
               dir={direction}
               sx={{
                 fontWeight: 700,
@@ -162,11 +162,11 @@ export default function ExpenseItem({
               {exp.description || "-"}
             </Typography>
             <Typography
-              variant="body2"
               dir={direction}
               sx={{
                 color: "text.secondary",
                 fontWeight: 600,
+                fontSize: ".8rem",
                 textAlign: direction === "rtl" ? "right" : "left",
               }}
             >
@@ -175,7 +175,7 @@ export default function ExpenseItem({
           </Box>
           <Stack sx={{ alignItems: "flex-end", minWidth: 120 }}>
             <Typography
-              variant="h5"
+              variant="h8"
               sx={{
                 fontWeight: 800,
                 color: isPositiveAmount ? "#19a700c8" : "#2f3a24",
@@ -196,6 +196,7 @@ export default function ExpenseItem({
                 minWidth: 0,
                 color: "#718355",
                 fontWeight: 700,
+                fontSize: ".7rem",
                 fontFamily: "inherit",
                 "&:hover": { bgcolor: "transparent", color: "#215b3a" },
               }}
