@@ -14,7 +14,7 @@ const app = express();
 function normalizeOrigin(value) {
   return (value ?? "").trim().replace(/\/+$/, "").toLowerCase();
 }
-
+//
 const allowedOrigins = (process.env.CLIENT_URL ?? "")
   .split(",")
   .map((origin) => normalizeOrigin(origin))
