@@ -1,17 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import { COLORS } from "../constants/colors";
 import { useLanguage } from "../context/LanguageContext";
 
 function buildEmptyCredentials(fields = []) {
@@ -33,15 +39,23 @@ export default function BankCredentialsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [pendingRemovalConnectionId, setPendingRemovalConnectionId] = useState("");
+  const [pendingRemoveAllConfirmation, setPendingRemoveAllConfirmation] = useState(false);
+  const [isAddAccountExpanded, setIsAddAccountExpanded] = useState(false);
 
   const selectedProvider = useMemo(
-    () => providers.find((provider) => provider.companyId === form.companyId) || null,
+    () =>
+      providers.find((provider) => provider.companyId === form.companyId) ||
+      null,
     [providers, form.companyId],
   );
   const providerLabelById = useMemo(
     () =>
       Object.fromEntries(
-        providers.map((provider) => [provider.companyId, provider.label || provider.companyId]),
+        providers.map((provider) => [
+          provider.companyId,
+          provider.label || provider.companyId,
+        ]),
       ),
     [providers],
   );
@@ -71,12 +85,17 @@ export default function BankCredentialsPage() {
       )
         ? preferredCompanyId
         : fallbackCompanyId;
-      const provider = nextProviders.find((item) => item.companyId === companyId);
+      const provider = nextProviders.find(
+        (item) => item.companyId === companyId,
+      );
 
       setProviders(nextProviders);
       setConnections(nextConnections);
       setConnectedCount(
-        Number(statusData.connectedCount ?? nextConnections.filter((item) => item.connected).length),
+        Number(
+          statusData.connectedCount ??
+            nextConnections.filter((item) => item.connected).length,
+        ),
       );
       setUpdatedAt(statusData.updatedAt || null);
       setForm({
@@ -127,7 +146,10 @@ export default function BankCredentialsPage() {
           companyId: form.companyId.trim(),
           connectionName: form.connectionName.trim(),
           credentials: Object.fromEntries(
-            Object.entries(form.credentials).map(([key, value]) => [key, value.trim()]),
+            Object.entries(form.credentials).map(([key, value]) => [
+              key,
+              value.trim(),
+            ]),
           ),
         }),
       });
@@ -163,6 +185,21 @@ export default function BankCredentialsPage() {
     }
   }
 
+  function openRemoveConfirmation(connectionId) {
+    setPendingRemovalConnectionId(String(connectionId || "").trim());
+  }
+
+  function closeRemoveConfirmation() {
+    if (saving) return;
+    setPendingRemovalConnectionId("");
+  }
+
+  async function confirmRemoveConnection() {
+    if (!pendingRemovalConnectionId) return;
+    await removeConnection(pendingRemovalConnectionId);
+    setPendingRemovalConnectionId("");
+  }
+
   async function removeAllConnections() {
     setSaving(true);
     setError("");
@@ -176,6 +213,20 @@ export default function BankCredentialsPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function openRemoveAllConfirmation() {
+    setPendingRemoveAllConfirmation(true);
+  }
+
+  function closeRemoveAllConfirmation() {
+    if (saving) return;
+    setPendingRemoveAllConfirmation(false);
+  }
+
+  async function confirmRemoveAllConnections() {
+    await removeAllConnections();
+    setPendingRemoveAllConfirmation(false);
   }
 
   return (
@@ -199,28 +250,44 @@ export default function BankCredentialsPage() {
           </Stack>
 
           <Stack spacing={1.5} sx={{ mb: 3 }}>
-            <Typography variant="subtitle1">{t("configuredAccounts")}</Typography>
+            <Typography variant="subtitle1">
+              {t("configuredAccounts")}
+            </Typography>
             {!connections.length && (
-              <Typography color="text.secondary">{t("noBankConnections")}</Typography>
+              <Typography color="text.secondary">
+                {t("noBankConnections")}
+              </Typography>
             )}
             {connections.map((connection) => (
               <Card key={connection.id} variant="outlined">
-                <CardContent sx={{ py: 1.5 }}>
+                <CardContent
+                  sx={{ backgroundColor: COLORS.theme.primary.main }}
+                >
                   <Stack
-                    direction={{ xs: "column", sm: "row" }}
+                    direction={{ xs: "row" }}
                     justifyContent="space-between"
-                    spacing={1}
+                    alignItems="space-between"
+                    pb={0}
                   >
                     <Stack spacing={0.5} justifyContent="center">
-                      <Typography sx={{ fontWeight: 600 }}>
-                        {providerLabelById[connection.companyId] || connection.companyId}
+                      <Typography
+                        sx={{
+                          fontWeight: 600,
+                          color: COLORS.theme.primary.contrastText,
+                        }}
+                      >
+                        {providerLabelById[connection.companyId] ||
+                          connection.companyId}
                       </Typography>
                     </Stack>
                     <Button
+                      sx={{
+                        color: COLORS.theme.primary.contrastText,
+                        border: `1px solid ${COLORS.theme.primary.contrastText}`,
+                      }}
                       type="button"
-                      variant="outlined"
-                      color="error"
-                      onClick={() => removeConnection(connection.id)}
+                      variant="inherit"
+                      onClick={() => openRemoveConfirmation(connection.id)}
                       disabled={saving || loading}
                     >
                       {t("removeConnection")}
@@ -233,74 +300,137 @@ export default function BankCredentialsPage() {
 
           <Divider sx={{ mb: 2 }} />
 
-          <Box component="form" onSubmit={saveCredentials}>
-            <Stack spacing={2}>
-              <Typography variant="subtitle1">{t("addConnection")}</Typography>
-              <TextField
-                label={t("bankOrCreditCardCompany")}
-                select
-                value={form.companyId}
-                onChange={(e) => onCompanyChange(e.target.value)}
-                required
-                fullWidth
-              >
-                {providers.map((provider) => (
-                  <MenuItem key={provider.companyId} value={provider.companyId}>
-                    {provider.label} ({provider.companyId})
-                  </MenuItem>
-                ))}
-              </TextField>
+          <Stack spacing={2}>
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={() => setIsAddAccountExpanded((prev) => !prev)}
+              sx={{ width: { xs: "100%", sm: "auto" }, alignSelf: "flex-start" }}
+            >
+              {isAddAccountExpanded ? `${t("addConnection")} -` : `${t("addConnection")} +`}
+            </Button>
+            <Collapse in={isAddAccountExpanded}>
+              <Box component="form" onSubmit={saveCredentials}>
+                <Stack spacing={2}>
+                  <Typography variant="subtitle1">{t("addConnection")}</Typography>
+                  <TextField
+                    label={t("bankOrCreditCardCompany")}
+                    select
+                    value={form.companyId}
+                    onChange={(e) => onCompanyChange(e.target.value)}
+                    required
+                    fullWidth
+                  >
+                    {providers.map((provider) => (
+                      <MenuItem key={provider.companyId} value={provider.companyId}>
+                        {provider.label} ({provider.companyId})
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-              <TextField
-                label={t("connectionName")}
-                value={form.connectionName}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, connectionName: e.target.value }))
-                }
-                helperText={t("optional")}
-                fullWidth
-              />
+                  <TextField
+                    label={t("connectionName")}
+                    value={form.connectionName}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        connectionName: e.target.value,
+                      }))
+                    }
+                    helperText={t("optional")}
+                    fullWidth
+                  />
 
-              {(selectedProvider?.fields || []).map((field) => (
-                <TextField
-                  key={field.name}
-                  label={field.label || field.name}
-                  type={field.type || "text"}
-                  value={form.credentials[field.name] || ""}
-                  onChange={(e) => onFieldChange(field.name, e.target.value)}
-                  required={Boolean(field.required)}
-                  helperText={field.required ? t("required") : t("optional")}
-                  fullWidth
-                />
-              ))}
+                  {(selectedProvider?.fields || []).map((field) => (
+                    <TextField
+                      key={field.name}
+                      label={field.label || field.name}
+                      type={field.type || "text"}
+                      value={form.credentials[field.name] || ""}
+                      onChange={(e) => onFieldChange(field.name, e.target.value)}
+                      required={Boolean(field.required)}
+                      helperText={field.required ? t("required") : t("optional")}
+                      fullWidth
+                    />
+                  ))}
 
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={saving || loading}
-                  sx={{ width: { xs: "100%", sm: "auto" } }}
-                >
-                  {t("addConnection")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outlined"
-                  color="error"
-                  onClick={removeAllConnections}
-                  disabled={saving || loading || connectedCount === 0}
-                  sx={{ width: { xs: "100%", sm: "auto" } }}
-                >
-                  {t("removeAllConnections")}
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      disabled={saving || loading}
+                      sx={{ width: { xs: "100%", sm: "auto" } }}
+                    >
+                      {t("addConnection")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      color="error"
+                      onClick={openRemoveAllConfirmation}
+                      disabled={saving || loading || connectedCount === 0}
+                      sx={{ width: { xs: "100%", sm: "auto" } }}
+                    >
+                      {t("removeAllConnections")}
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            </Collapse>
+          </Stack>
         </CardContent>
       </Card>
 
       {error && <Alert severity="error">{error}</Alert>}
       {success && <Alert severity="success">{success}</Alert>}
+      <Dialog
+        open={Boolean(pendingRemovalConnectionId)}
+        onClose={closeRemoveConfirmation}
+      >
+        <DialogTitle>Are you sure?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            This will remove the selected bank connection.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRemoveConfirmation} disabled={saving}>
+            {t("cancel")}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={confirmRemoveConnection}
+            disabled={saving}
+          >
+            {t("removeConnection")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={pendingRemoveAllConfirmation}
+        onClose={closeRemoveAllConfirmation}
+      >
+        <DialogTitle>Are you sure?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            This will remove all configured bank connections.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRemoveAllConfirmation} disabled={saving}>
+            {t("cancel")}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={confirmRemoveAllConnections}
+            disabled={saving}
+          >
+            {t("removeAllConnections")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

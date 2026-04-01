@@ -1,11 +1,11 @@
 import BoltIcon from "@mui/icons-material/Bolt";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import EditSquareIcon from "@mui/icons-material/EditSquare";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import MovieIcon from "@mui/icons-material/Movie";
-import PublishedWithChangesIcon from "@mui/icons-material/PublishedWithChanges";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import SaveIcon from "@mui/icons-material/Save";
@@ -126,7 +126,9 @@ export default function ExpenseItem({
   t,
 }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [draftDescription, setDraftDescription] = useState(exp.description || "");
+  const [draftDescription, setDraftDescription] = useState(
+    exp.description || "",
+  );
   const [draftCategory, setDraftCategory] = useState(exp.category || "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -243,9 +245,7 @@ export default function ExpenseItem({
                   {exp.description || "-"}
                   {exp.isUserAltered && (
                     <Tooltip title={t("changedByUser")}>
-                      <PublishedWithChangesIcon
-                        sx={{ fontSize: 16, color: "#2f3a24" }}
-                      />
+                      <EditSquareIcon sx={{ fontSize: 16, color: "#2f3a24" }} />
                     </Tooltip>
                   )}
                 </Typography>
@@ -273,18 +273,31 @@ export default function ExpenseItem({
               </Typography>
             )}
           </Box>
-          <Stack sx={{ alignItems: "flex-end", width: "fit-content", gap: 0.25 }}>
-            <Typography
+          <Stack
+            sx={{
+              alignItems: "flex-end",
+              width: "fit-content",
+              gap: 0.75,
+              flexDirection: "row",
+            }}
+          >
+            <Box
+              component="span"
               sx={{
-                fontWeight: 800,
                 color: isPositiveAmount ? "#19a700c8" : "#2f3a24",
+                display: "inline-flex",
+                alignItems: "baseline",
                 direction: "ltr",
                 unicodeBidi: "isolate",
-                fontSize: "1rem",
               }}
             >
-              {exp.amount} {exp.currency}
-            </Typography>
+              <Typography component="span" sx={{ fontWeight: 400, fontSize: ".9rem" }}>
+                {exp.currency}
+              </Typography>
+              <Typography component="span" sx={{ fontWeight: 800, fontSize: "1rem" }}>
+                {exp.amount}
+              </Typography>
+            </Box>
             <Stack direction="row" sx={{ alignItems: "center" }}>
               {isEditing && (
                 <>

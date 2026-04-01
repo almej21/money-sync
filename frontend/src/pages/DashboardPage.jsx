@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import ExpenseItem from "../components/ExpenseItem";
@@ -80,6 +81,7 @@ export default function DashboardPage() {
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
+  const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
   const { t, locale, direction } = useLanguage();
   const dropdownMenuColorProps = {
     panelBackground: "#2f3a24", // Background of the dropdown options list window.
@@ -145,21 +147,8 @@ export default function DashboardPage() {
         ]),
       );
 
-      const allConnectionIds = connections.map((connection) =>
-        String(connection.id).trim(),
-      );
-
       setProviderLabels(nextProviderLabels);
       setBankConnections(connections);
-      setSelectedConnectionIds((prevSelected) => {
-        if (allConnectionIds.length <= 1) return allConnectionIds;
-        if (!prevSelected.length) return allConnectionIds;
-
-        const retained = prevSelected.filter((id) =>
-          allConnectionIds.includes(id),
-        );
-        return retained.length ? retained : allConnectionIds;
-      });
     } catch {
       setBankConnections([]);
       setProviderLabels({});
@@ -256,24 +245,41 @@ export default function DashboardPage() {
     return Array.from(values).sort((a, b) => a.localeCompare(b, locale));
   }, [expenses, locale]);
 
-  const accountFilterOptions = useMemo(
-    () =>
-      bankConnections.map((connection) => {
-        const companyId = String(connection.companyId || "").trim();
-        const accountName = String(connection.connectionName || "").trim();
-        const providerLabel =
-          providerLabels[companyId] || companyId || t("bank");
-        const label = accountName
-          ? `${accountName} (${providerLabel})`
-          : providerLabel;
+  const accountFilterOptions = useMemo(() => {
+    const connectionById = new Map(
+      bankConnections.map((connection) => [
+        String(connection.id || "").trim(),
+        connection,
+      ]),
+    );
 
-        return {
-          id: String(connection.id || "").trim(),
-          label,
-        };
-      }),
-    [bankConnections, providerLabels, t],
-  );
+    const optionsByAccountId = new Map();
+    expenses.forEach((expense) => {
+      const accountId = String(expense.sourceAccountId || "").trim();
+      if (!accountId || optionsByAccountId.has(accountId)) return;
+
+      const sourceConnectionKey = String(expense.sourceConnectionKey || "").trim();
+      const sourceCompanyId = String(expense.sourceCompanyId || "").trim();
+      const connection = connectionById.get(sourceConnectionKey);
+      const companyId = String(
+        connection?.companyId || sourceCompanyId || "",
+      ).trim();
+      const accountName = String(connection?.connectionName || "").trim();
+      const providerLabel = providerLabels[companyId] || companyId || t("bank");
+      const label = accountName
+        ? `${accountName} (${providerLabel})`
+        : `${providerLabel} (${accountId})`;
+
+      optionsByAccountId.set(accountId, {
+        id: accountId,
+        label,
+      });
+    });
+
+    return Array.from(optionsByAccountId.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, locale),
+    );
+  }, [bankConnections, expenses, locale, providerLabels, t]);
   const loadingBankNames = useMemo(() => {
     const connectedNames = bankConnections
       .filter((connection) => Boolean(connection?.connected))
@@ -296,6 +302,17 @@ export default function DashboardPage() {
     selectedConnectionIds.length > 0 &&
     selectedConnectionIds.length < accountFilterOptions.length;
 
+  useEffect(() => {
+    const allAccountIds = accountFilterOptions.map((option) => option.id);
+    setSelectedConnectionIds((prevSelected) => {
+      if (allAccountIds.length <= 1) return allAccountIds;
+      if (!prevSelected.length) return allAccountIds;
+
+      const retained = prevSelected.filter((id) => allAccountIds.includes(id));
+      return retained.length ? retained : allAccountIds;
+    });
+  }, [accountFilterOptions]);
+
   function onAccountFilterChange(nextValues) {
     const values = Array.isArray(nextValues) ? nextValues : [];
     if (!values.length) {
@@ -306,7 +323,6 @@ export default function DashboardPage() {
   }
 
   const displayedExpenses = useMemo(() => {
-    const firstConnectionId = accountFilterOptions[0]?.id || "";
     const filtered = expenses.filter((exp) => {
       if (!matchesTimeRange(exp.date, timeRange)) return false;
       const normalizedCategory = String(exp.category || "").trim();
@@ -319,17 +335,9 @@ export default function DashboardPage() {
 
       if (!shouldApplyAccountFilter) return true;
 
-      const sourceConnectionKey = String(exp.sourceConnectionKey || "").trim();
-      if (sourceConnectionKey) {
-        return selectedConnectionIds.includes(sourceConnectionKey);
-      }
-
-      const source = String(exp.source || "").trim();
-      if (source === "israeli-bank-scrapers" && firstConnectionId) {
-        return selectedConnectionIds.includes(firstConnectionId);
-      }
-
-      return false;
+      const sourceAccountId = String(exp.sourceAccountId || "").trim();
+      if (!sourceAccountId) return false;
+      return selectedConnectionIds.includes(sourceAccountId);
     });
 
     return filtered.sort((a, b) => {
@@ -365,12 +373,25 @@ export default function DashboardPage() {
     [displayedExpenses],
   );
 
+  useEffect(() => {
+    setAnimatedTotalAmount(0);
+    const nextFrame = requestAnimationFrame(() => {
+      setAnimatedTotalAmount(displayedAmountTotal);
+    });
+
+    return () => cancelAnimationFrame(nextFrame);
+  }, [displayedAmountTotal]);
+
   const displayedDateRange = useMemo(() => {
     const now = new Date();
 
     if (timeRange === "this_month") {
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      return formatDisplayedRange(firstDayOfMonth, now);
+      const startDay = String(firstDayOfMonth.getDate());
+      const endDay = String(now.getDate());
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = String(now.getFullYear()).slice(-2);
+      return `${startDay} - ${endDay}/${month}/${year}`;
     }
 
     if (timeRange === "last_month") {
@@ -423,26 +444,51 @@ export default function DashboardPage() {
         <Box
           component="span"
           sx={{
+            display: "inline-flex",
+            alignItems: "baseline",
             direction: "ltr",
             unicodeBidi: "isolate",
-            display: "inline-block",
-            fontWeight: 800,
+            gap: 0.5,
           }}
         >
-          {displayedAmountTotal.toFixed(2)}{" "}
-        </Box>
+          <Box
+            component="span"
+            sx={{
+              display: "inline-block",
+              fontWeight: 400,
+              color: "#5b6c43",
+            }}
+          >
+            {displayedExpenses[0]?.currency || "₪"}
+          </Box>
 
-        <Box
-          component="span"
-          sx={{
-            direction: "ltr",
-            unicodeBidi: "isolate",
-            display: "inline-block",
-            fontWeight: 400,
-            color: "#5b6c43",
-          }}
-        >
-          {displayedExpenses[0]?.currency || "₪"}
+          <Box
+            component="span"
+            sx={{
+              display: "inline-block",
+              fontWeight: 800,
+            }}
+          >
+            <NumberFlow
+              value={animatedTotalAmount}
+              format={{
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }}
+              transformTiming={{
+                duration: 450,
+                easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+              }}
+              spinTiming={{
+                duration: 450,
+                easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+              }}
+              opacityTiming={{
+                duration: 300,
+                easing: "ease-out",
+              }}
+            />
+          </Box>
         </Box>
       </Typography>
       <Card sx={{ border: "none !important" }}>
@@ -475,7 +521,7 @@ export default function DashboardPage() {
             useFlexGap
             sx={{ mb: 2, gap: 2 }}
           >
-            <FormControl fullWidth>
+            <FormControl fullWidth sx={{ flex: { sm: 1 }, minWidth: 0 }}>
               <InputLabel id="category-filter-label">
                 {t("categoryFilter")}
               </InputLabel>
@@ -503,13 +549,13 @@ export default function DashboardPage() {
               direction="row"
               useFlexGap
               sx={{
-                flex: 1,
-                flexWrap: "wrap",
+                flex: { sm: 1.2 },
+                flexWrap: { xs: "wrap", sm: "nowrap" },
                 gap: 2,
                 minWidth: 0,
               }}
             >
-              <FormControl sx={{ flex: 1, minWidth: 0 }}>
+              <FormControl sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}>
                 <InputLabel id="time-range-label">{t("timeRange")}</InputLabel>
                 <Select
                   labelId="time-range-label"
@@ -527,7 +573,7 @@ export default function DashboardPage() {
                 </Select>
               </FormControl>
 
-              <FormControl sx={{ flex: 1, minWidth: 0 }}>
+              <FormControl sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}>
                 <InputLabel id="sort-by-label">{t("sortBy")}</InputLabel>
                 <Select
                   labelId="sort-by-label"
@@ -549,7 +595,7 @@ export default function DashboardPage() {
             </Stack>
 
             {shouldShowAccountFilter && (
-              <FormControl fullWidth>
+              <FormControl fullWidth sx={{ flex: { sm: 1 }, minWidth: 0 }}>
                 <InputLabel id="account-filter-label">
                   {t("accountFilter")}
                 </InputLabel>

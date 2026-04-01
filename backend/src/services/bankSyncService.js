@@ -596,8 +596,13 @@ export async function syncLastMonthExpensesForUser(user) {
       for (let index = 0; index < normalized.length; index += 1) {
         const normalizedItem = normalized[index];
         const transactionMeta = rawTransactions[index] || {};
+        const normalizedAmount = Number(normalizedItem.amount);
+        if (!Number.isFinite(normalizedAmount) || normalizedAmount === 0) {
+          continue;
+        }
         docs.push({
           ...normalizedItem,
+          amount: normalizedAmount,
           sourceCompanyId: activeCreds.companyId,
           sourceConnectionKey: connectionId,
           sourceAccountId: transactionMeta.accountId || "",

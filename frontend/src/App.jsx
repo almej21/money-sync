@@ -1,4 +1,3 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import {
   Box,
   Container,
@@ -7,13 +6,15 @@ import {
   createTheme,
 } from "@mui/material";
 import { useMemo } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import NavBar from "./components/NavBar";
+import { COLORS, THEME_COLORS } from "./constants/colors";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
-import NavBar from "./components/NavBar";
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import ShoppingListsPage from "./pages/ShoppingListsPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
+import DashboardPage from "./pages/DashboardPage";
+import LoginPage from "./pages/LoginPage";
+import ShoppingListsPage from "./pages/ShoppingListsPage";
 
 function ProtectedRoutes() {
   const { user } = useAuth();
@@ -47,45 +48,30 @@ function AppContent() {
     () =>
       createTheme({
         palette: {
-          primary: {
-            main: "#718355",
-            light: "#97a97c",
-            dark: "#87986a",
-            contrastText: "#ffffff",
-          },
-          secondary: {
-            main: "#b5c99a",
-            light: "#cfe1b9",
-            dark: "#97a97c",
-            contrastText: "#2f3a24",
-          },
-          background: {
-            default: "#ffffff",
-            paper: "#cfe1b9",
-          },
-          text: {
-            primary: "#2f3a24",
-            secondary: "#5b6c43",
-          },
+          primary: THEME_COLORS.primary,
+          secondary: THEME_COLORS.secondary,
+          background: THEME_COLORS.background,
+          text: THEME_COLORS.text,
         },
         shape: { borderRadius: 12 },
         typography: {
-          fontFamily: '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          fontFamily:
+            '"Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         },
         components: {
           MuiCssBaseline: {
             styleOverrides: {
               body: {
-                backgroundColor: "#ffffff",
+                backgroundColor: THEME_COLORS.background.default,
               },
             },
           },
           MuiAppBar: {
             styleOverrides: {
               colorInherit: {
-                backgroundColor: "#718355",
-                color: "#ffffff",
-                borderBottom: "1px solid #87986a",
+                backgroundColor: THEME_COLORS.primary.main,
+                color: THEME_COLORS.primary.contrastText,
+                borderBottom: `1px solid ${THEME_COLORS.primary.dark}`,
               },
             },
           },
@@ -100,8 +86,8 @@ function AppContent() {
           MuiCard: {
             styleOverrides: {
               root: {
-                backgroundColor: "#cfe1b9",
-                border: "1px solid #cfe1b9",
+                backgroundColor: THEME_COLORS.background.paper,
+                border: `1px solid ${THEME_COLORS.background.paper}`,
                 boxShadow: "0 10px 24px rgba(113, 131, 85, 0.15)",
               },
             },
@@ -113,25 +99,25 @@ function AppContent() {
                 textTransform: "none",
               },
               outlined: {
-                borderColor: "#97a97c",
-                color: "#718355",
+                borderColor: THEME_COLORS.primary.light,
+                color: THEME_COLORS.primary.main,
               },
             },
           },
           MuiOutlinedInput: {
             styleOverrides: {
               root: {
-                backgroundColor: "#ffffff",
+                backgroundColor: THEME_COLORS.background.default,
               },
             },
           },
           MuiInputLabel: {
             styleOverrides: {
               root: {
-                color: "#2f3a24",
+                color: COLORS.neutral.gray900,
                 fontWeight: 700,
                 "&.Mui-focused": {
-                  color: "#2f3a24",
+                  color: COLORS.neutral.gray900,
                 },
               },
             },
