@@ -26,10 +26,45 @@ function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  const day = String(date.getDate()).padStart(2, "0");
+  const day = String(date.getDate());
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+function formatDateTwoDigit(date) {
+  const day = String(date.getDate());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
+}
+
+function formatDisplayedRange(start, end) {
+  if (!start || !end) return "- - -";
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "- - -";
+  }
+
+  const startDay = String(startDate.getDate());
+  const endDay = String(endDate.getDate());
+
+  const sameYear = startDate.getFullYear() === endDate.getFullYear();
+  const sameMonth = sameYear && startDate.getMonth() === endDate.getMonth();
+  const sameDate = sameMonth && startDate.getDate() === endDate.getDate();
+
+  if (sameDate) {
+    return formatDateTwoDigit(startDate);
+  }
+
+  if (sameMonth) {
+    const month = String(startDate.getMonth() + 1).padStart(2, "0");
+    const year = String(startDate.getFullYear()).slice(-2);
+    return `${startDay}-${endDay}/${month}/${year}`;
+  }
+
+  return `${formatDate(startDate)}-${formatDate(endDate)}`;
 }
 
 export default function DashboardPage() {
@@ -144,6 +179,15 @@ export default function DashboardPage() {
     setIsSyncingExpenses(Boolean(running));
   }, []);
   useExpenseBackgroundRefresh(loadExpenses, onSyncRunningChange);
+
+  const onExpenseUpdated = useCallback((updatedExpense) => {
+    if (!updatedExpense?._id) return;
+    setExpenses((prev) =>
+      prev.map((item) =>
+        item._id === updatedExpense._id ? { ...item, ...updatedExpense } : item,
+      ),
+    );
+  }, []);
 
   function toggleExpanded(expenseId) {
     setExpandedIds((prev) => ({
@@ -322,10 +366,36 @@ export default function DashboardPage() {
   );
 
   const displayedDateRange = useMemo(() => {
+    const now = new Date();
+
     if (timeRange === "this_month") {
-      const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      return `${formatDate(firstDayOfMonth)} - ${formatDate(now)}`;
+      return formatDisplayedRange(firstDayOfMonth, now);
+    }
+
+    if (timeRange === "last_month") {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0);
+      return formatDisplayedRange(start, end);
+    }
+
+    if (timeRange === "last_7_days") {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      return formatDisplayedRange(start, now);
+    }
+
+    if (timeRange === "last_30_days") {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 30);
+      return formatDisplayedRange(start, now);
+    }
+
+    if (timeRange === "custom_range") {
+      if (!customStartDate || !customEndDate) return "- - -";
+      const start = new Date(`${customStartDate}T00:00:00`);
+      const end = new Date(`${customEndDate}T23:59:59.999`);
+      return formatDisplayedRange(start, end);
     }
 
     if (!displayedExpenses.length) return "- - -";
@@ -334,10 +404,10 @@ export default function DashboardPage() {
       .filter((value) => Number.isFinite(value));
     if (!timestamps.length) return "- - -";
 
-    const minDate = formatDate(new Date(Math.min(...timestamps)));
-    const maxDate = formatDate(new Date(Math.max(...timestamps)));
-    return `${minDate} - ${maxDate}`;
-  }, [displayedExpenses, timeRange]);
+    const minDate = new Date(Math.min(...timestamps));
+    const maxDate = new Date(Math.max(...timestamps));
+    return formatDisplayedRange(minDate, maxDate);
+  }, [customEndDate, customStartDate, displayedExpenses, timeRange]);
 
   return (
     <>
@@ -429,23 +499,54 @@ export default function DashboardPage() {
               </Select>
             </FormControl>
 
-            <FormControl fullWidth>
-              <InputLabel id="time-range-label">{t("timeRange")}</InputLabel>
-              <Select
-                labelId="time-range-label"
-                value={timeRange}
-                label={t("timeRange")}
-                onChange={(event) => setTimeRange(event.target.value)}
-                MenuProps={selectMenuProps}
-              >
-                <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-                <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
-                <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
-                <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
-                <MenuItem value="custom_range">{t("customRange")}</MenuItem>
-                <MenuItem value="all_time">{t("allTime")}</MenuItem>
-              </Select>
-            </FormControl>
+            <Stack
+              direction="row"
+              useFlexGap
+              sx={{
+                flex: 1,
+                flexWrap: "wrap",
+                gap: 2,
+                minWidth: 0,
+              }}
+            >
+              <FormControl sx={{ flex: 1, minWidth: 0 }}>
+                <InputLabel id="time-range-label">{t("timeRange")}</InputLabel>
+                <Select
+                  labelId="time-range-label"
+                  value={timeRange}
+                  label={t("timeRange")}
+                  onChange={(event) => setTimeRange(event.target.value)}
+                  MenuProps={selectMenuProps}
+                >
+                  <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
+                  <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
+                  <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
+                  <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
+                  <MenuItem value="custom_range">{t("customRange")}</MenuItem>
+                  <MenuItem value="all_time">{t("allTime")}</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl sx={{ flex: 1, minWidth: 0 }}>
+                <InputLabel id="sort-by-label">{t("sortBy")}</InputLabel>
+                <Select
+                  labelId="sort-by-label"
+                  value={sortBy}
+                  label={t("sortBy")}
+                  onChange={(event) => setSortBy(event.target.value)}
+                  MenuProps={selectMenuProps}
+                >
+                  <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
+                  <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
+                  <MenuItem value="amount_desc">
+                    {t("sortPriceHighToLow")}
+                  </MenuItem>
+                  <MenuItem value="amount_asc">
+                    {t("sortPriceLowToHigh")}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
 
             {shouldShowAccountFilter && (
               <FormControl fullWidth>
@@ -491,26 +592,6 @@ export default function DashboardPage() {
                 </Select>
               </FormControl>
             )}
-
-            <FormControl fullWidth>
-              <InputLabel id="sort-by-label">{t("sortBy")}</InputLabel>
-              <Select
-                labelId="sort-by-label"
-                value={sortBy}
-                label={t("sortBy")}
-                onChange={(event) => setSortBy(event.target.value)}
-                MenuProps={selectMenuProps}
-              >
-                <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
-                <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
-                <MenuItem value="amount_desc">
-                  {t("sortPriceHighToLow")}
-                </MenuItem>
-                <MenuItem value="amount_asc">
-                  {t("sortPriceLowToHigh")}
-                </MenuItem>
-              </Select>
-            </FormControl>
           </Stack>
           {timeRange === "custom_range" && (
             <Stack
@@ -571,6 +652,18 @@ export default function DashboardPage() {
               </Typography>
             </Stack>
           </Box>
+          {!isLoading && bankConnections.length === 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="body2"
+                dir={direction}
+                color="warning.main"
+                sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
+              >
+                {t("dashboardNoBankConnectionMessage")}
+              </Typography>
+            </Box>
+          )}
           <List disablePadding>
             {isLoading
               ? Array.from({ length: 6 }).map((_, index) => (
@@ -592,6 +685,7 @@ export default function DashboardPage() {
                     exp={exp}
                     isExpanded={Boolean(expandedIds[exp._id])}
                     onToggleExpanded={toggleExpanded}
+                    onExpenseUpdated={onExpenseUpdated}
                     isLast={index === displayedExpenses.length - 1}
                     direction={direction}
                     locale={locale}

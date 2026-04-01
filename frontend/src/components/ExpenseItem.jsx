@@ -1,15 +1,30 @@
 import BoltIcon from "@mui/icons-material/Bolt";
+import CancelIcon from "@mui/icons-material/Cancel";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import MovieIcon from "@mui/icons-material/Movie";
+import PublishedWithChangesIcon from "@mui/icons-material/PublishedWithChanges";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
+import SaveIcon from "@mui/icons-material/Save";
 import SchoolIcon from "@mui/icons-material/School";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import { Box, Collapse, ListItem, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Collapse,
+  IconButton,
+  ListItem,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import { api } from "../api";
 
 function formatDateTime(value, locale) {
   if (!value) return "-";
@@ -104,14 +119,60 @@ export default function ExpenseItem({
   exp,
   isExpanded,
   onToggleExpanded,
+  onExpenseUpdated,
   isLast,
   direction,
   locale,
   t,
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftDescription, setDraftDescription] = useState(exp.description || "");
+  const [draftCategory, setDraftCategory] = useState(exp.category || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  useEffect(() => {
+    setDraftDescription(exp.description || "");
+    setDraftCategory(exp.category || "");
+  }, [exp.category, exp.description, exp._id]);
+
   const CategoryIcon = getCategoryIcon(exp.category);
   const amountValue = Number(exp.amount || 0);
   const isPositiveAmount = amountValue > 0;
+
+  async function handleSave() {
+    const nextDescription = String(draftDescription || "").trim();
+    const nextCategory = String(draftCategory || "").trim();
+    if (!nextDescription) {
+      setSaveError(t("descriptionRequired"));
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      const updated = await api(`/expenses/${exp._id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          description: nextDescription,
+          category: nextCategory || "Uncategorized",
+        }),
+      });
+      onExpenseUpdated?.(updated);
+      setIsEditing(false);
+    } catch {
+      setSaveError(t("failedUpdateExpense"));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleCancel() {
+    setDraftDescription(exp.description || "");
+    setDraftCategory(exp.category || "");
+    setSaveError("");
+    setIsEditing(false);
+  }
 
   return (
     <div>
@@ -127,7 +188,13 @@ export default function ExpenseItem({
             gap: 1.5,
           }}
         >
-          <Box
+          <IconButton
+            size="small"
+            aria-label={t("edit")}
+            onClick={() => {
+              setSaveError("");
+              setIsEditing(true);
+            }}
             sx={{
               width: 38,
               height: 38,
@@ -136,35 +203,77 @@ export default function ExpenseItem({
               display: "grid",
               placeItems: "center",
               flexShrink: 0,
+              p: 0,
             }}
           >
             <CategoryIcon sx={{ color: "#2f3a24", fontSize: 28 }} />
-          </Box>
+          </IconButton>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              dir={direction}
-              sx={{
-                fontWeight: 700,
-                textAlign: direction === "rtl" ? "right" : "left",
-                lineHeight: 1.2,
-                fontSize: ".95rem",
-              }}
-            >
-              {exp.description || "-"}
-            </Typography>
-            <Typography
-              dir={direction}
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                fontSize: ".8rem",
-                textAlign: direction === "rtl" ? "right" : "left",
-              }}
-            >
-              {formatDate(exp.date)} {"\u2022"} {exp.category || "-"}
-            </Typography>
+            {isEditing ? (
+              <Stack sx={{ gap: 0.75 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={draftDescription}
+                  onChange={(event) => setDraftDescription(event.target.value)}
+                  label={t("description")}
+                />
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={draftCategory}
+                  onChange={(event) => setDraftCategory(event.target.value)}
+                  label={t("category")}
+                />
+              </Stack>
+            ) : (
+              <>
+                <Typography
+                  dir={direction}
+                  sx={{
+                    fontWeight: 700,
+                    textAlign: direction === "rtl" ? "right" : "left",
+                    lineHeight: 1.2,
+                    fontSize: ".95rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  {exp.description || "-"}
+                  {exp.isUserAltered && (
+                    <Tooltip title={t("changedByUser")}>
+                      <PublishedWithChangesIcon
+                        sx={{ fontSize: 16, color: "#2f3a24" }}
+                      />
+                    </Tooltip>
+                  )}
+                </Typography>
+                <Typography
+                  dir={direction}
+                  sx={{
+                    color: "text.secondary",
+                    fontWeight: 600,
+                    fontSize: ".8rem",
+                    textAlign: direction === "rtl" ? "right" : "left",
+                  }}
+                >
+                  {formatDate(exp.date)} {"\u2022"} {exp.category || "-"}
+                </Typography>
+              </>
+            )}
+            {saveError && (
+              <Typography
+                variant="caption"
+                color="error"
+                dir={direction}
+                sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
+              >
+                {saveError}
+              </Typography>
+            )}
           </Box>
-          <Stack sx={{ alignItems: "flex-end", width: 'fit-content' }}>
+          <Stack sx={{ alignItems: "flex-end", width: "fit-content", gap: 0.25 }}>
             <Typography
               sx={{
                 fontWeight: 800,
@@ -176,6 +285,32 @@ export default function ExpenseItem({
             >
               {exp.amount} {exp.currency}
             </Typography>
+            <Stack direction="row" sx={{ alignItems: "center" }}>
+              {isEditing && (
+                <>
+                  <IconButton
+                    size="small"
+                    aria-label={t("saveChanges")}
+                    onClick={handleSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <SaveIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    aria-label={t("cancel")}
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                </>
+              )}
+            </Stack>
           </Stack>
         </Box>
       </ListItem>

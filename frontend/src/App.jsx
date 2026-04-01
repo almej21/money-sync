@@ -55,13 +55,13 @@ function AppContent() {
           },
           secondary: {
             main: "#b5c99a",
-            light: "#e9f5db",
+            light: "#cfe1b9",
             dark: "#97a97c",
             contrastText: "#2f3a24",
           },
           background: {
             default: "#ffffff",
-            paper: "#e9f5db",
+            paper: "#cfe1b9",
           },
           text: {
             primary: "#2f3a24",
@@ -100,7 +100,7 @@ function AppContent() {
           MuiCard: {
             styleOverrides: {
               root: {
-                backgroundColor: "#e9f5db",
+                backgroundColor: "#cfe1b9",
                 border: "1px solid #cfe1b9",
                 boxShadow: "0 10px 24px rgba(113, 131, 85, 0.15)",
               },
@@ -122,6 +122,17 @@ function AppContent() {
             styleOverrides: {
               root: {
                 backgroundColor: "#ffffff",
+              },
+            },
+          },
+          MuiInputLabel: {
+            styleOverrides: {
+              root: {
+                color: "#2f3a24",
+                fontWeight: 700,
+                "&.Mui-focused": {
+                  color: "#2f3a24",
+                },
               },
             },
           },

@@ -22,6 +22,7 @@ const expenseSchema = new mongoose.Schema(
     notes: { type: String, default: "" },
     tags: [{ type: String }],
     isReviewed: { type: Boolean, default: false },
+    isUserAltered: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     editedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

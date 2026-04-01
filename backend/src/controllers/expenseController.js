@@ -59,15 +59,50 @@ export async function createExpense(req, res) {
 }
 
 export async function updateExpense(req, res) {
-  const expense = await Expense.findOneAndUpdate(
-    { _id: req.params.id, householdId: req.user.householdId },
-    { ...req.body, editedBy: req.user._id },
-    { new: true },
-  );
+  const expense = await Expense.findOne({
+    _id: req.params.id,
+    householdId: req.user.householdId,
+  });
 
   if (!expense) {
     return res.status(404).json({ message: "Expense not found" });
   }
+
+  const hasDescription = Object.hasOwn(req.body || {}, "description");
+  const hasCategory = Object.hasOwn(req.body || {}, "category");
+  if (!hasDescription && !hasCategory) {
+    return res
+      .status(400)
+      .json({ message: "At least one of description or category is required" });
+  }
+
+  let hasChanged = false;
+
+  if (hasDescription) {
+    const nextDescription = String(req.body.description || "").trim();
+    if (!nextDescription) {
+      return res.status(400).json({ message: "Description is required" });
+    }
+    if (nextDescription !== expense.description) {
+      hasChanged = true;
+      expense.description = nextDescription;
+    }
+  }
+
+  if (hasCategory) {
+    const nextCategory =
+      String(req.body.category || "").trim() || "Uncategorized";
+    if (nextCategory !== expense.category) {
+      hasChanged = true;
+      expense.category = nextCategory;
+    }
+  }
+
+  expense.editedBy = req.user._id;
+  if (hasChanged) {
+    expense.isUserAltered = true;
+  }
+  await expense.save();
 
   res.json(expense);
 }
