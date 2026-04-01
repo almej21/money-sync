@@ -11,7 +11,6 @@ import authRoutes from "./routes/authRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
 const app = express();
-//
 function normalizeOrigin(value) {
   return (value ?? "").trim().replace(/\/+$/, "").toLowerCase();
 }
