@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -10,6 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AppSnackbar from "../components/AppSnackbar";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -74,11 +74,6 @@ export default function LoginPage() {
               </Button>
             </Stack>
           </Box>
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
           <Button
             sx={{ mt: 2 }}
             variant="text"
@@ -88,6 +83,12 @@ export default function LoginPage() {
           </Button>
         </CardContent>
       </Card>
+      <AppSnackbar
+        open={Boolean(error)}
+        message={error}
+        severity="error"
+        onClose={() => setError("")}
+      />
     </Container>
   );
 }

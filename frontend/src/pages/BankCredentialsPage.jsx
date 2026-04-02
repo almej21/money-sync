@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -17,6 +16,8 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import AppSnackbar from "../components/AppSnackbar";
+import Dropdown from "../components/Dropdown";
 import { COLORS } from "../constants/colors";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -39,8 +40,10 @@ export default function BankCredentialsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [pendingRemovalConnectionId, setPendingRemovalConnectionId] = useState("");
-  const [pendingRemoveAllConfirmation, setPendingRemoveAllConfirmation] = useState(false);
+  const [pendingRemovalConnectionId, setPendingRemovalConnectionId] =
+    useState("");
+  const [pendingRemoveAllConfirmation, setPendingRemoveAllConfirmation] =
+    useState(false);
   const [isAddAccountExpanded, setIsAddAccountExpanded] = useState(false);
 
   const selectedProvider = useMemo(
@@ -261,12 +264,21 @@ export default function BankCredentialsPage() {
             {connections.map((connection) => (
               <Card key={connection.id} variant="outlined">
                 <CardContent
-                  sx={{ backgroundColor: COLORS.theme.primary.main }}
+                  sx={{
+                    backgroundColor: COLORS.theme.primary.main,
+                    display: "flex",
+                    alignItems: "center",
+                    py: 2,
+                    "&:last-child": {
+                      pb: 2,
+                    },
+                  }}
                 >
                   <Stack
                     direction={{ xs: "row" }}
                     justifyContent="space-between"
-                    alignItems="space-between"
+                    alignItems="center"
+                    width="100%"
                     pb={0}
                   >
                     <Stack spacing={0.5} justifyContent="center">
@@ -305,28 +317,37 @@ export default function BankCredentialsPage() {
               type="button"
               variant="outlined"
               onClick={() => setIsAddAccountExpanded((prev) => !prev)}
-              sx={{ width: { xs: "100%", sm: "auto" }, alignSelf: "flex-start" }}
+              sx={{
+                width: { xs: "100%", sm: "auto" },
+                alignSelf: "flex-start",
+              }}
             >
-              {isAddAccountExpanded ? `${t("addConnection")} -` : `${t("addConnection")} +`}
+              {isAddAccountExpanded
+                ? `${t("addConnection")} -`
+                : `${t("addConnection")} +`}
             </Button>
             <Collapse in={isAddAccountExpanded}>
               <Box component="form" onSubmit={saveCredentials}>
                 <Stack spacing={2}>
-                  <Typography variant="subtitle1">{t("addConnection")}</Typography>
-                  <TextField
+                  <Typography variant="subtitle1">
+                    {t("addConnection")}
+                  </Typography>
+                  <Dropdown
+                    labelId="bank-provider-label"
                     label={t("bankOrCreditCardCompany")}
-                    select
                     value={form.companyId}
                     onChange={(e) => onCompanyChange(e.target.value)}
                     required
-                    fullWidth
                   >
                     {providers.map((provider) => (
-                      <MenuItem key={provider.companyId} value={provider.companyId}>
+                      <MenuItem
+                        key={provider.companyId}
+                        value={provider.companyId}
+                      >
                         {provider.label} ({provider.companyId})
                       </MenuItem>
                     ))}
-                  </TextField>
+                  </Dropdown>
 
                   <TextField
                     label={t("connectionName")}
@@ -347,9 +368,13 @@ export default function BankCredentialsPage() {
                       label={field.label || field.name}
                       type={field.type || "text"}
                       value={form.credentials[field.name] || ""}
-                      onChange={(e) => onFieldChange(field.name, e.target.value)}
+                      onChange={(e) =>
+                        onFieldChange(field.name, e.target.value)
+                      }
                       required={Boolean(field.required)}
-                      helperText={field.required ? t("required") : t("optional")}
+                      helperText={
+                        field.required ? t("required") : t("optional")
+                      }
                       fullWidth
                     />
                   ))}
@@ -381,8 +406,18 @@ export default function BankCredentialsPage() {
         </CardContent>
       </Card>
 
-      {error && <Alert severity="error">{error}</Alert>}
-      {success && <Alert severity="success">{success}</Alert>}
+      <AppSnackbar
+        open={Boolean(error)}
+        message={error}
+        severity="error"
+        onClose={() => setError("")}
+      />
+      <AppSnackbar
+        open={Boolean(success)}
+        message={success}
+        severity="success"
+        onClose={() => setSuccess("")}
+      />
       <Dialog
         open={Boolean(pendingRemovalConnectionId)}
         onClose={closeRemoveConfirmation}

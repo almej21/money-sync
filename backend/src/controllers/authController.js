@@ -1,8 +1,32 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Household from "../models/Household.js";
+import Expense from "../models/Expense.js";
 import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
 import { signToken } from "../utils/jwt.js";
+
+function normalizeConnectionIds(values = []) {
+  if (!Array.isArray(values)) return [];
+  return Array.from(
+    new Set(
+      values
+        .map((value) => String(value || "").trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function serializeUser(user) {
+  return {
+    id: user._id,
+    email: user.email,
+    name: user.name,
+    householdId: user.householdId,
+    defaultSelectedBankConnectionIds: normalizeConnectionIds(
+      user.defaultSelectedBankConnectionIds,
+    ),
+  };
+}
 
 export async function register(req, res) {
   const { email, password, name, householdName } = req.body;
@@ -30,12 +54,7 @@ export async function register(req, res) {
   const token = signToken(user);
   res.status(201).json({
     token,
-    user: {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      householdId: user.householdId,
-    },
+    user: serializeUser(user),
   });
 }
 
@@ -51,23 +70,38 @@ export async function login(req, res) {
   triggerExpenseSyncForUser(user, "login");
   res.json({
     token,
-    user: {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      householdId: user.householdId,
-    },
+    user: serializeUser(user),
   });
 }
 
 export async function me(req, res) {
   triggerExpenseSyncForUser(req.user, "auth_me");
   res.json({
-    user: {
-      id: req.user._id,
-      email: req.user.email,
-      name: req.user.name,
-      householdId: req.user.householdId,
-    },
+    user: serializeUser(req.user),
   });
+}
+
+export async function updatePreferences(req, res) {
+  const user = await User.findById(req.user._id);
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  const nextDefaultIds = normalizeConnectionIds(
+    req.body?.defaultSelectedBankConnectionIds,
+  );
+  const allowedSourceAccountIds = new Set(
+    (
+      await Expense.distinct("sourceAccountId", {
+        householdId: user.householdId,
+      })
+    )
+      .map((value) => String(value || "").trim())
+      .filter(Boolean),
+  );
+
+  user.defaultSelectedBankConnectionIds = nextDefaultIds.filter((id) =>
+    allowedSourceAccountIds.has(id),
+  );
+  await user.save();
+
+  return res.json({ user: serializeUser(user) });
 }

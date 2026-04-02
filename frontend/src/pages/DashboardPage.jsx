@@ -5,12 +5,9 @@ import {
   Checkbox,
   CircularProgress,
   Divider,
-  FormControl,
-  InputLabel,
   List,
   ListItemText,
   MenuItem,
-  Select,
   Skeleton,
   Stack,
   TextField,
@@ -19,9 +16,13 @@ import {
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import Dropdown from "../components/Dropdown";
 import ExpenseItem from "../components/ExpenseItem";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useExpenseBackgroundRefresh } from "../hooks/useExpenseBackgroundRefresh";
+
+const CATEGORY_ALL_VALUE = "__all_categories__";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -69,6 +70,7 @@ function formatDisplayedRange(start, end) {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncingExpenses, setIsSyncingExpenses] = useState(false);
@@ -82,38 +84,8 @@ export default function DashboardPage() {
   const [customEndDate, setCustomEndDate] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
   const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
+  const [isTotalCalculating, setIsTotalCalculating] = useState(true);
   const { t, locale, direction } = useLanguage();
-  const dropdownMenuColorProps = {
-    panelBackground: "#2f3a24", // Background of the dropdown options list window.
-    panelText: "#ffffff", // Text color for every option label.
-    selectedOptionBackground: "rgba(255, 255, 255, 0.14)", // Background of the currently selected option row.
-    selectedOptionText: "#ffffff", // Text color of the currently selected option.
-    optionHoverBackground: "rgba(255, 255, 255, 0.1)", // Background when hovering an option row.
-  };
-
-  const selectMenuProps = {
-    disableScrollLock: true,
-    PaperProps: {
-      sx: {
-        bgcolor: dropdownMenuColorProps.panelBackground,
-        color: dropdownMenuColorProps.panelText,
-        "& .MuiMenuItem-root": {
-          color: dropdownMenuColorProps.panelText,
-          "&:hover": {
-            bgcolor: dropdownMenuColorProps.optionHoverBackground,
-          },
-          "&.Mui-selected": {
-            bgcolor: dropdownMenuColorProps.selectedOptionBackground,
-            color: dropdownMenuColorProps.selectedOptionText,
-          },
-          "&.Mui-selected:hover": {
-            bgcolor: dropdownMenuColorProps.selectedOptionBackground,
-          },
-        },
-      },
-    },
-  };
-
   const loadExpenses = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -244,6 +216,9 @@ export default function DashboardPage() {
     );
     return Array.from(values).sort((a, b) => a.localeCompare(b, locale));
   }, [expenses, locale]);
+  const allCategoriesSelected =
+    selectedCategories.length === 0 ||
+    selectedCategories.length === categoryOptions.length;
 
   const accountFilterOptions = useMemo(() => {
     const connectionById = new Map(
@@ -304,14 +279,23 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const allAccountIds = accountFilterOptions.map((option) => option.id);
+    const preferredAccountIds = Array.isArray(
+      user?.defaultSelectedBankConnectionIds,
+    )
+      ? user.defaultSelectedBankConnectionIds.filter((id) =>
+          allAccountIds.includes(id),
+        )
+      : [];
+
     setSelectedConnectionIds((prevSelected) => {
       if (allAccountIds.length <= 1) return allAccountIds;
+      if (preferredAccountIds.length) return preferredAccountIds;
       if (!prevSelected.length) return allAccountIds;
 
       const retained = prevSelected.filter((id) => allAccountIds.includes(id));
       return retained.length ? retained : allAccountIds;
     });
-  }, [accountFilterOptions]);
+  }, [accountFilterOptions, user?.defaultSelectedBankConnectionIds]);
 
   function onAccountFilterChange(nextValues) {
     const values = Array.isArray(nextValues) ? nextValues : [];
@@ -320,6 +304,27 @@ export default function DashboardPage() {
       return;
     }
     setSelectedConnectionIds(values);
+  }
+
+  function onCategoryFilterChange(nextValues) {
+    const values = Array.isArray(nextValues) ? nextValues : [];
+
+    if (values.includes(CATEGORY_ALL_VALUE)) {
+      // Internal empty selection means "all selected".
+      setSelectedCategories([]);
+      return;
+    }
+
+    const filteredValues = values.filter((value) =>
+      categoryOptions.includes(value),
+    );
+
+    if (!filteredValues.length || filteredValues.length === categoryOptions.length) {
+      setSelectedCategories([]);
+      return;
+    }
+
+    setSelectedCategories(filteredValues);
   }
 
   const displayedExpenses = useMemo(() => {
@@ -374,9 +379,11 @@ export default function DashboardPage() {
   );
 
   useEffect(() => {
+    setIsTotalCalculating(true);
     setAnimatedTotalAmount(0);
     const nextFrame = requestAnimationFrame(() => {
       setAnimatedTotalAmount(displayedAmountTotal);
+      setIsTotalCalculating(false);
     });
 
     return () => cancelAnimationFrame(nextFrame);
@@ -429,6 +436,7 @@ export default function DashboardPage() {
     const maxDate = new Date(Math.max(...timestamps));
     return formatDisplayedRange(minDate, maxDate);
   }, [customEndDate, customStartDate, displayedExpenses, timeRange]);
+  const shouldShowTotalLoading = isLoading || isTotalCalculating;
 
   return (
     <>
@@ -451,56 +459,72 @@ export default function DashboardPage() {
             gap: 0.5,
           }}
         >
-          <Box
-            component="span"
-            sx={{
-              display: "inline-block",
-              fontWeight: 400,
-              color: "#5b6c43",
-            }}
-          >
-            {displayedExpenses[0]?.currency || "₪"}
-          </Box>
+          {shouldShowTotalLoading ? (
+            <>
+              <Skeleton
+                variant="rounded"
+                width={28}
+                height={28}
+                sx={{ bgcolor: "rgba(91, 108, 67, 0.2)" }}
+              />
+              <Skeleton
+                variant="rounded"
+                width={140}
+                height={42}
+                sx={{ bgcolor: "rgba(91, 108, 67, 0.2)" }}
+              />
+            </>
+          ) : (
+            <>
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  fontWeight: 400,
+                  color: "#5b6c43",
+                }}
+              >
+                {displayedExpenses[0]?.currency || "₪"}
+              </Box>
 
-          <Box
-            component="span"
-            sx={{
-              display: "inline-block",
-              fontWeight: 800,
-            }}
-          >
-            <NumberFlow
-              value={animatedTotalAmount}
-              format={{
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }}
-              transformTiming={{
-                duration: 450,
-                easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-              }}
-              spinTiming={{
-                duration: 450,
-                easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
-              }}
-              opacityTiming={{
-                duration: 300,
-                easing: "ease-out",
-              }}
-            />
-          </Box>
+              <Box
+                component="span"
+                sx={{
+                  display: "inline-block",
+                  fontWeight: 800,
+                }}
+              >
+                <NumberFlow
+                  value={animatedTotalAmount}
+                  format={{
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }}
+                  transformTiming={{
+                    duration: 450,
+                    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+                  }}
+                  spinTiming={{
+                    duration: 450,
+                    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+                  }}
+                  opacityTiming={{
+                    duration: 300,
+                    easing: "ease-out",
+                  }}
+                />
+              </Box>
+            </>
+          )}
         </Box>
       </Typography>
-      <Card sx={{ border: "none !important" }}>
+      <Card sx={{ border: "none !important", borderRadius: '16px' }}>
         <CardContent
           sx={{
             px: { xs: 1, sm: 3 },
-            py: { xs: 1, sm: 3 },
+            py: { xs: 1.2, sm: 3 },
           }}
         >
-          <Typography variant="h5" gutterBottom>
-            {t("allExpenses")}
-          </Typography>
           {isSyncingExpenses && (
             <Stack
               direction="row"
@@ -521,29 +545,39 @@ export default function DashboardPage() {
             useFlexGap
             sx={{ mb: 2, gap: 2 }}
           >
-            <FormControl fullWidth sx={{ flex: { sm: 1 }, minWidth: 0 }}>
-              <InputLabel id="category-filter-label">
-                {t("categoryFilter")}
-              </InputLabel>
-              <Select
-                labelId="category-filter-label"
-                multiple
-                value={selectedCategories}
-                label={t("categoryFilter")}
-                onChange={(event) => setSelectedCategories(event.target.value)}
-                MenuProps={selectMenuProps}
-                renderValue={(selected) =>
-                  selected.length ? selected.join(", ") : t("allCategories")
-                }
-              >
-                {categoryOptions.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    <Checkbox checked={selectedCategories.includes(category)} />
-                    <ListItemText primary={category} />
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Dropdown
+              labelId="category-filter-label"
+              label={t("categoryFilter")}
+              labelShrink
+              multiple
+              value={selectedCategories}
+              displayEmpty
+              onChange={(event) => onCategoryFilterChange(event.target.value)}
+              renderValue={(selected) =>
+                allCategoriesSelected ? "All" : selected.join(", ")
+              }
+              sx={{ flex: { sm: 1 }, minWidth: 0 }}
+            >
+              <MenuItem value={CATEGORY_ALL_VALUE}>
+                <Checkbox
+                  checked={allCategoriesSelected}
+                  indeterminate={
+                    !allCategoriesSelected && selectedCategories.length > 0
+                  }
+                />
+                <ListItemText primary="All" />
+              </MenuItem>
+              {categoryOptions.map((category) => (
+                <MenuItem key={category} value={category}>
+                  <Checkbox
+                    checked={
+                      allCategoriesSelected || selectedCategories.includes(category)
+                    }
+                  />
+                  <ListItemText primary={category} />
+                </MenuItem>
+              ))}
+            </Dropdown>
 
             <Stack
               direction="row"
@@ -555,88 +589,70 @@ export default function DashboardPage() {
                 minWidth: 0,
               }}
             >
-              <FormControl sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}>
-                <InputLabel id="time-range-label">{t("timeRange")}</InputLabel>
-                <Select
-                  labelId="time-range-label"
-                  value={timeRange}
-                  label={t("timeRange")}
-                  onChange={(event) => setTimeRange(event.target.value)}
-                  MenuProps={selectMenuProps}
-                >
-                  <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-                  <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
-                  <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
-                  <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
-                  <MenuItem value="custom_range">{t("customRange")}</MenuItem>
-                  <MenuItem value="all_time">{t("allTime")}</MenuItem>
-                </Select>
-              </FormControl>
+              <Dropdown
+                labelId="time-range-label"
+                value={timeRange}
+                label={t("timeRange")}
+                onChange={(event) => setTimeRange(event.target.value)}
+                sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}
+              >
+                <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
+                <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
+                <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
+                <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
+                <MenuItem value="custom_range">{t("customRange")}</MenuItem>
+                <MenuItem value="all_time">{t("allTime")}</MenuItem>
+              </Dropdown>
 
-              <FormControl sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}>
-                <InputLabel id="sort-by-label">{t("sortBy")}</InputLabel>
-                <Select
-                  labelId="sort-by-label"
-                  value={sortBy}
-                  label={t("sortBy")}
-                  onChange={(event) => setSortBy(event.target.value)}
-                  MenuProps={selectMenuProps}
-                >
-                  <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
-                  <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
-                  <MenuItem value="amount_desc">
-                    {t("sortPriceHighToLow")}
-                  </MenuItem>
-                  <MenuItem value="amount_asc">
-                    {t("sortPriceLowToHigh")}
-                  </MenuItem>
-                </Select>
-              </FormControl>
+              <Dropdown
+                labelId="sort-by-label"
+                value={sortBy}
+                label={t("sortBy")}
+                onChange={(event) => setSortBy(event.target.value)}
+                sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}
+              >
+                <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
+                <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
+                <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
+                <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
+              </Dropdown>
             </Stack>
 
             {shouldShowAccountFilter && (
-              <FormControl fullWidth sx={{ flex: { sm: 1 }, minWidth: 0 }}>
-                <InputLabel id="account-filter-label">
-                  {t("accountFilter")}
-                </InputLabel>
-                <Select
-                  labelId="account-filter-label"
-                  multiple
-                  value={selectedConnectionIds}
-                  label={t("accountFilter")}
-                  onChange={(event) =>
-                    onAccountFilterChange(event.target.value)
+              <Dropdown
+                labelId="account-filter-label"
+                label={t("accountFilter")}
+                multiple
+                value={selectedConnectionIds}
+                onChange={(event) =>
+                  onAccountFilterChange(event.target.value)
+                }
+                renderValue={(selected) => {
+                  const values = Array.isArray(selected) ? selected : [];
+                  if (
+                    !values.length ||
+                    values.length === accountFilterOptions.length
+                  ) {
+                    return t("allAccounts");
                   }
-                  MenuProps={selectMenuProps}
-                  renderValue={(selected) => {
-                    const values = Array.isArray(selected) ? selected : [];
-                    if (
-                      !values.length ||
-                      values.length === accountFilterOptions.length
-                    ) {
-                      return t("allAccounts");
-                    }
 
-                    return values
-                      .map(
-                        (id) =>
-                          accountFilterOptions.find(
-                            (option) => option.id === id,
-                          )?.label || id,
-                      )
-                      .join(", ");
-                  }}
-                >
-                  {accountFilterOptions.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                      <Checkbox
-                        checked={selectedConnectionIds.includes(option.id)}
-                      />
-                      <ListItemText primary={option.label} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  return values
+                    .map(
+                      (id) =>
+                        accountFilterOptions.find((option) => option.id === id)
+                          ?.label || id,
+                    )
+                    .join(", ");
+                }}
+                sx={{ flex: { sm: 1 }, minWidth: 0 }}
+              >
+                {accountFilterOptions.map((option) => (
+                  <MenuItem key={option.id} value={option.id}>
+                    <Checkbox checked={selectedConnectionIds.includes(option.id)} />
+                    <ListItemText primary={option.label} />
+                  </MenuItem>
+                ))}
+              </Dropdown>
             )}
           </Stack>
           {timeRange === "custom_range" && (

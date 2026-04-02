@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
       type: [bankConnectionSchema],
       default: [],
     },
+    defaultSelectedBankConnectionIds: {
+      type: [String],
+      default: [],
+    },
     expenseSyncMeta: {
       lastBankFetchAt: { type: Date, default: null },
     },

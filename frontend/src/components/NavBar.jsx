@@ -1,6 +1,7 @@
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import LogoutIcon from "@mui/icons-material/Logout";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import WalletIcon from "@mui/icons-material/Wallet";
 import {
   AppBar,
@@ -11,6 +12,7 @@ import {
   DialogContent,
   DialogContentText,
   Stack,
+  Tooltip,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -122,32 +124,47 @@ export default function NavBar() {
         {user &&
           (isMobile ? (
             <Stack direction="row" spacing={1} alignItems="center">
-              <Button
-                onClick={toggleLanguage}
-                aria-label={t("language")}
-                title={nextLanguage === "en" ? t("english") : t("hebrew")}
-                sx={{
-                  minWidth: 0,
-                  px: 1,
-                  py: 0.6,
-                  borderRadius: 2,
-                }}
-              >
-                <Box
-                  component="img"
-                  src={nextLanguageFlagIcon}
-                  alt={nextLanguage === "en" ? t("english") : t("hebrew")}
-                  sx={{ width: 20, height: 20, display: "block" }}
-                />
-              </Button>
-              <Button
-                color="inherit"
-                onClick={openLogoutModal}
-                aria-label={t("logout")}
-                sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-              >
-                <LogoutIcon />
-              </Button>
+              <Tooltip title={t("account")}>
+                <Button
+                  component={Link}
+                  to="/account"
+                  color="inherit"
+                  aria-label={t("account")}
+                  sx={{ ...mobileNavButtonSx, minWidth: 0 }}
+                >
+                  <ManageAccountsIcon />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("language")}>
+                <Button
+                  onClick={toggleLanguage}
+                  aria-label={t("language")}
+                  title={nextLanguage === "en" ? t("english") : t("hebrew")}
+                  sx={{
+                    minWidth: 0,
+                    px: 1,
+                    py: 0.6,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={nextLanguageFlagIcon}
+                    alt={nextLanguage === "en" ? t("english") : t("hebrew")}
+                    sx={{ width: 20, height: 20, display: "block" }}
+                  />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("logout")}>
+                <Button
+                  color="inherit"
+                  onClick={openLogoutModal}
+                  aria-label={t("logout")}
+                  sx={{ ...mobileNavButtonSx, minWidth: 0 }}
+                >
+                  <LogoutIcon />
+                </Button>
+              </Tooltip>
             </Stack>
           ) : (
             <Stack
@@ -156,54 +173,75 @@ export default function NavBar() {
               alignItems="center"
               sx={{ flexWrap: "wrap" }}
             >
-              <Button
-                component={Link}
-                to="/"
-                color="inherit"
-                aria-label={t("dashboard")}
-                sx={getNavButtonSx("/")}
-              >
-                <FormatListBulletedIcon sx={navIconSx} />
-              </Button>
-              <Button
-                component={Link}
-                to="/shopping-lists"
-                color="inherit"
-                aria-label={t("shoppingLists")}
-                sx={getNavButtonSx("/shopping-lists")}
-              >
-                <AddShoppingCartIcon sx={navIconSx} />
-              </Button>
-              <Button
-                component={Link}
-                to="/bank"
-                color="inherit"
-                aria-label={t("bank")}
-                sx={getNavButtonSx("/bank")}
-              >
-                <WalletIcon sx={navIconSx} />
-              </Button>
-              <Button
-                onClick={toggleLanguage}
-                aria-label={t("language")}
-                title={nextLanguage === "en" ? t("english") : t("hebrew")}
-                sx={{ minWidth: 0, px: 1 }}
-              >
-                <Box
-                  component="img"
-                  src={nextLanguageFlagIcon}
-                  alt={nextLanguage === "en" ? t("english") : t("hebrew")}
-                  sx={{ width: 20, height: 20, display: "block" }}
-                />
-              </Button>
-              <Button
-                color="inherit"
-                onClick={openLogoutModal}
-                aria-label={t("logout")}
-                sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-              >
-                <LogoutIcon />
-              </Button>
+              <Tooltip title={t("dashboard")}>
+                <Button
+                  component={Link}
+                  to="/"
+                  color="inherit"
+                  aria-label={t("dashboard")}
+                  sx={getNavButtonSx("/")}
+                >
+                  <FormatListBulletedIcon sx={navIconSx} />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("shoppingLists")}>
+                <Button
+                  component={Link}
+                  to="/shopping-lists"
+                  color="inherit"
+                  aria-label={t("shoppingLists")}
+                  sx={getNavButtonSx("/shopping-lists")}
+                >
+                  <AddShoppingCartIcon sx={navIconSx} />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("bank")}>
+                <Button
+                  component={Link}
+                  to="/bank"
+                  color="inherit"
+                  aria-label={t("bank")}
+                  sx={getNavButtonSx("/bank")}
+                >
+                  <WalletIcon sx={navIconSx} />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("account")}>
+                <Button
+                  component={Link}
+                  to="/account"
+                  color="inherit"
+                  aria-label={t("account")}
+                  sx={getNavButtonSx("/account")}
+                >
+                  <ManageAccountsIcon sx={navIconSx} />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("language")}>
+                <Button
+                  onClick={toggleLanguage}
+                  aria-label={t("language")}
+                  title={nextLanguage === "en" ? t("english") : t("hebrew")}
+                  sx={{ minWidth: 0, px: 1 }}
+                >
+                  <Box
+                    component="img"
+                    src={nextLanguageFlagIcon}
+                    alt={nextLanguage === "en" ? t("english") : t("hebrew")}
+                    sx={{ width: 20, height: 20, display: "block" }}
+                  />
+                </Button>
+              </Tooltip>
+              <Tooltip title={t("logout")}>
+                <Button
+                  color="inherit"
+                  onClick={openLogoutModal}
+                  aria-label={t("logout")}
+                  sx={{ ...mobileNavButtonSx, minWidth: 0 }}
+                >
+                  <LogoutIcon />
+                </Button>
+              </Tooltip>
             </Stack>
           ))}
         <Dialog open={isLogoutModalOpen} onClose={closeLogoutModal}>
@@ -238,20 +276,26 @@ export default function NavBar() {
               transition: "top 180ms ease",
             }}
           >
-            <Button component={Link} to="/" sx={getNavButtonSx("/", true)} aria-label={t("dashboard")}>
-              <FormatListBulletedIcon sx={navIconSx} />
-            </Button>
-            <Button
-              component={Link}
-              to="/shopping-lists"
-              sx={getNavButtonSx("/shopping-lists", true)}
-              aria-label={t("shoppingLists")}
-            >
-              <AddShoppingCartIcon sx={navIconSx} />
-            </Button>
-            <Button component={Link} to="/bank" sx={getNavButtonSx("/bank", true)} aria-label={t("bank")}>
-              <WalletIcon sx={navIconSx} />
-            </Button>
+            <Tooltip title={t("dashboard")}>
+              <Button component={Link} to="/" sx={getNavButtonSx("/", true)} aria-label={t("dashboard")}>
+                <FormatListBulletedIcon sx={navIconSx} />
+              </Button>
+            </Tooltip>
+            <Tooltip title={t("shoppingLists")}>
+              <Button
+                component={Link}
+                to="/shopping-lists"
+                sx={getNavButtonSx("/shopping-lists", true)}
+                aria-label={t("shoppingLists")}
+              >
+                <AddShoppingCartIcon sx={navIconSx} />
+              </Button>
+            </Tooltip>
+            <Tooltip title={t("bank")}>
+              <Button component={Link} to="/bank" sx={getNavButtonSx("/bank", true)} aria-label={t("bank")}>
+                <WalletIcon sx={navIconSx} />
+              </Button>
+            </Tooltip>
           </Box>
           <Box sx={{ height: 54 }} />
         </>

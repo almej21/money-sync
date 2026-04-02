@@ -5,17 +5,34 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      api("/auth/me")
-        .then((data) => setUser(data.user))
-        .catch(() => {
-          localStorage.removeItem("token");
-          setUser(null);
-        });
+    let cancelled = false;
+
+    async function hydrateAuth() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        if (!cancelled) setAuthLoading(false);
+        return;
+      }
+
+      try {
+        const data = await api("/auth/me");
+        if (!cancelled) setUser(data.user);
+      } catch {
+        localStorage.removeItem("token");
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
     }
+
+    hydrateAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (email, password, name) => {
@@ -38,8 +55,19 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updatePreferences = async (preferences = {}) => {
+    const data = await api("/auth/preferences", {
+      method: "PUT",
+      body: JSON.stringify(preferences),
+    });
+    setUser(data.user);
+    return data.user;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, authLoading, login, logout, updatePreferences }}
+    >
       {children}
     </AuthContext.Provider>
   );

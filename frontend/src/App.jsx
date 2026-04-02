@@ -1,8 +1,10 @@
 import {
   Box,
+  CircularProgress,
   Container,
   CssBaseline,
   ThemeProvider,
+  Typography,
   createTheme,
 } from "@mui/material";
 import { useMemo } from "react";
@@ -11,14 +13,37 @@ import NavBar from "./components/NavBar";
 import { COLORS, THEME_COLORS } from "./constants/colors";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
+import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
 
 function ProtectedRoutes() {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
   const { direction } = useLanguage();
+
+  if (authLoading) {
+    return (
+      <Container
+        component="main"
+        maxWidth="sm"
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          px: { xs: 1.5, sm: 3 },
+        }}
+        dir={direction}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <CircularProgress size={22} thickness={5} />
+          <Typography variant="body1">Loading...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   if (!user) return <LoginPage />;
 
@@ -35,6 +60,7 @@ function ProtectedRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
           <Route path="/bank" element={<BankCredentialsPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Container>

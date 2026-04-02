@@ -10,6 +10,7 @@ const MESSAGES = {
     dashboard: "Dashboard",
     shoppingLists: "Shopping Lists",
     bank: "Bank",
+    account: "Account",
     logout: "Logout",
     language: "Language",
     english: "English",
@@ -114,12 +115,18 @@ const MESSAGES = {
     failedSaveBankCredentials: "Failed to save bank credentials",
     failedRemoveBankConnection: "Failed to remove bank account",
     failedRemoveBankCredentials: "Failed to remove bank credentials",
+    defaultBankAccountsDescription:
+      "Choose which bank accounts are selected by default in the dashboard filter.",
+    accountDefaultsSaved: "Default bank account selection saved.",
+    failedSaveAccountDefaults: "Failed to save default bank account selection",
+    failedLoadAccountDefaults: "Failed to load account defaults",
   },
   he: {
     appTitle: "Money Sync",
     dashboard: "לוח בקרה",
     shoppingLists: "רשימות קניות",
     bank: "בנק",
+    account: "חשבון",
     logout: "התנתק",
     language: "שפה",
     english: "אנגלית",
@@ -224,6 +231,11 @@ const MESSAGES = {
     failedSaveBankCredentials: "שמירת פרטי ההתחברות לבנק נכשלה",
     failedRemoveBankConnection: "הסרת חשבון הבנק נכשלה",
     failedRemoveBankCredentials: "הסרת פרטי ההתחברות לבנק נכשלה",
+    defaultBankAccountsDescription:
+      "בחר אילו חשבונות בנק יהיו מסומנים כברירת מחדל במסנן בלוח הבקרה.",
+    accountDefaultsSaved: "ברירת המחדל של חשבונות הבנק נשמרה.",
+    failedSaveAccountDefaults: "שמירת ברירת המחדל של חשבונות הבנק נכשלה",
+    failedLoadAccountDefaults: "טעינת ברירות המחדל של החשבון נכשלה",
   },
 };
 
