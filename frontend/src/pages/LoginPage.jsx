@@ -9,16 +9,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import israelFlagIcon from "../assets/icons/israel.png";
+import usaFlagIcon from "../assets/icons/united-states.png";
 import AppSnackbar from "../components/AppSnackbar";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [error, setError] = useState("");
+  const nextLanguage = language === "en" ? "he" : "en";
+  const nextLanguageFlagIcon = nextLanguage === "en" ? usaFlagIcon : israelFlagIcon;
 
   async function submit(e) {
     e.preventDefault();
@@ -36,6 +40,21 @@ export default function LoginPage() {
 
   return (
     <Container maxWidth="sm" sx={{ py: { xs: 3, sm: 8 }, px: { xs: 1.5, sm: 3 } }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+        <Button
+          onClick={() => setLanguage(nextLanguage)}
+          aria-label={t("language")}
+          title={nextLanguage === "en" ? t("english") : t("hebrew")}
+          sx={{ minWidth: 0, px: 1, py: 0.6, borderRadius: 2 }}
+        >
+          <Box
+            component="img"
+            src={nextLanguageFlagIcon}
+            alt={nextLanguage === "en" ? t("english") : t("hebrew")}
+            sx={{ width: 20, height: 20, display: "block" }}
+          />
+        </Button>
+      </Box>
       <Card>
         <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
           <Typography
