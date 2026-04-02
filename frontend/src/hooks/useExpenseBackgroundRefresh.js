@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { api } from "../api";
+import { getExpenseSyncStatus } from "../services/expenseService";
 
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLLS = 12;
@@ -10,7 +10,7 @@ export function useExpenseBackgroundRefresh(loadExpenses, onRunningChange = () =
     let timer = null;
 
     async function run() {
-      const initial = await api("/expenses/sync-status").catch(() => null);
+      const initial = await getExpenseSyncStatus().catch(() => null);
       if (!active || !initial?.sync) return;
       onRunningChange(Boolean(initial.sync.running));
       const initialReason = String(initial.sync.lastResult?.reason || "");
@@ -30,7 +30,7 @@ export function useExpenseBackgroundRefresh(loadExpenses, onRunningChange = () =
         if (!active) return;
         polls += 1;
 
-        const status = await api("/expenses/sync-status").catch(() => null);
+        const status = await getExpenseSyncStatus().catch(() => null);
         if (!active || !status?.sync) return;
 
         const sync = status.sync;

@@ -15,17 +15,25 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../api";
 import AppSnackbar from "../components/AppSnackbar";
 import Dropdown from "../components/Dropdown";
 import { COLORS } from "../constants/colors";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import {
+  getBankCredentialStatus,
+  getBankProviders,
+  removeAllBankConnections,
+  removeBankConnection,
+  saveBankCredentials,
+} from "../services/bankService";
 
 function buildEmptyCredentials(fields = []) {
   return Object.fromEntries(fields.map((field) => [field.name, ""]));
 }
 
 export default function BankCredentialsPage() {
+  const { user } = useAuth();
   const { t, locale } = useLanguage();
   const [providers, setProviders] = useState([]);
   const [connections, setConnections] = useState([]);
@@ -45,6 +53,7 @@ export default function BankCredentialsPage() {
   const [pendingRemoveAllConfirmation, setPendingRemoveAllConfirmation] =
     useState(false);
   const [isAddAccountExpanded, setIsAddAccountExpanded] = useState(false);
+  const canManageBankConnections = (user?.role || "manager") === "manager";
 
   const selectedProvider = useMemo(
     () =>
@@ -71,8 +80,8 @@ export default function BankCredentialsPage() {
     setError("");
     try {
       const [providersData, statusData] = await Promise.all([
-        api("/bank/providers"),
-        api("/bank/credentials"),
+        getBankProviders(),
+        getBankCredentialStatus(),
       ]);
 
       const nextProviders = Array.isArray(providersData.providers)
@@ -143,18 +152,15 @@ export default function BankCredentialsPage() {
     setSuccess("");
 
     try {
-      await api("/bank/credentials", {
-        method: "PUT",
-        body: JSON.stringify({
-          companyId: form.companyId.trim(),
-          connectionName: form.connectionName.trim(),
-          credentials: Object.fromEntries(
-            Object.entries(form.credentials).map(([key, value]) => [
-              key,
-              value.trim(),
-            ]),
-          ),
-        }),
+      await saveBankCredentials({
+        companyId: form.companyId.trim(),
+        connectionName: form.connectionName.trim(),
+        credentials: Object.fromEntries(
+          Object.entries(form.credentials).map(([key, value]) => [
+            key,
+            value.trim(),
+          ]),
+        ),
       });
 
       setSuccess(t("bankConnectionSaved"));
@@ -178,7 +184,7 @@ export default function BankCredentialsPage() {
     setError("");
     setSuccess("");
     try {
-      await api(`/bank/credentials/${connectionId}`, { method: "DELETE" });
+      await removeBankConnection(connectionId);
       setSuccess(t("bankConnectionRemoved"));
       await loadBankConfig();
     } catch (err) {
@@ -208,7 +214,7 @@ export default function BankCredentialsPage() {
     setError("");
     setSuccess("");
     try {
-      await api("/bank/credentials", { method: "DELETE" });
+      await removeAllBankConnections();
       setSuccess(t("allBankConnectionsRemoved"));
       await loadBankConfig();
     } catch (err) {
@@ -300,7 +306,7 @@ export default function BankCredentialsPage() {
                       type="button"
                       variant="inherit"
                       onClick={() => openRemoveConfirmation(connection.id)}
-                      disabled={saving || loading}
+                      disabled={saving || loading || !canManageBankConnections}
                     >
                       {t("removeConnection")}
                     </Button>
@@ -313,10 +319,16 @@ export default function BankCredentialsPage() {
           <Divider sx={{ mb: 2 }} />
 
           <Stack spacing={2}>
+            {!canManageBankConnections && (
+              <Typography color="warning.main">
+                {t("bankManagerOnlyMessage")}
+              </Typography>
+            )}
             <Button
               type="button"
               variant="outlined"
               onClick={() => setIsAddAccountExpanded((prev) => !prev)}
+              disabled={!canManageBankConnections}
               sx={{
                 width: { xs: "100%", sm: "auto" },
                 alignSelf: "flex-start",
@@ -383,7 +395,7 @@ export default function BankCredentialsPage() {
                     <Button
                       type="submit"
                       variant="contained"
-                      disabled={saving || loading}
+                      disabled={saving || loading || !canManageBankConnections}
                       sx={{ width: { xs: "100%", sm: "auto" } }}
                     >
                       {t("addConnection")}
@@ -393,7 +405,12 @@ export default function BankCredentialsPage() {
                       variant="outlined"
                       color="error"
                       onClick={openRemoveAllConfirmation}
-                      disabled={saving || loading || connectedCount === 0}
+                      disabled={
+                        saving ||
+                        loading ||
+                        connectedCount === 0 ||
+                        !canManageBankConnections
+                      }
                       sx={{ width: { xs: "100%", sm: "auto" } }}
                     >
                       {t("removeAllConnections")}

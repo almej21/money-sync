@@ -5,6 +5,7 @@ import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import WalletIcon from "@mui/icons-material/Wallet";
 import {
   AppBar,
+  Badge,
   Box,
   Button,
   Dialog,
@@ -22,8 +23,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import israelFlagIcon from "../assets/icons/israel.png";
 import usaFlagIcon from "../assets/icons/united-states.png";
+import { SHOW_SCREEN_SIZE_INDICATOR } from "../constants/debug";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { getMyHouseholdInvitations } from "../services/householdService";
 
 export default function NavBar() {
   const { user, logout } = useAuth();
@@ -31,9 +34,15 @@ export default function NavBar() {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isXsOnly = useMediaQuery(theme.breakpoints.only("xs"));
+  const isSmOnly = useMediaQuery(theme.breakpoints.only("sm"));
+  const isMdOnly = useMediaQuery(theme.breakpoints.only("md"));
+  const isLgOnly = useMediaQuery(theme.breakpoints.only("lg"));
+  const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileHeaderHeight, setMobileHeaderHeight] = useState(0);
+  const [pendingInvitationCount, setPendingInvitationCount] = useState(0);
   const appBarRef = useRef(null);
   const nextLanguage = language === "en" ? "he" : "en";
   const toggleLanguage = () => setLanguage(nextLanguage);
@@ -52,6 +61,39 @@ export default function NavBar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [isMobile]);
+
+  useEffect(() => {
+    if (!user) {
+      setPendingInvitationCount(0);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function refreshInvitationCount() {
+      try {
+        const data = await getMyHouseholdInvitations();
+        if (!isMounted) return;
+        const invitations = Array.isArray(data?.invitations) ? data.invitations : [];
+        setPendingInvitationCount(invitations.length);
+      } catch {
+        if (!isMounted) return;
+        setPendingInvitationCount(0);
+      }
+    }
+
+    refreshInvitationCount().catch(() => {});
+    const timer = setInterval(() => {
+      refreshInvitationCount().catch(() => {});
+    }, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [user, location.pathname]);
+
+  const hasPendingInvitations = pendingInvitationCount > 0;
 
   useEffect(() => {
     if (!isMobile) return;
@@ -82,6 +124,17 @@ export default function NavBar() {
   };
 
   const navIconSx = { fontSize: 26 };
+  const currentScreenSize = isXlUp
+    ? "xl"
+    : isLgOnly
+      ? "lg"
+      : isMdOnly
+        ? "md"
+        : isSmOnly
+          ? "sm"
+          : isXsOnly
+            ? "xs"
+            : "unknown";
   const isRouteActive = (path) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
@@ -121,6 +174,24 @@ export default function NavBar() {
         >
           {t("appTitle")}
         </Typography>
+        {SHOW_SCREEN_SIZE_INDICATOR && (
+          <Typography
+            variant="caption"
+            sx={{
+              mr: 1.5,
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              bgcolor: "rgba(47, 58, 36, .2)",
+              color: "inherit",
+              fontWeight: 700,
+              letterSpacing: 0.4,
+              textTransform: "uppercase",
+            }}
+          >
+            {currentScreenSize}
+          </Typography>
+        )}
         {user &&
           (isMobile ? (
             <Stack direction="row" spacing={1} alignItems="center">
@@ -132,7 +203,15 @@ export default function NavBar() {
                   aria-label={t("account")}
                   sx={{ ...mobileNavButtonSx, minWidth: 0 }}
                 >
-                  <ManageAccountsIcon />
+                  <Badge
+                    color="error"
+                    variant="dot"
+                    invisible={!hasPendingInvitations}
+                    overlap="circular"
+                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                  >
+                    <ManageAccountsIcon />
+                  </Badge>
                 </Button>
               </Tooltip>
               <Tooltip title={t("language")}>
@@ -214,7 +293,15 @@ export default function NavBar() {
                   aria-label={t("account")}
                   sx={getNavButtonSx("/account")}
                 >
-                  <ManageAccountsIcon sx={navIconSx} />
+                  <Badge
+                    color="error"
+                    variant="dot"
+                    invisible={!hasPendingInvitations}
+                    overlap="circular"
+                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                  >
+                    <ManageAccountsIcon sx={navIconSx} />
+                  </Badge>
                 </Button>
               </Tooltip>
               <Tooltip title={t("language")}>

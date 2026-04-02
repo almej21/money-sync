@@ -9,6 +9,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import authRoutes from "./routes/authRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import householdRoutes from "./routes/householdRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
 const app = express();
 function normalizeOrigin(value) {
@@ -57,6 +58,7 @@ app.use(async (req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/shopping-lists", shoppingListRoutes);
+app.use("/api/household", householdRoutes);
 
 let bankRoutesPromise;
 async function getBankRoutes() {

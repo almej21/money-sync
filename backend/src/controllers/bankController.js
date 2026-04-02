@@ -105,6 +105,10 @@ function normalizeConnectionName(value) {
   return String(value || "").trim();
 }
 
+function isHouseholdManager(user) {
+  return (user?.role || "manager") === "manager";
+}
+
 function clearLegacyCredentials(user) {
   user.bankCredentials = {
     companyId: "",
@@ -268,6 +272,12 @@ export async function getBankCredentialStatus(req, res) {
 }
 
 export async function setBankCredentials(req, res) {
+  if (!isHouseholdManager(req.user)) {
+    return res.status(403).json({
+      message: "Only household managers can add or remove bank connections",
+    });
+  }
+
   const normalizedCompanyId = String(req.body?.companyId || "").trim();
   if (!normalizedCompanyId) {
     return res.status(400).json({ message: "companyId is required" });
@@ -347,6 +357,12 @@ export async function setBankCredentials(req, res) {
 }
 
 export async function deleteBankCredentials(req, res) {
+  if (!isHouseholdManager(req.user)) {
+    return res.status(403).json({
+      message: "Only household managers can add or remove bank connections",
+    });
+  }
+
   const user = await User.findById(req.user._id);
   if (!user) return res.status(404).json({ message: "User not found" });
 

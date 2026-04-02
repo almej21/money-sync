@@ -15,12 +15,13 @@ import {
 } from "@mui/material";
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../api";
 import Dropdown from "../components/Dropdown";
 import ExpenseItem from "../components/ExpenseItem";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useExpenseBackgroundRefresh } from "../hooks/useExpenseBackgroundRefresh";
+import { getBankCredentialStatus, getBankProviders } from "../services/bankService";
+import { getExpenses } from "../services/expenseService";
 
 const CATEGORY_ALL_VALUE = "__all_categories__";
 
@@ -89,7 +90,7 @@ export default function DashboardPage() {
   const loadExpenses = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await api("/expenses");
+      const data = await getExpenses();
       setExpenses(data);
     } finally {
       setIsLoading(false);
@@ -99,8 +100,8 @@ export default function DashboardPage() {
   const loadBankFilterOptions = useCallback(async () => {
     try {
       const [statusData, providersData] = await Promise.all([
-        api("/bank/credentials"),
-        api("/bank/providers"),
+        getBankCredentialStatus(),
+        getBankProviders(),
       ]);
 
       const connections = Array.isArray(statusData?.connections)
@@ -272,6 +273,7 @@ export default function DashboardPage() {
   }, [accountFilterOptions, bankConnections, providerLabels]);
 
   const shouldShowAccountFilter = accountFilterOptions.length > 1;
+  const hasHouseholdConnections = accountFilterOptions.length > 0;
   const shouldApplyAccountFilter =
     shouldShowAccountFilter &&
     selectedConnectionIds.length > 0 &&
@@ -541,7 +543,7 @@ export default function DashboardPage() {
             </Stack>
           )}
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: "column", md: "row" }}
             useFlexGap
             sx={{ mb: 2, gap: 2 }}
           >
@@ -583,7 +585,7 @@ export default function DashboardPage() {
               direction="row"
               useFlexGap
               sx={{
-                flex: { sm: 1.2 },
+                flex: { md: 1.2 },
                 flexWrap: { xs: "wrap", sm: "nowrap" },
                 gap: 2,
                 minWidth: 0,
@@ -714,7 +716,9 @@ export default function DashboardPage() {
               </Typography>
             </Stack>
           </Box>
-          {!isLoading && bankConnections.length === 0 && (
+          {!isLoading &&
+            bankConnections.length === 0 &&
+            !hasHouseholdConnections && (
             <Box sx={{ mb: 2 }}>
               <Typography
                 variant="body2"

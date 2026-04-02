@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     passwordHash: { type: String, required: true },
     name: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["manager", "member"],
+      default: "manager",
+    },
     householdId: { type: mongoose.Schema.Types.ObjectId, ref: "Household" },
     bankCredentials: {
       companyId: { type: String, default: "" },

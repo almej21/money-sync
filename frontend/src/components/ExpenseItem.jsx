@@ -24,7 +24,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { updateExpense as updateExpenseRequest } from "../services/expenseService";
 
 function formatDateTime(value, locale) {
   if (!value) return "-";
@@ -153,12 +153,9 @@ export default function ExpenseItem({
     setIsSaving(true);
     setSaveError("");
     try {
-      const updated = await api(`/expenses/${exp._id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          description: nextDescription,
-          category: nextCategory || "Uncategorized",
-        }),
+      const updated = await updateExpenseRequest(exp._id, {
+        description: nextDescription,
+        category: nextCategory || "Uncategorized",
       });
       onExpenseUpdated?.(updated);
       setIsEditing(false);

@@ -1,27 +1,51 @@
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
   CircularProgress,
+  Divider,
   FormControlLabel,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../api";
 import AppSnackbar from "../components/AppSnackbar";
+import { THEME_COLORS } from "../constants/colors";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { getBankCredentialStatus, getBankProviders } from "../services/bankService";
+import { getExpenses } from "../services/expenseService";
+import {
+  acceptHouseholdInvitation,
+  getHouseholdOverview,
+  getMyHouseholdInvitations,
+  sendHouseholdInvitation,
+} from "../services/householdService";
+
+const SECTION_STYLE = {
+  backgroundColor: THEME_COLORS.background.default,
+};
 
 export default function AccountPage() {
-  const { user, updatePreferences } = useAuth();
+  const { user, updatePreferences, refreshUser } = useAuth();
   const { t } = useLanguage();
   const [sourceAccountOptions, setSourceAccountOptions] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [householdMembers, setHouseholdMembers] = useState([]);
+  const [inviteEmail, setInviteEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [joiningInvitationId, setJoiningInvitationId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -38,10 +62,18 @@ export default function AccountPage() {
       setLoading(true);
       setError("");
       try {
-        const [expenses, statusData, providersData] = await Promise.all([
-          api("/expenses"),
-          api("/bank/credentials"),
-          api("/bank/providers"),
+        const [
+          expenses,
+          statusData,
+          providersData,
+          householdData,
+          myInvitesData,
+        ] = await Promise.all([
+          getExpenses(),
+          getBankCredentialStatus(),
+          getBankProviders(),
+          getHouseholdOverview(),
+          getMyHouseholdInvitations(),
         ]);
         const connections = Array.isArray(statusData?.connections)
           ? statusData.connections.filter((connection) =>
@@ -49,7 +81,10 @@ export default function AccountPage() {
             )
           : [];
         const connectionById = new Map(
-          connections.map((connection) => [String(connection.id || "").trim(), connection]),
+          connections.map((connection) => [
+            String(connection.id || "").trim(),
+            connection,
+          ]),
         );
 
         const providers = Array.isArray(providersData?.providers)
@@ -67,11 +102,16 @@ export default function AccountPage() {
           const accountId = String(expense?.sourceAccountId || "").trim();
           if (!accountId || optionsByAccountId.has(accountId)) return;
 
-          const sourceConnectionKey = String(expense?.sourceConnectionKey || "").trim();
+          const sourceConnectionKey = String(
+            expense?.sourceConnectionKey || "",
+          ).trim();
           const sourceCompanyId = String(expense?.sourceCompanyId || "").trim();
           const connection = connectionById.get(sourceConnectionKey);
-          const companyId = String(connection?.companyId || sourceCompanyId || "").trim();
-          const providerLabel = providerLabels[companyId] || companyId || t("bank");
+          const companyId = String(
+            connection?.companyId || sourceCompanyId || "",
+          ).trim();
+          const providerLabel =
+            providerLabels[companyId] || companyId || t("bank");
 
           optionsByAccountId.set(accountId, {
             id: accountId,
@@ -83,6 +123,14 @@ export default function AccountPage() {
           a.label.localeCompare(b.label, "en"),
         );
         setSourceAccountOptions(options);
+        setHouseholdMembers(
+          Array.isArray(householdData?.members) ? householdData.members : [],
+        );
+        setPendingInvitations(
+          Array.isArray(myInvitesData?.invitations)
+            ? myInvitesData.invitations
+            : [],
+        );
       } catch (err) {
         setError(err.message || t("failedLoadAccountDefaults"));
       } finally {
@@ -123,6 +171,61 @@ export default function AccountPage() {
     }
   }
 
+  async function inviteUser() {
+    const email = String(inviteEmail || "").trim();
+    if (!email) {
+      setError(t("inviteEmailRequired"));
+      return;
+    }
+
+    setInviting(true);
+    setError("");
+    setSuccess("");
+    try {
+      await sendHouseholdInvitation(email);
+      setInviteEmail("");
+      setSuccess(t("householdInviteSent"));
+      const householdData = await getHouseholdOverview();
+      setHouseholdMembers(
+        Array.isArray(householdData?.members) ? householdData.members : [],
+      );
+    } catch (err) {
+      setError(err.message || t("failedInviteUser"));
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function acceptInvite(invitationId) {
+    const id = String(invitationId || "").trim();
+    if (!id) return;
+    setJoiningInvitationId(id);
+    setError("");
+    setSuccess("");
+
+    try {
+      await acceptHouseholdInvitation(id);
+      await refreshUser();
+      setSuccess(t("householdJoined"));
+      await Promise.all([
+        getMyHouseholdInvitations().then((data) =>
+          setPendingInvitations(
+            Array.isArray(data?.invitations) ? data.invitations : [],
+          ),
+        ),
+        getHouseholdOverview().then((householdData) =>
+          setHouseholdMembers(
+            Array.isArray(householdData?.members) ? householdData.members : [],
+          ),
+        ),
+      ]);
+    } catch (err) {
+      setError(err.message || t("failedJoinHousehold"));
+    } finally {
+      setJoiningInvitationId("");
+    }
+  }
+
   return (
     <Stack spacing={2}>
       <Card>
@@ -130,44 +233,185 @@ export default function AccountPage() {
           <Typography variant="h5" gutterBottom>
             {t("account")}
           </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            {t("defaultBankAccountsDescription")}
-          </Typography>
+          <Stack spacing={1.5}>
+            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1">{t("myUserInfo")}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={0.75}>
+                  <Typography>
+                    <strong>{t("name")}:</strong> {user?.name || "-"}
+                  </Typography>
+                  <Typography>
+                    <strong>{t("email")}:</strong> {user?.email || "-"}
+                  </Typography>
+                  <Typography>
+                    <strong>{t("role")}:</strong>{" "}
+                    {t((user?.role || "manager") === "manager" ? "managerRole" : "memberRole")}
+                  </Typography>
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
 
-          {loading ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <CircularProgress size={20} />
-              <Typography>{t("loading")}</Typography>
-            </Box>
-          ) : !sourceAccountOptions.length ? (
-            <Typography color="text.secondary">{t("noBankConnections")}</Typography>
-          ) : (
-            <Stack spacing={1}>
-              {sourceAccountOptions.map((option) => {
-                return (
-                  <FormControlLabel
-                    key={option.id}
-                    control={
-                      <Checkbox
-                        checked={selectedIds.includes(option.id)}
-                        onChange={() => onToggleConnection(option.id)}
-                      />
-                    }
-                    label={option.label}
-                  />
-                );
-              })}
-            </Stack>
-          )}
+            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1">
+                  {t("defaultBankAccountsSectionTitle")}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>
+                  {t("defaultBankAccountsDescription")}
+                </Typography>
 
-          <Button
-            variant="contained"
-            sx={{ mt: 2 }}
-            onClick={save}
-            disabled={saving || loading || !sourceAccountOptions.length}
-          >
-            {t("save")}
-          </Button>
+                {loading ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <CircularProgress size={20} />
+                    <Typography>{t("loading")}</Typography>
+                  </Box>
+                ) : !sourceAccountOptions.length ? (
+                  <Typography color="text.secondary">
+                    {t("noBankConnections")}
+                  </Typography>
+                ) : (
+                  <Stack spacing={1}>
+                    {sourceAccountOptions.map((option) => {
+                      return (
+                        <FormControlLabel
+                          key={option.id}
+                          control={
+                            <Checkbox
+                              checked={selectedIds.includes(option.id)}
+                              onChange={() => onToggleConnection(option.id)}
+                            />
+                          }
+                          label={option.label}
+                        />
+                      );
+                    })}
+                  </Stack>
+                )}
+
+                <Button
+                  variant="contained"
+                  sx={{ mt: 2 }}
+                  onClick={save}
+                  disabled={saving || loading || !sourceAccountOptions.length}
+                >
+                  {t("save")}
+                </Button>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1">
+                  {t("householdMembers")}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {!householdMembers.length ? (
+                  <Typography color="text.secondary">{t("loading")}</Typography>
+                ) : (
+                  <Stack spacing={0.5}>
+                    {householdMembers.map((member) => (
+                      <Typography key={member.id}>
+                        {member.name} ({member.email}) -{" "}
+                        {t(
+                          member.role === "manager"
+                            ? "managerRole"
+                            : "memberRole",
+                        )}
+                      </Typography>
+                    ))}
+                  </Stack>
+                )}
+
+                {(user?.role || "manager") === "manager" && (
+                  <>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" gutterBottom>
+                      {t("inviteToHousehold")}
+                    </Typography>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      useFlexGap
+                      sx={{ gap: 1 }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <TextField
+                          label={t("email")}
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          fullWidth
+                        />
+                      </Box>
+                      <Button
+                        variant="contained"
+                        onClick={inviteUser}
+                        disabled={inviting}
+                        sx={{ whiteSpace: "nowrap", minWidth: 120 }}
+                      >
+                        {t("sendInvite")}
+                      </Button>
+                    </Stack>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      {t("inviteHint")}
+                    </Typography>
+                  </>
+                )}
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="subtitle1">
+                    {t("householdInvitations")}
+                  </Typography>
+                  {pendingInvitations.length > 0 && (
+                    <WarningAmberRoundedIcon color="warning" fontSize="small" />
+                  )}
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails>
+                {!pendingInvitations.length ? (
+                  <Typography color="text.secondary">
+                    {t("noPendingInvitations")}
+                  </Typography>
+                ) : (
+                  <Stack spacing={1}>
+                    {pendingInvitations.map((invitation) => (
+                      <Stack
+                        key={invitation.id}
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        alignItems={{ sm: "center" }}
+                        justifyContent="space-between"
+                      >
+                        <Typography>
+                          {t("inviteFrom")} {invitation?.inviter?.email || "-"}
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          onClick={() => acceptInvite(invitation.id)}
+                          disabled={joiningInvitationId === invitation.id}
+                        >
+                          {t("joinHousehold")}
+                        </Button>
+                      </Stack>
+                    ))}
+                  </Stack>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          </Stack>
         </CardContent>
       </Card>
 

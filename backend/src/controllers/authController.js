@@ -21,6 +21,7 @@ function serializeUser(user) {
     id: user._id,
     email: user.email,
     name: user.name,
+    role: user.role || "manager",
     householdId: user.householdId,
     defaultSelectedBankConnectionIds: normalizeConnectionIds(
       user.defaultSelectedBankConnectionIds,
@@ -45,6 +46,7 @@ export async function register(req, res) {
     email,
     passwordHash,
     name,
+    role: "manager",
     householdId: household._id,
   });
 

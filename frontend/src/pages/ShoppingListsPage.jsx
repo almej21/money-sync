@@ -12,8 +12,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { api } from "../api";
 import { useLanguage } from "../context/LanguageContext";
+import {
+  createShoppingList,
+  getShoppingLists,
+  toggleShoppingListItem,
+} from "../services/shoppingListService";
 
 export default function ShoppingListsPage() {
   const { t, direction } = useLanguage();
@@ -21,7 +25,7 @@ export default function ShoppingListsPage() {
   const [title, setTitle] = useState("");
 
   async function load() {
-    const data = await api("/shopping-lists");
+    const data = await getShoppingLists();
     setLists(data);
   }
 
@@ -31,24 +35,19 @@ export default function ShoppingListsPage() {
 
   async function createList(e) {
     e.preventDefault();
-    await api("/shopping-lists", {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        items: [
-          { text: t("sampleMilk"), quantity: 1 },
-          { text: t("sampleBread"), quantity: 1 },
-        ],
-      }),
+    await createShoppingList({
+      title,
+      items: [
+        { text: t("sampleMilk"), quantity: 1 },
+        { text: t("sampleBread"), quantity: 1 },
+      ],
     });
     setTitle("");
     load();
   }
 
   async function toggleItem(listId, itemId) {
-    await api(`/shopping-lists/${listId}/items/${itemId}/toggle`, {
-      method: "PATCH",
-    });
+    await toggleShoppingListItem(listId, itemId);
     load();
   }
 
