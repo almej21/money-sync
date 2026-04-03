@@ -1,6 +1,11 @@
 import Expense from "../models/Expense.js";
+import Household from "../models/Household.js";
 import { normalizeScrapedTransactions } from "./bankImporter.js";
 import { decryptValue } from "./credentialCrypto.js";
+import {
+  ensureHouseholdBankConnections,
+  toStoredEncryptedFields,
+} from "./householdBankConnections.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
   "email",
@@ -63,25 +68,6 @@ function sanitizeCredentials(creds = {}) {
   return output;
 }
 
-function toStoredEncryptedFields(bankCredentials = {}) {
-  const encryptedFields = bankCredentials?.encryptedFields;
-  if (encryptedFields && typeof encryptedFields.entries === "function") {
-    return Object.fromEntries(encryptedFields.entries());
-  }
-  if (encryptedFields && typeof encryptedFields === "object") {
-    return { ...encryptedFields };
-  }
-
-  const legacy = {
-    username: bankCredentials?.usernameEnc || "",
-    nationalID: bankCredentials?.nationalIdEnc || "",
-    password: bankCredentials?.passwordEnc || "",
-  };
-  return Object.fromEntries(
-    Object.entries(legacy).filter(([, value]) => Boolean(value)),
-  );
-}
-
 function getDecryptedConnectionCredentials(
   bankCredentials,
   connectionKey = "",
@@ -133,59 +119,36 @@ function getDecryptedConnectionCredentials(
   };
 }
 
-function getDecryptedUserConnections(user) {
+function getDecryptedHouseholdConnections(household) {
   const errors = [];
   const modernConnections =
-    Array.isArray(user?.bankConnections) && user.bankConnections.length > 0
-      ? user.bankConnections
+    Array.isArray(household?.bankConnections) && household.bankConnections.length > 0
+      ? household.bankConnections
       : [];
 
-  if (modernConnections.length > 0) {
-    const connections = [];
-    for (const connection of modernConnections) {
-      const connectionKey = String(connection?._id || "").trim();
-      const companyId = String(connection?.companyId || "").trim();
-      try {
-        const decrypted = getDecryptedConnectionCredentials(
-          connection,
-          connectionKey,
-        );
-        if (decrypted) {
-          connections.push(sanitizeCredentials(decrypted));
-        }
-      } catch (error) {
-        errors.push({
-          connectionKey: connectionKey || companyId || "unknown",
-          companyId,
-          total: 0,
-          status: "error",
-          error: error?.message || "Failed to decrypt connection credentials",
-        });
+  const connections = [];
+  for (const connection of modernConnections) {
+    const connectionKey = String(connection?._id || "").trim();
+    const companyId = String(connection?.companyId || "").trim();
+    try {
+      const decrypted = getDecryptedConnectionCredentials(
+        connection,
+        connectionKey,
+      );
+      if (decrypted) {
+        connections.push(sanitizeCredentials(decrypted));
       }
+    } catch (error) {
+      errors.push({
+        connectionKey: connectionKey || companyId || "unknown",
+        companyId,
+        total: 0,
+        status: "error",
+        error: error?.message || "Failed to decrypt connection credentials",
+      });
     }
-    return { connections, errors };
   }
-
-  try {
-    const legacyCredentials = getDecryptedConnectionCredentials(
-      user?.bankCredentials,
-      "legacy",
-      user?.expenseSyncMeta?.lastBankFetchAt || null,
-    );
-    if (!legacyCredentials) {
-      return { connections: [], errors };
-    }
-    return { connections: [sanitizeCredentials(legacyCredentials)], errors };
-  } catch (error) {
-    errors.push({
-      connectionKey: "legacy",
-      companyId: String(user?.bankCredentials?.companyId || "").trim(),
-      total: 0,
-      status: "error",
-      error: error?.message || "Failed to decrypt connection credentials",
-    });
-    return { connections: [], errors };
-  }
+  return { connections, errors };
 }
 
 function oneMonthWindow() {
@@ -453,8 +416,26 @@ export async function syncLastMonthExpensesForUser(user) {
     return { imported: 0, reason: "disabled" };
   }
 
-  const { connections: userConnections, errors: connectionErrors } =
-    getDecryptedUserConnections(user);
+  const householdId = String(user?.householdId || "").trim();
+  if (!householdId) {
+    throw new Error("Missing household for this user");
+  }
+
+  const household = await Household.findById(householdId);
+  if (!household) {
+    throw new Error("Household not found for this user");
+  }
+
+  const { migrated } = await ensureHouseholdBankConnections(household, {
+    preferredUserId: user?._id,
+    loadUsers: true,
+  });
+  if (migrated) {
+    await household.save();
+  }
+
+  const { connections: householdConnections, errors: connectionErrors } =
+    getDecryptedHouseholdConnections(household);
   const fallbackConnection = sanitizeCredentials({
     connectionKey: "env-default",
     companyId: envCfg.companyId,
@@ -463,7 +444,7 @@ export async function syncLastMonthExpensesForUser(user) {
     password: envCfg.password,
   });
   const activeConnections =
-    userConnections.length > 0 ? userConnections : [fallbackConnection];
+    householdConnections.length > 0 ? householdConnections : [fallbackConnection];
 
   if (!activeConnections.some((connection) => connection.companyId)) {
     throw new Error("Missing bank credentials for this user");
@@ -607,7 +588,7 @@ export async function syncLastMonthExpensesForUser(user) {
           sourceConnectionKey: connectionId,
           sourceAccountId: transactionMeta.accountId || "",
           sourceAccountName: transactionMeta.accountName || "",
-          householdId: user.householdId,
+          householdId: household._id,
           createdBy: user._id,
           editedBy: user._id,
         });

@@ -1,6 +1,10 @@
 import { SCRAPERS } from "israeli-bank-scrapers";
-import User from "../models/User.js";
+import Household from "../models/Household.js";
 import { encryptValue } from "../services/credentialCrypto.js";
+import {
+  ensureHouseholdBankConnections,
+  toStoredEncryptedFields,
+} from "../services/householdBankConnections.js";
 
 const COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
@@ -70,25 +74,6 @@ function getProviders() {
   }));
 }
 
-function toStoredEncryptedFields(bankCredentials = {}) {
-  const encryptedFields = bankCredentials?.encryptedFields;
-  if (encryptedFields && typeof encryptedFields.entries === "function") {
-    return Object.fromEntries(encryptedFields.entries());
-  }
-  if (encryptedFields && typeof encryptedFields === "object") {
-    return { ...encryptedFields };
-  }
-
-  const legacy = {
-    username: bankCredentials?.usernameEnc || "",
-    nationalID: bankCredentials?.nationalIdEnc || "",
-    password: bankCredentials?.passwordEnc || "",
-  };
-  return Object.fromEntries(
-    Object.entries(legacy).filter(([, value]) => Boolean(value)),
-  );
-}
-
 function hasConnectionCredentials(bankConnection = {}) {
   const companyId = String(bankConnection?.companyId || "").trim();
   if (!companyId) return false;
@@ -109,65 +94,10 @@ function isHouseholdManager(user) {
   return (user?.role || "manager") === "manager";
 }
 
-function clearLegacyCredentials(user) {
-  user.bankCredentials = {
-    companyId: "",
-    usernameEnc: "",
-    nationalIdEnc: "",
-    passwordEnc: "",
-    encryptedFields: {},
-    updatedAt: null,
-  };
-}
-
-function syncLegacyCredentialSnapshot(user) {
-  const [firstConnection] = Array.isArray(user.bankConnections)
-    ? user.bankConnections
+function getSerializedConnections(household) {
+  const connections = Array.isArray(household?.bankConnections)
+    ? household.bankConnections
     : [];
-  if (!firstConnection) {
-    clearLegacyCredentials(user);
-    return;
-  }
-
-  user.bankCredentials = {
-    companyId: firstConnection.companyId || "",
-    usernameEnc: firstConnection.usernameEnc || "",
-    nationalIdEnc: firstConnection.nationalIdEnc || "",
-    passwordEnc: firstConnection.passwordEnc || "",
-    encryptedFields: toStoredEncryptedFields(firstConnection),
-    updatedAt: firstConnection.updatedAt || null,
-  };
-}
-
-function migrateLegacyCredentialsIfNeeded(user) {
-  const hasModernConnections =
-    Array.isArray(user.bankConnections) && user.bankConnections.length > 0;
-  if (hasModernConnections) return false;
-
-  const legacyCompanyId = String(user?.bankCredentials?.companyId || "").trim();
-  const legacyEncryptedFields = toStoredEncryptedFields(user?.bankCredentials);
-  if (!legacyCompanyId || Object.keys(legacyEncryptedFields).length === 0) {
-    return false;
-  }
-
-  user.bankConnections = [
-    {
-      companyId: legacyCompanyId,
-      connectionName: "",
-      usernameEnc: user?.bankCredentials?.usernameEnc || "",
-      nationalIdEnc: user?.bankCredentials?.nationalIdEnc || "",
-      passwordEnc: user?.bankCredentials?.passwordEnc || "",
-      encryptedFields: legacyEncryptedFields,
-      updatedAt: user?.bankCredentials?.updatedAt || null,
-      lastBankFetchAt: user?.expenseSyncMeta?.lastBankFetchAt || null,
-    },
-  ];
-  syncLegacyCredentialSnapshot(user);
-  return true;
-}
-
-function getSerializedConnections(user) {
-  const connections = Array.isArray(user?.bankConnections) ? user.bankConnections : [];
   return connections.map((connection) => ({
     id: String(connection?._id || ""),
     companyId: String(connection?.companyId || "").trim(),
@@ -246,20 +176,43 @@ function validateCredentials(companyId, credentials) {
   return { valid: true };
 }
 
+async function getHouseholdWithConnections(req, res) {
+  const householdId = String(req.user?.householdId || "").trim();
+  if (!householdId) {
+    res.status(400).json({ message: "User is not linked to a household" });
+    return null;
+  }
+
+  const household = await Household.findById(householdId);
+  if (!household) {
+    res.status(404).json({ message: "Household not found" });
+    return null;
+  }
+
+  const { migrated } = await ensureHouseholdBankConnections(household, {
+    preferredUserId: req.user?._id,
+    loadUsers: true,
+  });
+  if (migrated) {
+    await household.save();
+  }
+
+  if (!Array.isArray(household.bankConnections)) {
+    household.bankConnections = [];
+  }
+
+  return household;
+}
+
 export async function getBankProviders(req, res) {
   res.json({ providers: getProviders() });
 }
 
 export async function getBankCredentialStatus(req, res) {
-  const user = await User.findById(req.user._id);
-  if (!user) return res.status(404).json({ message: "User not found" });
+  const household = await getHouseholdWithConnections(req, res);
+  if (!household) return;
 
-  const migrated = migrateLegacyCredentialsIfNeeded(user);
-  if (migrated) {
-    await user.save();
-  }
-
-  const connections = getSerializedConnections(user);
+  const connections = getSerializedConnections(household);
   const connectedCount = connections.filter((connection) => connection.connected).length;
 
   res.json({
@@ -289,13 +242,8 @@ export async function setBankCredentials(req, res) {
     return res.status(400).json({ message: validation.message });
   }
 
-  const user = await User.findById(req.user._id);
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  migrateLegacyCredentialsIfNeeded(user);
-  if (!Array.isArray(user.bankConnections)) {
-    user.bankConnections = [];
-  }
+  const household = await getHouseholdWithConnections(req, res);
+  if (!household) return;
 
   const encryptedFields = {};
   for (const [key, value] of Object.entries(credentials)) {
@@ -317,31 +265,31 @@ export async function setBankCredentials(req, res) {
   const connectionId = String(req.body?.connectionId || "").trim();
   let updatedIndex = -1;
   if (connectionId) {
-    updatedIndex = user.bankConnections.findIndex(
+    updatedIndex = household.bankConnections.findIndex(
       (connection) => String(connection?._id || "") === connectionId,
     );
     if (updatedIndex < 0) {
       return res.status(404).json({ message: "Bank connection not found" });
     }
-    const existingConnection = user.bankConnections[updatedIndex];
+
+    const existingConnection = household.bankConnections[updatedIndex];
     const existingAsObject =
       existingConnection && typeof existingConnection.toObject === "function"
         ? existingConnection.toObject()
         : existingConnection || {};
-    user.bankConnections[updatedIndex] = {
+    household.bankConnections[updatedIndex] = {
       ...existingAsObject,
       ...nextConnection,
     };
   } else {
-    user.bankConnections.push(nextConnection);
-    updatedIndex = user.bankConnections.length - 1;
+    household.bankConnections.push(nextConnection);
+    updatedIndex = household.bankConnections.length - 1;
   }
 
-  syncLegacyCredentialSnapshot(user);
-  await user.save();
+  await household.save();
 
-  const savedConnection = user.bankConnections[updatedIndex];
-  const connectedCount = user.bankConnections.filter(hasConnectionCredentials).length;
+  const savedConnection = household.bankConnections[updatedIndex];
+  const connectedCount = household.bankConnections.filter(hasConnectionCredentials).length;
   res.json({
     success: true,
     connected: connectedCount > 0,
@@ -363,30 +311,24 @@ export async function deleteBankCredentials(req, res) {
     });
   }
 
-  const user = await User.findById(req.user._id);
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  migrateLegacyCredentialsIfNeeded(user);
-  if (!Array.isArray(user.bankConnections)) {
-    user.bankConnections = [];
-  }
+  const household = await getHouseholdWithConnections(req, res);
+  if (!household) return;
 
   const connectionId = String(req.params?.connectionId || "").trim();
   if (connectionId) {
-    const nextConnections = user.bankConnections.filter(
+    const nextConnections = household.bankConnections.filter(
       (connection) => String(connection?._id || "") !== connectionId,
     );
-    if (nextConnections.length === user.bankConnections.length) {
+    if (nextConnections.length === household.bankConnections.length) {
       return res.status(404).json({ message: "Bank connection not found" });
     }
-    user.bankConnections = nextConnections;
+    household.bankConnections = nextConnections;
   } else {
-    user.bankConnections = [];
+    household.bankConnections = [];
   }
 
-  syncLegacyCredentialSnapshot(user);
-  await user.save();
+  await household.save();
 
-  const connectedCount = user.bankConnections.filter(hasConnectionCredentials).length;
+  const connectedCount = household.bankConnections.filter(hasConnectionCredentials).length;
   res.json({ success: true, connected: connectedCount > 0, connectedCount });
 }

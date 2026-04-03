@@ -9,16 +9,16 @@
   "theme_color": "#718355",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/android/mipmap-xxxhdpi/ic_launcher.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/android/playstore-icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

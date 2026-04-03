@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "../models/User.js";
+import Household from "../models/Household.js";
 import { syncLastMonthExpensesForUser } from "./bankSyncService.js";
 
 const syncStateByUserId = new Map();
@@ -60,24 +60,19 @@ export function triggerExpenseSyncForUser(user, reason = "unknown") {
         const attemptedObjectIds = attemptedConnectionKeys.map(
           (value) => new mongoose.Types.ObjectId(String(value)),
         );
-        await User.findByIdAndUpdate(
-          userId,
-          {
-            $set: {
-              "bankConnections.$[connection].lastBankFetchAt": fetchStartedAt,
+        const householdId = String(user?.householdId || "").trim();
+        if (mongoose.isValidObjectId(householdId)) {
+          await Household.findByIdAndUpdate(
+            householdId,
+            {
+              $set: {
+                "bankConnections.$[connection].lastBankFetchAt": fetchStartedAt,
+              },
             },
-          },
-          {
-            arrayFilters: [{ "connection._id": { $in: attemptedObjectIds } }],
-          },
-        );
-
-        if (Array.isArray(user?.bankConnections)) {
-          for (const connection of user.bankConnections) {
-            const key = String(connection?._id || "");
-            if (!attemptedConnectionKeys.includes(key)) continue;
-            connection.lastBankFetchAt = fetchStartedAt;
-          }
+            {
+              arrayFilters: [{ "connection._id": { $in: attemptedObjectIds } }],
+            },
+          );
         }
       }
     })

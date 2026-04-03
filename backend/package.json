@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch src/app.js",
     "start": "node src/app.js",
-    "lint": "node -e \"console.log('add eslint later')\""
+    "lint": "node -e \"console.log('add eslint later')\"",
+    "migrate:household-bank-connections": "node scripts/migrate-household-bank-connections.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
