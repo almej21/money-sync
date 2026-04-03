@@ -1,7 +1,6 @@
 import BoltIcon from "@mui/icons-material/Bolt";
 import CancelIcon from "@mui/icons-material/Cancel";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
-import EditSquareIcon from "@mui/icons-material/EditSquare";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
@@ -20,7 +19,6 @@ import {
   ListItem,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
@@ -141,6 +139,11 @@ export default function ExpenseItem({
   const CategoryIcon = getCategoryIcon(exp.category);
   const amountValue = Number(exp.amount || 0);
   const isPositiveAmount = amountValue > 0;
+  const editedLabel = String(locale || "")
+    .toLowerCase()
+    .startsWith("he")
+    ? "נערך"
+    : "edited";
 
   async function handleSave() {
     const nextDescription = String(draftDescription || "").trim();
@@ -241,9 +244,18 @@ export default function ExpenseItem({
                 >
                   {exp.description || "-"}
                   {exp.isUserAltered && (
-                    <Tooltip title={t("changedByUser")}>
-                      <EditSquareIcon sx={{ fontSize: 16, color: "#2f3a24" }} />
-                    </Tooltip>
+                    <Typography
+                      component="span"
+                      sx={{
+                        color: "#2f3a24",
+                        fontSize: ".7rem",
+                        fontWeight: 700,
+                        fontStyle: "italic",
+                        textTransform: "none",
+                      }}
+                    >
+                      {editedLabel}
+                    </Typography>
                   )}
                 </Typography>
                 <Typography
@@ -272,10 +284,10 @@ export default function ExpenseItem({
           </Box>
           <Stack
             sx={{
-              alignItems: "flex-end",
+              alignItems: "center",
               width: "fit-content",
               gap: 0.75,
-              flexDirection: "row",
+              flexDirection: "column",
             }}
           >
             <Box
@@ -288,39 +300,43 @@ export default function ExpenseItem({
                 unicodeBidi: "isolate",
               }}
             >
-              <Typography component="span" sx={{ fontWeight: 400, fontSize: ".9rem" }}>
+              <Typography
+                component="span"
+                sx={{ fontWeight: 400, fontSize: ".9rem" }}
+              >
                 {exp.currency}
               </Typography>
-              <Typography component="span" sx={{ fontWeight: 800, fontSize: "1rem" }}>
+              <Typography
+                component="span"
+                sx={{ fontWeight: 800, fontSize: "1rem" }}
+              >
                 {exp.amount}
               </Typography>
             </Box>
-            <Stack direction="row" sx={{ alignItems: "center" }}>
-              {isEditing && (
-                <>
-                  <IconButton
-                    size="small"
-                    aria-label={t("saveChanges")}
-                    onClick={handleSave}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      <SaveIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    aria-label={t("cancel")}
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                  >
-                    <CancelIcon fontSize="small" />
-                  </IconButton>
-                </>
-              )}
-            </Stack>
+            {isEditing && (
+              <Stack direction="row" sx={{ alignItems: "center" }}>
+                <IconButton
+                  size="small"
+                  aria-label={t("saveChanges")}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <SaveIcon fontSize="small" />
+                  )}
+                </IconButton>
+                <IconButton
+                  size="small"
+                  aria-label={t("cancel")}
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  <CancelIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            )}
           </Stack>
         </Box>
       </ListItem>
