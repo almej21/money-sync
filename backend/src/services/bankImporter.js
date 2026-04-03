@@ -1,3 +1,5 @@
+import { createExpenseDedupKey } from "./expenseDedup.js";
+
 function toNumber(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -37,5 +39,15 @@ export function normalizeScrapedTransactions(scraped = []) {
         ? t.category.trim()
         : "Imported",
     tags: [],
+    dedupKey: createExpenseDedupKey({
+      date: t.date,
+      amount: resolveTransactionAmount(t),
+      currency: "₪",
+      description: t.description || t.memo || "Bank transaction",
+      merchant: t.description || "",
+      sourceCompanyId: t.companyId || "",
+      sourceAccountId: t.accountNumber || t.accountId || "",
+      sourceAccountName: t.accountName || "",
+    }),
   }));
 }

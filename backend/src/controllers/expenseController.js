@@ -1,6 +1,10 @@
 import Expense from "../models/Expense.js";
 import { normalizeScrapedTransactions } from "../services/bankImporter.js";
 import {
+  buildExpenseUpsertFilter,
+  createExpenseDedupKey,
+} from "../services/expenseDedup.js";
+import {
   getExpenseSyncState,
   triggerExpenseSyncForUser,
 } from "../services/expenseSyncCoordinator.js";
@@ -127,6 +131,7 @@ export async function importExpenses(req, res) {
 
   const normalized = normalizeScrapedTransactions(rawTransactions).map((t) => ({
     ...t,
+    dedupKey: createExpenseDedupKey(t),
     householdId: req.user.householdId,
     createdBy: req.user._id,
     editedBy: req.user._id,
@@ -136,6 +141,17 @@ export async function importExpenses(req, res) {
     return res.json({ imported: 0, items: [] });
   }
 
-  const inserted = await Expense.insertMany(normalized, { ordered: false });
-  res.status(201).json({ imported: inserted.length, items: inserted });
+  const ops = normalized.map((doc) => ({
+    updateOne: {
+      filter: buildExpenseUpsertFilter(doc),
+      update: { $set: doc },
+      upsert: true,
+    },
+  }));
+
+  const result = await Expense.bulkWrite(ops, { ordered: false });
+  const imported = Number(result.upsertedCount || 0);
+  const updated = Number(result.modifiedCount || 0);
+
+  res.status(201).json({ imported, updated, total: normalized.length });
 }

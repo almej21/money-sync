@@ -13,6 +13,7 @@ const expenseSchema = new mongoose.Schema(
     sourceConnectionKey: { type: String, default: "" },
     sourceAccountId: { type: String, default: "" },
     sourceAccountName: { type: String, default: "" },
+    dedupKey: { type: String, default: "" },
     date: { type: Date, required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: "₪" },
@@ -34,6 +35,15 @@ expenseSchema.index({ householdId: 1, externalId: 1 }, { unique: false });
 expenseSchema.index(
   { householdId: 1, source: 1, externalId: 1, sourceConnectionKey: 1 },
   { unique: false },
+);
+expenseSchema.index(
+  { householdId: 1, source: 1, sourceConnectionKey: 1, dedupKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      dedupKey: { $exists: true, $ne: "" },
+    },
+  },
 );
 
 export default mongoose.model("Expense", expenseSchema);

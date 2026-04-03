@@ -3,6 +3,10 @@ import Household from "../models/Household.js";
 import { normalizeScrapedTransactions } from "./bankImporter.js";
 import { decryptValue } from "./credentialCrypto.js";
 import {
+  buildExpenseUpsertFilter,
+  createExpenseDedupKey,
+} from "./expenseDedup.js";
+import {
   ensureHouseholdBankConnections,
   toStoredEncryptedFields,
 } from "./householdBankConnections.js";
@@ -392,24 +396,6 @@ async function scrapeWithAutomationFallback({
   throw terminalError;
 }
 
-function buildUpsertFilter(doc) {
-  const baseFilter = {
-    householdId: doc.householdId,
-    source: doc.source,
-    externalId: doc.externalId,
-  };
-
-  if (!doc.sourceConnectionKey) return baseFilter;
-
-  return {
-    ...baseFilter,
-    $or: [
-      { sourceConnectionKey: doc.sourceConnectionKey },
-      { sourceConnectionKey: { $exists: false } },
-    ],
-  };
-}
-
 export async function syncLastMonthExpensesForUser(user) {
   const envCfg = getConfig();
   if (!envCfg.enabled) {
@@ -588,6 +574,13 @@ export async function syncLastMonthExpensesForUser(user) {
           sourceConnectionKey: connectionId,
           sourceAccountId: transactionMeta.accountId || "",
           sourceAccountName: transactionMeta.accountName || "",
+          dedupKey: createExpenseDedupKey({
+            ...normalizedItem,
+            amount: normalizedAmount,
+            sourceCompanyId: activeCreds.companyId,
+            sourceAccountId: transactionMeta.accountId || "",
+            sourceAccountName: transactionMeta.accountName || "",
+          }),
           householdId: household._id,
           createdBy: user._id,
           editedBy: user._id,
@@ -663,7 +656,7 @@ export async function syncLastMonthExpensesForUser(user) {
 
   const bulkOps = docs.map((doc) => ({
     updateOne: {
-      filter: buildUpsertFilter(doc),
+      filter: buildExpenseUpsertFilter(doc),
       update: { $set: doc },
       upsert: true,
     },
