@@ -11,6 +11,9 @@ export default function PingPongTypography({
   const contentRef = useRef(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [overflowDistance, setOverflowDistance] = useState(0);
+  const isRtl = String(typographyProps?.dir || "")
+    .toLowerCase()
+    .startsWith("rtl");
 
   useEffect(() => {
     if (!enablePingPongEffect) {
@@ -53,6 +56,7 @@ export default function PingPongTypography({
   }, [isOverflowing, overflowDistance]);
 
   const shouldAnimate = enablePingPongEffect && isOverflowing;
+  const distanceSign = isRtl ? 1 : -1;
 
   if (!enablePingPongEffect) {
     return (
@@ -69,10 +73,11 @@ export default function PingPongTypography({
         {
           overflow: "hidden",
           whiteSpace: "nowrap",
+          textOverflow: "clip",
           "@keyframes pingPongMarquee": {
             "0%": { transform: "translateX(0)" },
             "100%": {
-              transform: `translateX(calc(-1 * var(--ping-pong-distance, 0px)))`,
+              transform: `translateX(calc(var(--ping-pong-distance, 0px) * ${distanceSign}))`,
             },
           },
         },
@@ -83,14 +88,16 @@ export default function PingPongTypography({
       <span
         ref={contentRef}
         style={{
-          display: "inline-block",
+          display: "inline-flex",
+          maxWidth: "max-content",
           willChange: shouldAnimate ? "transform" : "auto",
           animationName: shouldAnimate ? "pingPongMarquee" : "none",
           animationDuration,
-          animationTimingFunction: "ease-in-out",
+          animationTimingFunction: "linear",
           animationIterationCount: "infinite",
           animationDirection: "alternate",
-          ["--ping-pong-distance"]: `${overflowDistance}px`,
+          animationFillMode: "both",
+          "--ping-pong-distance": `${overflowDistance}px`,
         }}
       >
         {children}

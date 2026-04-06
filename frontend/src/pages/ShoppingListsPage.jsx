@@ -1,5 +1,7 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import {
   Box,
   Button,
@@ -11,12 +13,16 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  IconButton,
+  InputAdornment,
   List,
   ListItem,
   ListItemText,
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
@@ -41,6 +47,8 @@ function getDefaultListTitle() {
 
 export default function ShoppingListsPage() {
   const { t, direction } = useLanguage();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [lists, setLists] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState(getDefaultListTitle);
@@ -98,6 +106,16 @@ export default function ShoppingListsPage() {
       next[index] = { ...next[index], quantity: safe };
       return next;
     });
+  }
+
+  function incrementItemQuantity(index) {
+    const current = Number(newListItems[index]?.quantity || 0);
+    onItemQuantityChange(index, Math.min(100, current + 1));
+  }
+
+  function decrementItemQuantity(index) {
+    const current = Number(newListItems[index]?.quantity || 0);
+    onItemQuantityChange(index, Math.max(0, current - 1));
   }
 
   function addItemRow() {
@@ -398,7 +416,7 @@ export default function ShoppingListsPage() {
         headerText={t("createShoppingList")}
       >
         <Box component="form" onSubmit={createList}>
-          <Stack spacing={1.5} sx={{ minHeight: { xs: 360, sm: 420 } }}>
+          <Stack spacing={1.5}>
             <TextField
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
@@ -417,6 +435,7 @@ export default function ShoppingListsPage() {
                     value={itemValue.description}
                     onChange={(e) => onItemChange(index, e.target.value)}
                     label={t("itemName")}
+                    InputLabelProps={{ shrink: true }}
                     placeholder={t("sampleMilk")}
                     fullWidth
                   />
@@ -425,13 +444,46 @@ export default function ShoppingListsPage() {
                     value={itemValue.quantity}
                     onChange={(e) => onItemQuantityChange(index, e.target.value)}
                     label={t("itemQuantity")}
-                    inputProps={{ min: 0, max: 100 }}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{
+                      min: 0,
+                      max: 100,
+                      inputMode: isMobile ? "none" : "numeric",
+                      readOnly: isMobile,
+                    }}
+                    InputProps={
+                      isMobile
+                        ? {
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Stack spacing={0} sx={{ mr: -1 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => incrementItemQuantity(index)}
+                                    aria-label="Increase quantity"
+                                    tabIndex={-1}
+                                  >
+                                    <KeyboardArrowUpIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => decrementItemQuantity(index)}
+                                    aria-label="Decrease quantity"
+                                    tabIndex={-1}
+                                  >
+                                    <KeyboardArrowDownIcon fontSize="small" />
+                                  </IconButton>
+                                </Stack>
+                              </InputAdornment>
+                            ),
+                          }
+                        : undefined
+                    }
                     sx={{ width: 100 }}
                   />
                 </Stack>
               );
             })}
-            <Box sx={{ flexGrow: 1 }} />
             <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
               <Button
                 type="button"
@@ -440,7 +492,16 @@ export default function ShoppingListsPage() {
                 {t("newItemButton")}
               </Button>
             </Box>
-            <Stack direction="row" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                mt: 1,
+                pt: 1,
+                borderTop: "1px solid",
+                borderColor: "divider",
+              }}
+            >
               <Button type="button" variant="outlined" onClick={closeCreateModal} fullWidth>
                 {t("cancel")}
               </Button>
@@ -458,7 +519,7 @@ export default function ShoppingListsPage() {
         headerText={t("editListTitle")}
       >
         <Box component="form" onSubmit={saveEditedList}>
-          <Stack spacing={1.5} sx={{ minHeight: { xs: 360, sm: 420 } }}>
+          <Stack spacing={1.5}>
             <TextField
               value={editingListTitle}
               onChange={(e) => setEditingListTitle(e.target.value)}
@@ -477,6 +538,7 @@ export default function ShoppingListsPage() {
                     value={item.description}
                     onChange={(e) => onEditItemChange(index, e.target.value)}
                     label={t("itemName")}
+                    InputLabelProps={{ shrink: true }}
                     placeholder={t("sampleMilk")}
                     fullWidth
                   />
@@ -487,13 +549,13 @@ export default function ShoppingListsPage() {
                       onEditItemQuantityChange(index, e.target.value)
                     }
                     label={t("itemQuantity")}
+                    InputLabelProps={{ shrink: true }}
                     inputProps={{ min: 0, max: 100 }}
                     sx={{ width: 100 }}
                   />
                 </Stack>
               );
             })}
-            <Box sx={{ flexGrow: 1 }} />
             <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
               <Button
                 type="button"

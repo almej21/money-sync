@@ -99,10 +99,7 @@ function AppContent() {
               colorInherit: {
                 backgroundColor: themeColors.primary.main,
                 color: themeColors.primary.contrastText,
-                borderBottom: `1px solid ${alpha(
-                  themeColors.primary.contrastText,
-                  0.22,
-                )}`,
+                borderBottom: "none",
               },
             },
           },

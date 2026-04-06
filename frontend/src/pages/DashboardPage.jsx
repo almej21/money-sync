@@ -12,7 +12,9 @@ import {
   Slider,
   Stack,
   TextField,
+  ThemeProvider,
   Typography,
+  createTheme,
   useTheme,
 } from "@mui/material";
 import NumberFlow from "@number-flow/react";
@@ -78,6 +80,14 @@ function formatDisplayedRange(start, end) {
 
 export default function DashboardPage() {
   const theme = useTheme();
+  const ltrSliderTheme = useMemo(
+    () =>
+      createTheme({
+        ...theme,
+        direction: "ltr",
+      }),
+    [theme],
+  );
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -626,44 +636,53 @@ export default function DashboardPage() {
               ))}
             </Dropdown>
 
-            {shouldShowAccountFilter ? (
-              <Dropdown
-                labelId="account-filter-label-mobile"
-                label={t("accountFilter")}
-                multiple
-                value={selectedConnectionIds}
-                onChange={(event) => onAccountFilterChange(event.target.value)}
-                renderValue={(selected) => {
-                  const values = Array.isArray(selected) ? selected : [];
-                  if (
-                    !values.length ||
-                    values.length === accountFilterOptions.length
-                  ) {
-                    return t("allAccounts");
-                  }
+            <Dropdown
+              labelId="account-filter-label-mobile"
+              label={t("accountFilter")}
+              multiple
+              disabled={!shouldShowAccountFilter}
+              value={
+                shouldShowAccountFilter ? selectedConnectionIds : []
+              }
+              onChange={(event) => onAccountFilterChange(event.target.value)}
+              renderValue={(selected) => {
+                if (!shouldShowAccountFilter) {
+                  return t("allAccounts");
+                }
 
-                  return values
-                    .map(
-                      (id) =>
-                        accountFilterOptions.find((option) => option.id === id)
-                          ?.label || id,
-                    )
-                    .join(", ");
-                }}
-                sx={{ minWidth: 0 }}
-              >
-                {accountFilterOptions.map((option) => (
+                const values = Array.isArray(selected) ? selected : [];
+                if (
+                  !values.length ||
+                  values.length === accountFilterOptions.length
+                ) {
+                  return t("allAccounts");
+                }
+
+                return values
+                  .map(
+                    (id) =>
+                      accountFilterOptions.find((option) => option.id === id)
+                        ?.label || id,
+                  )
+                  .join(", ");
+              }}
+              sx={{ minWidth: 0 }}
+            >
+              {!shouldShowAccountFilter ? (
+                <MenuItem disabled value="">
+                  <ListItemText primary={t("allAccounts")} />
+                </MenuItem>
+              ) : (
+                accountFilterOptions.map((option) => (
                   <MenuItem key={option.id} value={option.id}>
                     <Checkbox
                       checked={selectedConnectionIds.includes(option.id)}
                     />
                     <ListItemText primary={option.label} />
                   </MenuItem>
-                ))}
-              </Dropdown>
-            ) : (
-              <Box />
-            )}
+                ))
+              )}
+            </Dropdown>
 
             <Dropdown
               labelId="time-range-label-mobile"
@@ -762,42 +781,53 @@ export default function DashboardPage() {
               <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
             </Dropdown>
 
-            {shouldShowAccountFilter && (
-              <Dropdown
-                labelId="account-filter-label"
-                label={t("accountFilter")}
-                multiple
-                value={selectedConnectionIds}
-                onChange={(event) => onAccountFilterChange(event.target.value)}
-                renderValue={(selected) => {
-                  const values = Array.isArray(selected) ? selected : [];
-                  if (
-                    !values.length ||
-                    values.length === accountFilterOptions.length
-                  ) {
-                    return t("allAccounts");
-                  }
+            <Dropdown
+              labelId="account-filter-label"
+              label={t("accountFilter")}
+              multiple
+              disabled={!shouldShowAccountFilter}
+              value={
+                shouldShowAccountFilter ? selectedConnectionIds : []
+              }
+              onChange={(event) => onAccountFilterChange(event.target.value)}
+              renderValue={(selected) => {
+                if (!shouldShowAccountFilter) {
+                  return t("allAccounts");
+                }
 
-                  return values
-                    .map(
-                      (id) =>
-                        accountFilterOptions.find((option) => option.id === id)
-                          ?.label || id,
-                    )
-                    .join(", ");
-                }}
-                sx={{ flex: 1, minWidth: 0 }}
-              >
-                {accountFilterOptions.map((option) => (
+                const values = Array.isArray(selected) ? selected : [];
+                if (
+                  !values.length ||
+                  values.length === accountFilterOptions.length
+                ) {
+                  return t("allAccounts");
+                }
+
+                return values
+                  .map(
+                    (id) =>
+                      accountFilterOptions.find((option) => option.id === id)
+                        ?.label || id,
+                  )
+                  .join(", ");
+              }}
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              {!shouldShowAccountFilter ? (
+                <MenuItem disabled value="">
+                  <ListItemText primary={t("allAccounts")} />
+                </MenuItem>
+              ) : (
+                accountFilterOptions.map((option) => (
                   <MenuItem key={option.id} value={option.id}>
                     <Checkbox
                       checked={selectedConnectionIds.includes(option.id)}
                     />
                     <ListItemText primary={option.label} />
                   </MenuItem>
-                ))}
-              </Dropdown>
-            )}
+                ))
+              )}
+            </Dropdown>
           </Stack>
           <Box
             sx={{
@@ -812,24 +842,33 @@ export default function DashboardPage() {
               color="text.primary"
               sx={{ mb: 1, textAlign: "center" }}
             >
-              {t("amountRange")}: {Math.round(selectedAmountRange[0])}₪ -{" "}
-              {Math.round(selectedAmountRange[1])}₪
+              {t("amountRange")}:{" "}
+              <Box
+                component="span"
+                sx={{ direction: "ltr", unicodeBidi: "isolate" }}
+              >
+                {Math.round(selectedAmountRange[0])}₪ -{" "}
+                {Math.round(selectedAmountRange[1])}₪
+              </Box>
             </Typography>
-            <Slider
-              value={selectedAmountRange}
-              min={0}
-              max={maxExpenseAmount}
-              step={1}
-              disableSwap
-              onChange={(_, newValue) => {
-                const nextRange = Array.isArray(newValue)
-                  ? newValue
-                  : [0, maxExpenseAmount];
-                setSelectedAmountRange(nextRange);
-              }}
-              valueLabelDisplay="auto"
-              valueLabelFormat={(value) => `${Math.round(Number(value))}₪`}
-            />
+            <ThemeProvider theme={ltrSliderTheme}>
+              <Slider
+                value={selectedAmountRange}
+                min={0}
+                max={maxExpenseAmount}
+                step={1}
+                disableSwap
+                onChange={(_, newValue) => {
+                  const nextRange = Array.isArray(newValue)
+                    ? newValue
+                    : [0, maxExpenseAmount];
+                  setSelectedAmountRange(nextRange);
+                }}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `${Math.round(Number(value))}₪`}
+                sx={{ direction: "ltr" }}
+              />
+            </ThemeProvider>
           </Box>
           {timeRange === "custom_range" && (
             <Stack
@@ -947,7 +986,7 @@ export default function DashboardPage() {
         }
         severity="info"
         variant="filled"
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
     </>
   );

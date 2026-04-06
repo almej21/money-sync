@@ -144,7 +144,9 @@ export default function ExpenseItem({
   const amountValue = Number(exp.amount || 0);
   const normalizedAmount = Math.abs(amountValue);
   const isReturn =
-    String(exp.transactionType || "").trim().toLowerCase() === "return";
+    String(exp.transactionType || "")
+      .trim()
+      .toLowerCase() === "return";
   const categoryText = String(exp.category || "").trim() || "-";
   const sourceAccountIdText = String(exp.sourceAccountId || "").trim();
   const shouldShowSourceAccountId =
@@ -283,12 +285,12 @@ export default function ExpenseItem({
                     </Typography>
                   )}
                 </Box>
-                <Typography
+                <PingPongTypography
                   dir={direction}
                   sx={{
                     color: "text.primary",
                     fontWeight: 600,
-                    fontSize: ".8rem",
+                    fontSize: ".75rem",
                     textAlign: direction === "rtl" ? "right" : "left",
                   }}
                 >
@@ -318,7 +320,7 @@ export default function ExpenseItem({
                       </>
                     )}
                   </Box>
-                </Typography>
+                </PingPongTypography>
               </>
             )}
             {saveError && (
