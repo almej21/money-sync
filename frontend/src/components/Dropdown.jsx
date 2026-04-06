@@ -1,5 +1,4 @@
-import { FormControl, InputLabel, Select } from "@mui/material";
-import { COLORS } from "../constants/colors";
+import { alpha, FormControl, InputLabel, Select, useTheme } from "@mui/material";
 
 function toSxArray(sx) {
   if (!sx) return [];
@@ -19,20 +18,21 @@ export default function Dropdown({
   children,
   ...selectProps
 }) {
+  const theme = useTheme();
   const baseMenuItemSx = {
     fontSize: "1rem",
     minHeight: "34px",
     py: 0.5,
-    color: COLORS.ui.menu.text,
+    color: theme.palette.primary.contrastText,
     "&:hover": {
-      bgcolor: COLORS.ui.menu.hoverBackground,
+      bgcolor: alpha(theme.palette.primary.contrastText, 0.1),
     },
     "&.Mui-selected": {
-      bgcolor: COLORS.ui.menu.selectedBackground,
-      color: COLORS.ui.menu.selectedText,
+      bgcolor: alpha(theme.palette.primary.contrastText, 0.14),
+      color: theme.palette.primary.contrastText,
     },
     "&.Mui-selected:hover": {
-      bgcolor: COLORS.ui.menu.selectedBackground,
+      bgcolor: alpha(theme.palette.primary.contrastText, 0.14),
     },
   };
 
@@ -49,8 +49,8 @@ export default function Dropdown({
       sx: [
         {
           maxHeight: "min(420px, calc(100vh - 120px))",
-          bgcolor: COLORS.ui.menu.background,
-          color: COLORS.ui.menu.text,
+          bgcolor: theme.palette.primary.dark,
+          color: theme.palette.primary.contrastText,
           "& .MuiMenuItem-root": [
             baseMenuItemSx,
             ...toSxArray(menuItemSx),
@@ -68,7 +68,10 @@ export default function Dropdown({
         id={labelId}
         shrink={labelShrink}
         sx={[
-          { fontSize: "1.1rem" },
+          {
+            fontSize: "1.1rem",
+            transform: "translate(10px, -17px) scale(0.75)",
+          },
           ...toSxArray(inputLabelSx),
         ]}
       >
@@ -81,6 +84,16 @@ export default function Dropdown({
         sx={[
           {
             minHeight: "45px",
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "divider",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "text.secondary",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "primary.main",
+              borderWidth: 2,
+            },
             "& .MuiSelect-select": {
               fontSize: ".9rem",
               minHeight: "20px",

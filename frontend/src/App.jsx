@@ -1,4 +1,5 @@
 import {
+  alpha,
   Box,
   CircularProgress,
   Container,
@@ -10,9 +11,9 @@ import {
 import { useMemo } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import NavBar from "./components/NavBar";
-import { COLORS, THEME_COLORS } from "./constants/colors";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
+import { AppThemeProvider, useAppTheme } from "./context/ThemeContext";
 import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -70,14 +71,15 @@ function ProtectedRoutes() {
 
 function AppContent() {
   const { direction } = useLanguage();
+  const { colors, themeColors } = useAppTheme();
   const theme = useMemo(
     () =>
       createTheme({
         palette: {
-          primary: THEME_COLORS.primary,
-          secondary: THEME_COLORS.secondary,
-          background: THEME_COLORS.background,
-          text: THEME_COLORS.text,
+          primary: themeColors.primary,
+          secondary: themeColors.secondary,
+          background: themeColors.background,
+          text: themeColors.text,
         },
         shape: { borderRadius: 12 },
         typography: {
@@ -88,16 +90,19 @@ function AppContent() {
           MuiCssBaseline: {
             styleOverrides: {
               body: {
-                backgroundColor: THEME_COLORS.background.default,
+                backgroundColor: themeColors.background.default,
               },
             },
           },
           MuiAppBar: {
             styleOverrides: {
               colorInherit: {
-                backgroundColor: THEME_COLORS.primary.main,
-                color: THEME_COLORS.primary.contrastText,
-                borderBottom: `1px solid ${THEME_COLORS.primary.dark}`,
+                backgroundColor: themeColors.primary.main,
+                color: themeColors.primary.contrastText,
+                borderBottom: `1px solid ${alpha(
+                  themeColors.primary.contrastText,
+                  0.22,
+                )}`,
               },
             },
           },
@@ -112,9 +117,9 @@ function AppContent() {
           MuiCard: {
             styleOverrides: {
               root: {
-                backgroundColor: THEME_COLORS.background.paper,
-                border: `1px solid ${THEME_COLORS.background.paper}`,
-                boxShadow: "0 10px 24px rgba(113, 131, 85, 0.15)",
+                backgroundColor: themeColors.background.paper,
+                border: `1px solid ${themeColors.background.paper}`,
+                boxShadow: `0 10px 24px ${themeColors.primary.main}26`,
               },
             },
           },
@@ -125,25 +130,25 @@ function AppContent() {
                 textTransform: "none",
               },
               outlined: {
-                borderColor: THEME_COLORS.primary.light,
-                color: THEME_COLORS.primary.main,
+                borderColor: themeColors.primary.light,
+                color: themeColors.primary.main,
               },
             },
           },
           MuiOutlinedInput: {
             styleOverrides: {
               root: {
-                backgroundColor: THEME_COLORS.background.default,
+                backgroundColor: themeColors.background.default,
               },
             },
           },
           MuiInputLabel: {
             styleOverrides: {
               root: {
-                color: COLORS.neutral.gray900,
+                color: colors.text,
                 fontWeight: 700,
                 "&.Mui-focused": {
-                  color: COLORS.neutral.gray900,
+                  color: colors.text,
                 },
               },
             },
@@ -151,7 +156,7 @@ function AppContent() {
         },
         direction,
       }),
-    [direction],
+    [colors.text, direction, themeColors],
   );
 
   return (
@@ -178,8 +183,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AppContent />
-    </LanguageProvider>
+    <AppThemeProvider>
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
+    </AppThemeProvider>
   );
 }

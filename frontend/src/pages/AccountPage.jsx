@@ -12,16 +12,21 @@ import {
   CircularProgress,
   Divider,
   FormControlLabel,
+  MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
-import { THEME_COLORS } from "../constants/colors";
+import { COLOR_SCHEMES } from "../constants/colors";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { getBankCredentialStatus, getBankProviders } from "../services/bankService";
+import { useAppTheme } from "../context/ThemeContext";
+import {
+  getBankCredentialStatus,
+  getBankProviders,
+} from "../services/bankService";
 import { getExpenses } from "../services/expenseService";
 import {
   acceptHouseholdInvitation,
@@ -30,13 +35,10 @@ import {
   sendHouseholdInvitation,
 } from "../services/householdService";
 
-const SECTION_STYLE = {
-  backgroundColor: THEME_COLORS.background.default,
-};
-
 export default function AccountPage() {
   const { user, updatePreferences, refreshUser } = useAuth();
   const { t } = useLanguage();
+  const { schemeKey, schemeKeys, setSchemeKey } = useAppTheme();
   const [sourceAccountOptions, setSourceAccountOptions] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
@@ -48,6 +50,7 @@ export default function AccountPage() {
   const [joiningInvitationId, setJoiningInvitationId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const shadeKeys = ["primary", "secondary", "accent", "background", "text", "white"];
 
   const userDefaultIds = useMemo(
     () =>
@@ -234,7 +237,10 @@ export default function AccountPage() {
             {t("account")}
           </Typography>
           <Stack spacing={1.5}>
-            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+            <Accordion
+              defaultExpanded={false}
+              sx={{ backgroundColor: "background.default" }}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1">{t("myUserInfo")}</Typography>
               </AccordionSummary>
@@ -248,13 +254,77 @@ export default function AccountPage() {
                   </Typography>
                   <Typography>
                     <strong>{t("role")}:</strong>{" "}
-                    {t((user?.role || "manager") === "manager" ? "managerRole" : "memberRole")}
+                    {t(
+                      (user?.role || "manager") === "manager"
+                        ? "managerRole"
+                        : "memberRole",
+                    )}
                   </Typography>
                 </Stack>
               </AccordionDetails>
             </Accordion>
 
-            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+            <Accordion
+              defaultExpanded={false}
+              sx={{ backgroundColor: "background.default" }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle1">{t("theme")}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>
+                  {t("themeSectionDescription")}
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  label={t("colorScheme")}
+                  value={schemeKey}
+                  onChange={(event) => setSchemeKey(event.target.value)}
+                >
+                  {schemeKeys.map((key) => {
+                    const scheme = COLOR_SCHEMES[key];
+                    const displayName = `${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+                    return (
+                    <MenuItem key={key} value={key}>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        width="100%"
+                        spacing={1}
+                      >
+                        <Typography variant="body2">{displayName}</Typography>
+                        <Stack direction="row" spacing={0.5}>
+                          {shadeKeys.map((shadeKey) => (
+                            <Box
+                              key={`${key}-${shadeKey}`}
+                              sx={{
+                                width: 14,
+                                height: 14,
+                                borderRadius: 0.5,
+                                bgcolor: scheme?.[shadeKey] || "transparent",
+                                border: "1px solid",
+                                borderColor:
+                                  shadeKey === "white"
+                                    ? "divider"
+                                    : "transparent",
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      </Stack>
+                    </MenuItem>
+                    );
+                  })}
+                </TextField>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              defaultExpanded={false}
+              sx={{ backgroundColor: "background.default" }}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1">
                   {t("defaultBankAccountsSectionTitle")}
@@ -304,7 +374,10 @@ export default function AccountPage() {
               </AccordionDetails>
             </Accordion>
 
-            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+            <Accordion
+              defaultExpanded={false}
+              sx={{ backgroundColor: "background.default" }}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="subtitle1">
                   {t("householdMembers")}
@@ -369,7 +442,10 @@ export default function AccountPage() {
               </AccordionDetails>
             </Accordion>
 
-            <Accordion defaultExpanded={false} sx={SECTION_STYLE}>
+            <Accordion
+              defaultExpanded={false}
+              sx={{ backgroundColor: "background.default" }}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Typography variant="subtitle1">

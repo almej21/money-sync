@@ -1,26 +1,32 @@
 import {
+  alpha,
   Box,
   Card,
   CardContent,
   Checkbox,
-  CircularProgress,
   Divider,
   List,
   ListItemText,
   MenuItem,
   Skeleton,
+  Slider,
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AppSnackbar from "../components/AppSnackbar";
 import Dropdown from "../components/Dropdown";
 import ExpenseItem from "../components/ExpenseItem";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useExpenseBackgroundRefresh } from "../hooks/useExpenseBackgroundRefresh";
-import { getBankCredentialStatus, getBankProviders } from "../services/bankService";
+import {
+  getBankCredentialStatus,
+  getBankProviders,
+} from "../services/bankService";
 import { getExpenses } from "../services/expenseService";
 
 const CATEGORY_ALL_VALUE = "__all_categories__";
@@ -71,6 +77,7 @@ function formatDisplayedRange(start, end) {
 }
 
 export default function DashboardPage() {
+  const theme = useTheme();
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +91,7 @@ export default function DashboardPage() {
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
+  const [selectedAmountRange, setSelectedAmountRange] = useState([0, 0]);
   const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
   const [isTotalCalculating, setIsTotalCalculating] = useState(true);
   const { t, locale, direction } = useLanguage();
@@ -234,7 +242,9 @@ export default function DashboardPage() {
       const accountId = String(expense.sourceAccountId || "").trim();
       if (!accountId || optionsByAccountId.has(accountId)) return;
 
-      const sourceConnectionKey = String(expense.sourceConnectionKey || "").trim();
+      const sourceConnectionKey = String(
+        expense.sourceConnectionKey || "",
+      ).trim();
       const sourceCompanyId = String(expense.sourceCompanyId || "").trim();
       const connection = connectionById.get(sourceConnectionKey);
       const companyId = String(
@@ -278,6 +288,35 @@ export default function DashboardPage() {
     shouldShowAccountFilter &&
     selectedConnectionIds.length > 0 &&
     selectedConnectionIds.length < accountFilterOptions.length;
+  const hasMultipleSelectedAccounts = selectedConnectionIds.length > 1;
+  const maxExpenseAmount = useMemo(
+    () =>
+      Math.max(
+        0,
+        ...expenses.map((exp) => {
+          const amount = Math.abs(Number(exp.amount || 0));
+          return Number.isFinite(amount) ? amount : 0;
+        }),
+      ),
+    [expenses],
+  );
+
+  useEffect(() => {
+    const safeMax = Math.max(0, Number(maxExpenseAmount || 0));
+    setSelectedAmountRange((prev) => {
+      const prevMin = Number(prev?.[0] || 0);
+      const prevMax = Number(prev?.[1] || 0);
+
+      if (prevMin === 0 && prevMax === 0) {
+        return [0, safeMax];
+      }
+
+      const nextMin = Math.min(Math.max(0, prevMin), safeMax);
+      const nextMax = Math.min(Math.max(nextMin, prevMax), safeMax);
+      if (nextMin === prevMin && nextMax === prevMax) return prev;
+      return [nextMin, nextMax];
+    });
+  }, [maxExpenseAmount]);
 
   useEffect(() => {
     const allAccountIds = accountFilterOptions.map((option) => option.id);
@@ -321,7 +360,10 @@ export default function DashboardPage() {
       categoryOptions.includes(value),
     );
 
-    if (!filteredValues.length || filteredValues.length === categoryOptions.length) {
+    if (
+      !filteredValues.length ||
+      filteredValues.length === categoryOptions.length
+    ) {
       setSelectedCategories([]);
       return;
     }
@@ -339,6 +381,11 @@ export default function DashboardPage() {
       ) {
         return false;
       }
+      const amount = Math.abs(Number(exp.amount || 0));
+      if (!Number.isFinite(amount)) return false;
+      if (amount < selectedAmountRange[0] || amount > selectedAmountRange[1]) {
+        return false;
+      }
 
       if (!shouldApplyAccountFilter) return true;
 
@@ -352,10 +399,14 @@ export default function DashboardPage() {
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       }
       if (sortBy === "amount_desc") {
-        return Number(a.amount || 0) - Number(b.amount || 0);
+        return (
+          Math.abs(Number(a.amount || 0)) - Math.abs(Number(b.amount || 0))
+        );
       }
       if (sortBy === "amount_asc") {
-        return Number(b.amount || 0) - Number(a.amount || 0);
+        return (
+          Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0))
+        );
       }
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
@@ -366,6 +417,7 @@ export default function DashboardPage() {
     accountFilterOptions,
     selectedCategories,
     selectedConnectionIds,
+    selectedAmountRange,
     sortBy,
     shouldApplyAccountFilter,
     timeRange,
@@ -373,10 +425,14 @@ export default function DashboardPage() {
 
   const displayedAmountTotal = useMemo(
     () =>
-      displayedExpenses.reduce(
-        (sum, expense) => sum + Number(expense.amount || 0),
-        0,
-      ),
+      displayedExpenses.reduce((sum, expense) => {
+        const amount = Math.abs(Number(expense.amount || 0));
+        const isReturn =
+          String(expense.transactionType || "")
+            .trim()
+            .toLowerCase() === "return";
+        return sum + (isReturn ? -amount : amount);
+      }, 0),
     [displayedExpenses],
   );
 
@@ -467,13 +523,13 @@ export default function DashboardPage() {
                 variant="rounded"
                 width={28}
                 height={28}
-                sx={{ bgcolor: "rgba(91, 108, 67, 0.2)" }}
+                sx={{ bgcolor: alpha(theme.palette.text.secondary, 0.2) }}
               />
               <Skeleton
                 variant="rounded"
                 width={140}
                 height={42}
-                sx={{ bgcolor: "rgba(91, 108, 67, 0.2)" }}
+                sx={{ bgcolor: alpha(theme.palette.text.secondary, 0.2) }}
               />
             </>
           ) : (
@@ -483,7 +539,7 @@ export default function DashboardPage() {
                 sx={{
                   display: "inline-block",
                   fontWeight: 400,
-                  color: "#5b6c43",
+                  color: "text.secondary",
                 }}
               >
                 {displayedExpenses[0]?.currency || "₪"}
@@ -503,15 +559,15 @@ export default function DashboardPage() {
                     maximumFractionDigits: 2,
                   }}
                   transformTiming={{
-                    duration: 450,
+                    duration: 600,
                     easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
                   }}
                   spinTiming={{
-                    duration: 450,
+                    duration: 600,
                     easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
                   }}
                   opacityTiming={{
-                    duration: 300,
+                    duration: 500,
                     easing: "ease-out",
                   }}
                 />
@@ -520,35 +576,23 @@ export default function DashboardPage() {
           )}
         </Box>
       </Typography>
-      <Card sx={{ border: "none !important", borderRadius: '16px' }}>
+      <Card sx={{ border: "none !important", borderRadius: "16px" }}>
         <CardContent
           sx={{
             px: { xs: 1, sm: 3 },
-            py: { xs: 1.2, sm: 3 },
+            py: { xs: 2.5, sm: 3 },
           }}
         >
-          {isSyncingExpenses && (
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              sx={{ mb: 2, color: "text.secondary" }}
-            >
-              <CircularProgress size={18} thickness={5} />
-              <Typography variant="body2">
-                {loadingBankNames
-                  ? `${t("loadingBankExpensesPrefix")} ${loadingBankNames} ${t("loadingBankExpensesSuffix")}`
-                  : t("loadingBankExpensesDefault")}
-              </Typography>
-            </Stack>
-          )}
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            useFlexGap
-            sx={{ mb: 2, gap: 2 }}
+          <Box
+            sx={{
+              display: { xs: "grid", md: "none" },
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 2,
+              mb: 2,
+            }}
           >
             <Dropdown
-              labelId="category-filter-label"
+              labelId="category-filter-label-mobile"
               label={t("categoryFilter")}
               labelShrink
               multiple
@@ -558,7 +602,7 @@ export default function DashboardPage() {
               renderValue={(selected) =>
                 allCategoriesSelected ? "All" : selected.join(", ")
               }
-              sx={{ flex: { sm: 1 }, minWidth: 0 }}
+              sx={{ minWidth: 0 }}
             >
               <MenuItem value={CATEGORY_ALL_VALUE}>
                 <Checkbox
@@ -573,7 +617,8 @@ export default function DashboardPage() {
                 <MenuItem key={category} value={category}>
                   <Checkbox
                     checked={
-                      allCategoriesSelected || selectedCategories.includes(category)
+                      allCategoriesSelected ||
+                      selectedCategories.includes(category)
                     }
                   />
                   <ListItemText primary={category} />
@@ -581,54 +626,13 @@ export default function DashboardPage() {
               ))}
             </Dropdown>
 
-            <Stack
-              direction="row"
-              useFlexGap
-              sx={{
-                flex: { md: 1.2 },
-                flexWrap: { xs: "wrap", sm: "nowrap" },
-                gap: 2,
-                minWidth: 0,
-              }}
-            >
+            {shouldShowAccountFilter ? (
               <Dropdown
-                labelId="time-range-label"
-                value={timeRange}
-                label={t("timeRange")}
-                onChange={(event) => setTimeRange(event.target.value)}
-                sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}
-              >
-                <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-                <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
-                <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
-                <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
-                <MenuItem value="custom_range">{t("customRange")}</MenuItem>
-                <MenuItem value="all_time">{t("allTime")}</MenuItem>
-              </Dropdown>
-
-              <Dropdown
-                labelId="sort-by-label"
-                value={sortBy}
-                label={t("sortBy")}
-                onChange={(event) => setSortBy(event.target.value)}
-                sx={{ flex: 1, minWidth: { sm: 170, md: 0 } }}
-              >
-                <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
-                <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
-                <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
-                <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
-              </Dropdown>
-            </Stack>
-
-            {shouldShowAccountFilter && (
-              <Dropdown
-                labelId="account-filter-label"
+                labelId="account-filter-label-mobile"
                 label={t("accountFilter")}
                 multiple
                 value={selectedConnectionIds}
-                onChange={(event) =>
-                  onAccountFilterChange(event.target.value)
-                }
+                onChange={(event) => onAccountFilterChange(event.target.value)}
                 renderValue={(selected) => {
                   const values = Array.isArray(selected) ? selected : [];
                   if (
@@ -646,17 +650,176 @@ export default function DashboardPage() {
                     )
                     .join(", ");
                 }}
-                sx={{ flex: { sm: 1 }, minWidth: 0 }}
+                sx={{ minWidth: 0 }}
               >
                 {accountFilterOptions.map((option) => (
                   <MenuItem key={option.id} value={option.id}>
-                    <Checkbox checked={selectedConnectionIds.includes(option.id)} />
+                    <Checkbox
+                      checked={selectedConnectionIds.includes(option.id)}
+                    />
+                    <ListItemText primary={option.label} />
+                  </MenuItem>
+                ))}
+              </Dropdown>
+            ) : (
+              <Box />
+            )}
+
+            <Dropdown
+              labelId="time-range-label-mobile"
+              value={timeRange}
+              label={t("timeRange")}
+              onChange={(event) => setTimeRange(event.target.value)}
+              sx={{ minWidth: 0 }}
+            >
+              <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
+              <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
+              <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
+              <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
+              <MenuItem value="custom_range">{t("customRange")}</MenuItem>
+              <MenuItem value="all_time">{t("allTime")}</MenuItem>
+            </Dropdown>
+
+            <Dropdown
+              labelId="sort-by-label-mobile"
+              value={sortBy}
+              label={t("sortBy")}
+              onChange={(event) => setSortBy(event.target.value)}
+              sx={{ minWidth: 0 }}
+            >
+              <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
+              <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
+              <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
+              <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
+            </Dropdown>
+          </Box>
+
+          <Stack
+            direction="row"
+            useFlexGap
+            sx={{ display: { xs: "none", md: "flex" }, mb: 2, gap: 3 }}
+          >
+            <Dropdown
+              labelId="category-filter-label"
+              label={t("categoryFilter")}
+              labelShrink
+              multiple
+              value={selectedCategories}
+              displayEmpty
+              onChange={(event) => onCategoryFilterChange(event.target.value)}
+              renderValue={(selected) =>
+                allCategoriesSelected ? "All" : selected.join(", ")
+              }
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              <MenuItem value={CATEGORY_ALL_VALUE}>
+                <Checkbox
+                  checked={allCategoriesSelected}
+                  indeterminate={
+                    !allCategoriesSelected && selectedCategories.length > 0
+                  }
+                />
+                <ListItemText primary="All" />
+              </MenuItem>
+              {categoryOptions.map((category) => (
+                <MenuItem key={category} value={category}>
+                  <Checkbox
+                    checked={
+                      allCategoriesSelected ||
+                      selectedCategories.includes(category)
+                    }
+                  />
+                  <ListItemText primary={category} />
+                </MenuItem>
+              ))}
+            </Dropdown>
+
+            <Dropdown
+              labelId="time-range-label"
+              value={timeRange}
+              label={t("timeRange")}
+              onChange={(event) => setTimeRange(event.target.value)}
+              sx={{ flex: 1, minWidth: 170 }}
+            >
+              <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
+              <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
+              <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
+              <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
+              <MenuItem value="custom_range">{t("customRange")}</MenuItem>
+              <MenuItem value="all_time">{t("allTime")}</MenuItem>
+            </Dropdown>
+
+            <Dropdown
+              labelId="sort-by-label"
+              value={sortBy}
+              label={t("sortBy")}
+              onChange={(event) => setSortBy(event.target.value)}
+              sx={{ flex: 1, minWidth: 170 }}
+            >
+              <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
+              <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
+              <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
+              <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
+            </Dropdown>
+
+            {shouldShowAccountFilter && (
+              <Dropdown
+                labelId="account-filter-label"
+                label={t("accountFilter")}
+                multiple
+                value={selectedConnectionIds}
+                onChange={(event) => onAccountFilterChange(event.target.value)}
+                renderValue={(selected) => {
+                  const values = Array.isArray(selected) ? selected : [];
+                  if (
+                    !values.length ||
+                    values.length === accountFilterOptions.length
+                  ) {
+                    return t("allAccounts");
+                  }
+
+                  return values
+                    .map(
+                      (id) =>
+                        accountFilterOptions.find((option) => option.id === id)
+                          ?.label || id,
+                    )
+                    .join(", ");
+                }}
+                sx={{ flex: 1, minWidth: 0 }}
+              >
+                {accountFilterOptions.map((option) => (
+                  <MenuItem key={option.id} value={option.id}>
+                    <Checkbox
+                      checked={selectedConnectionIds.includes(option.id)}
+                    />
                     <ListItemText primary={option.label} />
                   </MenuItem>
                 ))}
               </Dropdown>
             )}
           </Stack>
+          <Box sx={{ mb: 2, px: { xs: 0.5, sm: 1 } }}>
+            <Typography variant="body2" color="text.primary" sx={{ mb: 1 }}>
+              {t("amountRange")}: {selectedAmountRange[0].toFixed(2)} -{" "}
+              {selectedAmountRange[1].toFixed(2)}
+            </Typography>
+            <Slider
+              value={selectedAmountRange}
+              min={0}
+              max={maxExpenseAmount}
+              step={0.01}
+              disableSwap
+              onChange={(_, newValue) => {
+                const nextRange = Array.isArray(newValue)
+                  ? newValue
+                  : [0, maxExpenseAmount];
+                setSelectedAmountRange(nextRange);
+              }}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(value) => Number(value).toFixed(2)}
+            />
+          </Box>
           {timeRange === "custom_range" && (
             <Stack
               direction={{ xs: "column", sm: "row" }}
@@ -719,17 +882,17 @@ export default function DashboardPage() {
           {!isLoading &&
             bankConnections.length === 0 &&
             !hasHouseholdConnections && (
-            <Box sx={{ mb: 2 }}>
-              <Typography
-                variant="body2"
-                dir={direction}
-                color="warning.main"
-                sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
-              >
-                {t("dashboardNoBankConnectionMessage")}
-              </Typography>
-            </Box>
-          )}
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  dir={direction}
+                  color="warning.main"
+                  sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
+                >
+                  {t("dashboardNoBankConnectionMessage")}
+                </Typography>
+              </Box>
+            )}
           <List disablePadding>
             {isLoading
               ? Array.from({ length: 6 }).map((_, index) => (
@@ -749,6 +912,9 @@ export default function DashboardPage() {
                   <ExpenseItem
                     key={exp._id}
                     exp={exp}
+                    showSourceAccountIdAfterCategory={
+                      hasMultipleSelectedAccounts
+                    }
                     isExpanded={Boolean(expandedIds[exp._id])}
                     onToggleExpanded={toggleExpanded}
                     onExpenseUpdated={onExpenseUpdated}
@@ -761,6 +927,17 @@ export default function DashboardPage() {
           </List>
         </CardContent>
       </Card>
+      <AppSnackbar
+        open={isSyncingExpenses}
+        message={
+          loadingBankNames
+            ? `${t("loadingBankExpensesPrefix")} ${loadingBankNames} ${t("loadingBankExpensesSuffix")}`
+            : t("loadingBankExpensesDefault")
+        }
+        severity="info"
+        variant="filled"
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      />
     </>
   );
 }

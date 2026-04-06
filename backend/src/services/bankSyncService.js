@@ -567,16 +567,20 @@ export async function syncLastMonthExpensesForUser(user) {
         if (!Number.isFinite(normalizedAmount) || normalizedAmount === 0) {
           continue;
         }
+        const normalizedTransactionType =
+          normalizedItem.transactionType === "return" ? "return" : "expense";
         docs.push({
           ...normalizedItem,
-          amount: normalizedAmount,
+          amount: Math.abs(normalizedAmount),
+          transactionType: normalizedTransactionType,
           sourceCompanyId: activeCreds.companyId,
           sourceConnectionKey: connectionId,
           sourceAccountId: transactionMeta.accountId || "",
           sourceAccountName: transactionMeta.accountName || "",
           dedupKey: createExpenseDedupKey({
             ...normalizedItem,
-            amount: normalizedAmount,
+            amount: Math.abs(normalizedAmount),
+            transactionType: normalizedTransactionType,
             sourceCompanyId: activeCreds.companyId,
             sourceAccountId: transactionMeta.accountId || "",
             sourceAccountName: transactionMeta.accountName || "",

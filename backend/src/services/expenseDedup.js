@@ -40,6 +40,7 @@ export function createExpenseDedupKey(expense = {}) {
   const raw = [
     normalizeDate(expense.date),
     normalizeAmount(expense.amount),
+    normalizeText(expense.transactionType || "expense"),
     normalizeText(expense.currency),
     normalizeText(expense.description),
     normalizeText(expense.merchant),

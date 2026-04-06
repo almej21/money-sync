@@ -4,6 +4,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import WalletIcon from "@mui/icons-material/Wallet";
 import {
+  alpha,
   AppBar,
   Badge,
   Box,
@@ -113,13 +114,13 @@ export default function NavBar() {
     color: "inherit",
     minHeight: 40,
     "&:hover": {
-      bgcolor: "rgba(47, 58, 36, .2)",
+      bgcolor: alpha(theme.palette.primary.dark, 0.2),
     },
   };
 
   const NavButtonSx = {
     "&:hover": {
-      bgcolor: "rgba(47, 58, 36, .2)",
+      bgcolor: alpha(theme.palette.primary.dark, 0.2),
     },
   };
 
@@ -144,10 +145,14 @@ export default function NavBar() {
 
     return {
       ...base,
-      bgcolor: active ? "rgba(47, 58, 36, .32)" : "transparent",
-      boxShadow: active ? "inset 0 0 0 1px rgba(255, 255, 255, 0.22)" : "none",
+      bgcolor: active ? alpha(theme.palette.primary.dark, 0.32) : "transparent",
+      boxShadow: active
+        ? `inset 0 0 0 1px ${alpha(theme.palette.primary.contrastText, 0.22)}`
+        : "none",
       "&:hover": {
-        bgcolor: active ? "rgba(47, 58, 36, .32)" : "rgba(47, 58, 36, .2)",
+        bgcolor: active
+          ? alpha(theme.palette.primary.dark, 0.32)
+          : alpha(theme.palette.primary.dark, 0.2),
       },
     };
   };
@@ -182,7 +187,7 @@ export default function NavBar() {
               px: 1,
               py: 0.25,
               borderRadius: 1,
-              bgcolor: "rgba(47, 58, 36, .2)",
+              bgcolor: alpha(theme.palette.primary.dark, 0.2),
               color: "inherit",
               fontWeight: 700,
               letterSpacing: 0.4,
@@ -358,8 +363,7 @@ export default function NavBar() {
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 1,
-              bgcolor: "#718355",
-              borderBottom: "1px solid #87986a",
+              bgcolor: theme.palette.primary.main,
               transition: "top 180ms ease",
             }}
           >

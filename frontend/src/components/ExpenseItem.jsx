@@ -20,6 +20,7 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
@@ -115,6 +116,7 @@ function getCategoryIcon(category) {
 
 export default function ExpenseItem({
   exp,
+  showSourceAccountIdAfterCategory = false,
   isExpanded,
   onToggleExpanded,
   onExpenseUpdated,
@@ -123,6 +125,7 @@ export default function ExpenseItem({
   locale,
   t,
 }) {
+  const theme = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [draftDescription, setDraftDescription] = useState(
     exp.description || "",
@@ -138,7 +141,17 @@ export default function ExpenseItem({
 
   const CategoryIcon = getCategoryIcon(exp.category);
   const amountValue = Number(exp.amount || 0);
-  const isPositiveAmount = amountValue > 0;
+  const normalizedAmount = Math.abs(amountValue);
+  const isReturn =
+    String(exp.transactionType || "").trim().toLowerCase() === "return";
+  const categoryText = String(exp.category || "").trim() || "-";
+  const sourceAccountIdText = String(exp.sourceAccountId || "").trim();
+  const shouldShowSourceAccountId =
+    showSourceAccountIdAfterCategory && Boolean(sourceAccountIdText);
+  const isHebrewLocale = String(locale || "")
+    .toLowerCase()
+    .startsWith("he");
+  const metaDisplayDirection = isHebrewLocale ? "rtl" : "ltr";
   const editedLabel = String(locale || "")
     .toLowerCase()
     .startsWith("he")
@@ -184,7 +197,7 @@ export default function ExpenseItem({
             width: "100%",
             p: 0.5,
             borderRadius: 1.2,
-            bgcolor: "#f4f6f3",
+            bgcolor: theme.palette.background.default,
             display: "flex",
             alignItems: "center",
             gap: 1.5,
@@ -201,14 +214,16 @@ export default function ExpenseItem({
               width: 38,
               height: 38,
               borderRadius: 0.9,
-              bgcolor: "#cfe1b9",
+              bgcolor: theme.palette.secondary.main,
               display: "grid",
               placeItems: "center",
               flexShrink: 0,
               p: 0,
             }}
           >
-            <CategoryIcon sx={{ color: "#2f3a24", fontSize: 28 }} />
+            <CategoryIcon
+              sx={{ color: theme.palette.text.primary, fontSize: 28 }}
+            />
           </IconButton>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {isEditing ? (
@@ -247,7 +262,7 @@ export default function ExpenseItem({
                     <Typography
                       component="span"
                       sx={{
-                        color: "#2f3a24",
+                        color: theme.palette.text.primary,
                         fontSize: ".7rem",
                         fontWeight: 700,
                         fontStyle: "italic",
@@ -261,13 +276,38 @@ export default function ExpenseItem({
                 <Typography
                   dir={direction}
                   sx={{
-                    color: "text.secondary",
+                    color: "text.primary",
                     fontWeight: 600,
                     fontSize: ".8rem",
                     textAlign: direction === "rtl" ? "right" : "left",
                   }}
                 >
-                  {formatDate(exp.date)} {"\u2022"} {exp.category || "-"}
+                  {formatDate(exp.date)} {"\u2022"}{" "}
+                  <Box
+                    component="span"
+                    sx={{
+                      direction: metaDisplayDirection,
+                      unicodeBidi: "isolate",
+                    }}
+                  >
+                    <Box component="span" sx={{ unicodeBidi: "isolate" }}>
+                      {categoryText}
+                    </Box>
+                    {shouldShowSourceAccountId && (
+                      <>
+                        {" "}
+                        <Box component="span" sx={{ unicodeBidi: "isolate" }}>
+                          {"\u2022"}
+                        </Box>{" "}
+                        <Box
+                          component="span"
+                          sx={{ direction: "ltr", unicodeBidi: "isolate" }}
+                        >
+                          ({sourceAccountIdText})
+                        </Box>
+                      </>
+                    )}
+                  </Box>
                 </Typography>
               </>
             )}
@@ -293,7 +333,7 @@ export default function ExpenseItem({
             <Box
               component="span"
               sx={{
-                color: isPositiveAmount ? "#19a700c8" : "#2f3a24",
+                color: isReturn ? "#00c853" : theme.palette.text.primary,
                 display: "inline-flex",
                 alignItems: "baseline",
                 direction: "ltr",
@@ -304,13 +344,14 @@ export default function ExpenseItem({
                 component="span"
                 sx={{ fontWeight: 400, fontSize: ".9rem" }}
               >
+                {isReturn ? "+" : ""}
                 {exp.currency}
               </Typography>
               <Typography
                 component="span"
                 sx={{ fontWeight: 800, fontSize: "1rem" }}
               >
-                {exp.amount}
+                {normalizedAmount}
               </Typography>
             </Box>
             {isEditing && (

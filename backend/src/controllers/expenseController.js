@@ -32,7 +32,17 @@ export async function summary(req, res) {
     {
       $group: {
         _id: "$category",
-        total: { $sum: "$amount" },
+        total: {
+          $sum: {
+            $cond: [
+              {
+                $eq: ["$transactionType", "return"],
+              },
+              { $multiply: [{ $abs: "$amount" }, -1] },
+              "$amount",
+            ],
+          },
+        },
         count: { $sum: 1 },
       },
     },
@@ -43,12 +53,18 @@ export async function summary(req, res) {
 }
 
 export async function createExpense(req, res) {
+  const normalizedAmount = Math.abs(Number(req.body.amount || 0));
+  const transactionType =
+    String(req.body.transactionType || "").trim().toLowerCase() === "return"
+      ? "return"
+      : "expense";
   const expense = await Expense.create({
     householdId: req.user.householdId,
     source: req.body.source || "manual",
     externalId: req.body.externalId,
     date: req.body.date,
-    amount: req.body.amount,
+    amount: normalizedAmount,
+    transactionType,
     currency: req.body.currency || "₪",
     description: req.body.description,
     merchant: req.body.merchant || "",
@@ -129,13 +145,24 @@ export async function importExpenses(req, res) {
     ? req.body.transactions
     : [];
 
-  const normalized = normalizeScrapedTransactions(rawTransactions).map((t) => ({
-    ...t,
-    dedupKey: createExpenseDedupKey(t),
-    householdId: req.user.householdId,
-    createdBy: req.user._id,
-    editedBy: req.user._id,
-  }));
+  const normalized = normalizeScrapedTransactions(rawTransactions).map((t) => {
+    const normalizedAmount = Math.abs(Number(t.amount || 0));
+    const transactionType =
+      t.transactionType === "return" ? "return" : "expense";
+    return {
+      ...t,
+      amount: normalizedAmount,
+      transactionType,
+      dedupKey: createExpenseDedupKey({
+        ...t,
+        amount: normalizedAmount,
+        transactionType,
+      }),
+      householdId: req.user.householdId,
+      createdBy: req.user._id,
+      editedBy: req.user._id,
+    };
+  });
 
   if (normalized.length === 0) {
     return res.json({ imported: 0, items: [] });

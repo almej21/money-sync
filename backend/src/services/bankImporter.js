@@ -24,30 +24,42 @@ function resolveTransactionAmount(transaction = {}) {
   return 0;
 }
 
+function resolveTransactionType(rawAmount) {
+  return Number(rawAmount) > 0 ? "return" : "expense";
+}
+
 export function normalizeScrapedTransactions(scraped = []) {
-  return scraped.map((t) => ({
-    source: "israeli-bank-scrapers",
-    externalId:
-      t.identifier || t.id || `${t.date}-${t.description}-${t.chargedAmount}`,
-    date: t.date,
-    amount: resolveTransactionAmount(t),
-    currency: "₪",
-    description: t.description || t.memo || "Bank transaction",
-    merchant: t.description || "",
-    category:
-      typeof t.category === "string" && t.category.trim()
-        ? t.category.trim()
-        : "Imported",
-    tags: [],
-    dedupKey: createExpenseDedupKey({
+  return scraped.map((t) => {
+    const rawAmount = resolveTransactionAmount(t);
+    const amount = Math.abs(Number(rawAmount) || 0);
+    const transactionType = resolveTransactionType(rawAmount);
+
+    return {
+      source: "israeli-bank-scrapers",
+      externalId:
+        t.identifier || t.id || `${t.date}-${t.description}-${t.chargedAmount}`,
       date: t.date,
-      amount: resolveTransactionAmount(t),
+      amount,
+      transactionType,
       currency: "₪",
       description: t.description || t.memo || "Bank transaction",
       merchant: t.description || "",
-      sourceCompanyId: t.companyId || "",
-      sourceAccountId: t.accountNumber || t.accountId || "",
-      sourceAccountName: t.accountName || "",
-    }),
-  }));
+      category:
+        typeof t.category === "string" && t.category.trim()
+          ? t.category.trim()
+          : "Imported",
+      tags: [],
+      dedupKey: createExpenseDedupKey({
+        date: t.date,
+        amount,
+        transactionType,
+        currency: "₪",
+        description: t.description || t.memo || "Bank transaction",
+        merchant: t.description || "",
+        sourceCompanyId: t.companyId || "",
+        sourceAccountId: t.accountNumber || t.accountId || "",
+        sourceAccountName: t.accountName || "",
+      }),
+    };
+  });
 }

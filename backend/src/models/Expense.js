@@ -16,6 +16,11 @@ const expenseSchema = new mongoose.Schema(
     dedupKey: { type: String, default: "" },
     date: { type: Date, required: true },
     amount: { type: Number, required: true },
+    transactionType: {
+      type: String,
+      enum: ["expense", "return"],
+      default: "expense",
+    },
     currency: { type: String, default: "₪" },
     description: { type: String, required: true },
     merchant: { type: String },

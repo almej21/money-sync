@@ -13,11 +13,11 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
 import Dropdown from "../components/Dropdown";
-import { COLORS } from "../constants/colors";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import {
@@ -33,6 +33,7 @@ function buildEmptyCredentials(fields = []) {
 }
 
 export default function BankCredentialsPage() {
+  const theme = useTheme();
   const { user } = useAuth();
   const { t, locale } = useLanguage();
   const [providers, setProviders] = useState([]);
@@ -271,7 +272,7 @@ export default function BankCredentialsPage() {
               <Card key={connection.id} variant="outlined">
                 <CardContent
                   sx={{
-                    backgroundColor: COLORS.theme.primary.main,
+                    backgroundColor: theme.palette.primary.main,
                     display: "flex",
                     alignItems: "center",
                     py: 2,
@@ -291,7 +292,7 @@ export default function BankCredentialsPage() {
                       <Typography
                         sx={{
                           fontWeight: 600,
-                          color: COLORS.theme.primary.contrastText,
+                          color: theme.palette.primary.contrastText,
                         }}
                       >
                         {providerLabelById[connection.companyId] ||
@@ -300,8 +301,8 @@ export default function BankCredentialsPage() {
                     </Stack>
                     <Button
                       sx={{
-                        color: COLORS.theme.primary.contrastText,
-                        border: `1px solid ${COLORS.theme.primary.contrastText}`,
+                        color: theme.palette.primary.contrastText,
+                        border: `1px solid ${theme.palette.primary.contrastText}`,
                       }}
                       type="button"
                       variant="inherit"
