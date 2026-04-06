@@ -16,3 +16,16 @@ export async function toggleShoppingListItem(listId, itemId) {
     method: "PATCH",
   });
 }
+
+export async function deleteShoppingList(listId) {
+  return api(`/shopping-lists/${listId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function updateShoppingList(listId, payload) {
+  return api(`/shopping-lists/${listId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}

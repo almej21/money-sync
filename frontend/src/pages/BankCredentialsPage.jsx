@@ -246,14 +246,14 @@ export default function BankCredentialsPage() {
           <Typography variant="h5" gutterBottom>
             {t("bankCredentials")}
           </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
+          <Typography color="text.primary" sx={{ mb: 2 }}>
             {t("configureBankCredentials")}
           </Typography>
 
           <Stack spacing={1} sx={{ mb: 2 }}>
             <Typography>{`${t("status")}: ${statusText}`}</Typography>
             {!loading && updatedAt && (
-              <Typography color="text.secondary">
+              <Typography color="text.primary">
                 {t("lastUpdated")}: {new Date(updatedAt).toLocaleString(locale)}
               </Typography>
             )}
@@ -264,7 +264,7 @@ export default function BankCredentialsPage() {
               {t("configuredAccounts")}
             </Typography>
             {!connections.length && (
-              <Typography color="text.secondary">
+              <Typography color="text.primary">
                 {t("noBankConnections")}
               </Typography>
             )}
@@ -442,7 +442,7 @@ export default function BankCredentialsPage() {
       >
         <DialogTitle>Are you sure?</DialogTitle>
         <DialogContent>
-          <Typography color="text.secondary">
+          <Typography color="text.primary">
             This will remove the selected bank connection.
           </Typography>
         </DialogContent>
@@ -466,7 +466,7 @@ export default function BankCredentialsPage() {
       >
         <DialogTitle>Are you sure?</DialogTitle>
         <DialogContent>
-          <Typography color="text.secondary">
+          <Typography color="text.primary">
             This will remove all configured bank connections.
           </Typography>
         </DialogContent>

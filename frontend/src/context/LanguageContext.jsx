@@ -144,6 +144,12 @@ const MESSAGES = {
     householdJoined: "You joined the household.",
     failedJoinHousehold: "Failed to join household",
     inviteEmailRequired: "Email is required",
+    deleteListConfirmMessage: "Are you sure you want to delete the {listName} list?",
+    newListButton: "+ New list",
+    editListTitle: "Edit list",
+    newItemButton: "+ New item",
+    itemName: "Item name",
+    itemQuantity: "Quantity",
   },
   he: {
     appTitle: "Money Sync",
@@ -284,6 +290,12 @@ const MESSAGES = {
     householdJoined: "הצטרפת למשק הבית.",
     failedJoinHousehold: "הצטרפות למשק הבית נכשלה",
     inviteEmailRequired: "אימייל הוא שדה חובה",
+    deleteListConfirmMessage: "האם למחוק את רשימת {listName}?",
+    newListButton: "+ רשימה חדשה",
+    editListTitle: "עריכת רשימה",
+    newItemButton: "+ הוסף פריט",
+    itemName: "שם פריט",
+    itemQuantity: "כמות",
   },
 };
 

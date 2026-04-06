@@ -1,5 +1,20 @@
 import ShoppingList from "../models/ShoppingList.js";
 
+function normalizeItems(items = []) {
+  const source = Array.isArray(items) ? items : [];
+  return source.map((item) => {
+    const description = String(
+      item?.description ?? item?.text ?? "",
+    ).trim();
+    return {
+      description,
+      quantity: Number(item?.quantity || 1),
+      completed: Boolean(item?.completed),
+      completedBy: item?.completedBy || null,
+    };
+  });
+}
+
 export async function listShoppingLists(req, res) {
   const lists = await ShoppingList.find({
     householdId: req.user.householdId,
@@ -9,6 +24,9 @@ export async function listShoppingLists(req, res) {
 }
 
 export async function createShoppingList(req, res) {
+  const normalizedItems = normalizeItems(req.body.items).filter(
+    (item) => item.description,
+  );
   const list = await ShoppingList.create({
     householdId: req.user.householdId,
     title: req.body.title,
@@ -16,16 +34,23 @@ export async function createShoppingList(req, res) {
     collaborators: req.body.collaborators || [
       { userId: req.user._id, canEdit: true },
     ],
-    items: req.body.items || [],
+    items: normalizedItems,
   });
 
   res.status(201).json(list);
 }
 
 export async function updateShoppingList(req, res) {
+  const nextPayload = { ...req.body };
+  if (Object.hasOwn(req.body || {}, "items")) {
+    nextPayload.items = normalizeItems(req.body.items).filter(
+      (item) => item.description,
+    );
+  }
+
   const list = await ShoppingList.findOneAndUpdate(
     { _id: req.params.id, householdId: req.user.householdId },
-    req.body,
+    nextPayload,
     { new: true },
   );
 
