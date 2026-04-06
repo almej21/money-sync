@@ -1,12 +1,11 @@
 import {
-  alpha,
   Box,
   CircularProgress,
   Container,
+  createTheme,
   CssBaseline,
   ThemeProvider,
   Typography,
-  createTheme,
 } from "@mui/material";
 import { useMemo } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -133,9 +132,33 @@ function AppContent() {
             },
           },
           MuiOutlinedInput: {
+            defaultProps: {
+              notched: false,
+            },
             styleOverrides: {
               root: {
                 backgroundColor: themeColors.background.default,
+                minHeight: 39,
+                "&.MuiInputBase-multiline": {
+                  minHeight: "auto",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: themeColors.primary.light,
+                },
+                "& .MuiOutlinedInput-notchedOutline legend": {
+                  maxWidth: "0.01px",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: themeColors.text.secondary,
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: themeColors.primary.main,
+                  borderWidth: 2,
+                },
+              },
+              input: {
+                paddingTop: 10,
+                paddingBottom: 10,
               },
             },
           },
@@ -144,6 +167,26 @@ function AppContent() {
               root: {
                 color: colors.text,
                 fontWeight: 700,
+                "&.MuiInputLabel-outlined": {
+                  transform:
+                    direction === "rtl"
+                      ? "translate(-14px, -11px) scale(1)"
+                      : "translate(14px, -11px) scale(1)",
+                },
+                ...(direction === "rtl"
+                  ? {
+                      right: 14,
+                      left: "auto",
+                      transformOrigin: "top right",
+                    }
+                  : {}),
+                "&.MuiInputLabel-shrink": {
+                  transformOrigin: direction === "rtl" ? "top right" : "top left",
+                  transform:
+                    direction === "rtl"
+                      ? "translate(5px, -14px) scale(0.75)"
+                      : "translate(5px, -14px) scale(0.75)",
+                },
                 "&.Mui-focused": {
                   color: colors.text,
                 },

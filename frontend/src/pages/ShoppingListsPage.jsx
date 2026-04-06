@@ -46,7 +46,7 @@ function getDefaultListTitle() {
 }
 
 export default function ShoppingListsPage() {
-  const { t, direction } = useLanguage();
+  const { t, direction, locale } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [lists, setLists] = useState([]);
@@ -99,8 +99,8 @@ export default function ShoppingListsPage() {
   function onItemQuantityChange(index, value) {
     const parsed = Number(value);
     const safe = Number.isFinite(parsed)
-      ? Math.max(0, Math.min(100, parsed))
-      : 0;
+      ? Math.max(1, Math.min(100, parsed))
+      : 1;
     setNewListItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], quantity: safe };
@@ -109,13 +109,13 @@ export default function ShoppingListsPage() {
   }
 
   function incrementItemQuantity(index) {
-    const current = Number(newListItems[index]?.quantity || 0);
+    const current = Number(newListItems[index]?.quantity || 1);
     onItemQuantityChange(index, Math.min(100, current + 1));
   }
 
   function decrementItemQuantity(index) {
-    const current = Number(newListItems[index]?.quantity || 0);
-    onItemQuantityChange(index, Math.max(0, current - 1));
+    const current = Number(newListItems[index]?.quantity || 1);
+    onItemQuantityChange(index, Math.max(1, current - 1));
   }
 
   function addItemRow() {
@@ -158,8 +158,8 @@ export default function ShoppingListsPage() {
   function onEditItemQuantityChange(index, value) {
     const parsed = Number(value);
     const safe = Number.isFinite(parsed)
-      ? Math.max(0, Math.min(100, parsed))
-      : 0;
+      ? Math.max(1, Math.min(100, parsed))
+      : 1;
     setEditingItems((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], quantity: safe };
@@ -180,7 +180,7 @@ export default function ShoppingListsPage() {
     const normalizedItems = newListItems
       .map((item) => ({
         description: String(item?.description || "").trim(),
-        quantity: Math.max(0, Math.min(100, Number(item?.quantity || 0))),
+        quantity: Math.max(1, Math.min(100, Number(item?.quantity || 1))),
       }))
       .filter((item) => item.description);
 
@@ -248,12 +248,13 @@ export default function ShoppingListsPage() {
     const listId = String(editingListId || "").trim();
     if (!listId) return;
 
-    const title = String(editingListTitle || "").trim() || getDefaultListTitle();
+    const title =
+      String(editingListTitle || "").trim() || getDefaultListTitle();
     const normalizedItems = editingItems
       .map((item) => ({
         _id: item?._id,
         description: String(item?.description || "").trim(),
-        quantity: Number(item?.quantity || 1),
+        quantity: Math.max(1, Math.min(100, Number(item?.quantity || 1))),
         completed: Boolean(item?.completed),
       }))
       .filter((item) => item.description);
@@ -273,6 +274,13 @@ export default function ShoppingListsPage() {
     } finally {
       setIsSavingEdit(false);
     }
+  }
+
+  function formatCreatedAt(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString(locale);
   }
 
   return (
@@ -319,6 +327,7 @@ export default function ShoppingListsPage() {
                     mr: 0.5,
                     borderRadius: 1,
                     borderColor: "error.main",
+                    border: "2px solid",
                     color: "error.main",
                     "&:hover": {
                       bgcolor: "error.main",
@@ -339,6 +348,7 @@ export default function ShoppingListsPage() {
                     height: 32,
                     p: 0,
                     borderRadius: 1,
+                    border: "2px solid",
                   }}
                 >
                   <EditOutlinedIcon fontSize="small" />
@@ -388,6 +398,18 @@ export default function ShoppingListsPage() {
                 </Box>
               ))}
             </List>
+            <Box
+              sx={{
+                mt: 1.25,
+                display: "flex",
+                direction: "ltr",
+                justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {formatCreatedAt(list.createdAt)}
+              </Typography>
+            </Box>
           </CardContent>
         </Card>
       ))}
@@ -423,72 +445,77 @@ export default function ShoppingListsPage() {
               label={t("title")}
               fullWidth
             />
-            {newListItems.map((itemValue, index) => {
-              return (
-                <Stack
-                  key={`new-item-${index}`}
-                  direction="row"
-                  useFlexGap
-                  sx={{ gap: 2 }}
-                >
-                  <TextField
-                    value={itemValue.description}
-                    onChange={(e) => onItemChange(index, e.target.value)}
-                    label={t("itemName")}
-                    InputLabelProps={{ shrink: true }}
-                    placeholder={t("sampleMilk")}
-                    fullWidth
-                  />
-                  <TextField
-                    type="number"
-                    value={itemValue.quantity}
-                    onChange={(e) => onItemQuantityChange(index, e.target.value)}
-                    label={t("itemQuantity")}
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{
-                      min: 0,
-                      max: 100,
-                      inputMode: isMobile ? "none" : "numeric",
-                      readOnly: isMobile,
-                    }}
-                    InputProps={
-                      isMobile
-                        ? {
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <Stack spacing={0} sx={{ mr: -1 }}>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => incrementItemQuantity(index)}
-                                    aria-label="Increase quantity"
-                                    tabIndex={-1}
-                                  >
-                                    <KeyboardArrowUpIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => decrementItemQuantity(index)}
-                                    aria-label="Decrease quantity"
-                                    tabIndex={-1}
-                                  >
-                                    <KeyboardArrowDownIcon fontSize="small" />
-                                  </IconButton>
-                                </Stack>
-                              </InputAdornment>
-                            ),
-                          }
-                        : undefined
-                    }
-                    sx={{ width: 100 }}
-                  />
-                </Stack>
-              );
-            })}
+            <Stack useFlexGap sx={{ rowGap: 2 }}>
+              {newListItems.map((itemValue, index) => {
+                return (
+                  <Stack
+                    key={`new-item-${index}`}
+                    direction="row"
+                    useFlexGap
+                    sx={{ gap: 2, mt: .5 }}
+                  >
+                    <TextField
+                      value={itemValue.description}
+                      onChange={(e) => onItemChange(index, e.target.value)}
+                      label={t("itemName")}
+                      InputLabelProps={{ shrink: true }}
+                      placeholder={t("sampleMilk")}
+                      fullWidth
+                    />
+                    <TextField
+                      type="number"
+                      value={itemValue.quantity}
+                      onChange={(e) =>
+                        onItemQuantityChange(index, e.target.value)
+                      }
+                      label={t("itemQuantity")}
+                      InputLabelProps={{ shrink: true }}
+                      inputProps={{
+                        min: 1,
+                        max: 100,
+                        inputMode: isMobile ? "none" : "numeric",
+                        readOnly: isMobile,
+                      }}
+                      InputProps={
+                        isMobile
+                          ? {
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Stack spacing={0} sx={{ mr: -1 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        incrementItemQuantity(index)
+                                      }
+                                      aria-label="Increase quantity"
+                                      tabIndex={-1}
+                                    >
+                                      <KeyboardArrowUpIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        decrementItemQuantity(index)
+                                      }
+                                      aria-label="Decrease quantity"
+                                      tabIndex={-1}
+                                    >
+                                      <KeyboardArrowDownIcon fontSize="small" />
+                                    </IconButton>
+                                  </Stack>
+                                </InputAdornment>
+                              ),
+                            }
+                          : undefined
+                      }
+                      sx={{ width: 100 }}
+                    />
+                  </Stack>
+                );
+              })}
+            </Stack>
             <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
-              <Button
-                type="button"
-                onClick={addItemRow}
-              >
+              <Button type="button" onClick={addItemRow}>
                 {t("newItemButton")}
               </Button>
             </Box>
@@ -502,7 +529,12 @@ export default function ShoppingListsPage() {
                 borderColor: "divider",
               }}
             >
-              <Button type="button" variant="outlined" onClick={closeCreateModal} fullWidth>
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={closeCreateModal}
+                fullWidth
+              >
                 {t("cancel")}
               </Button>
               <Button type="submit" variant="contained" fullWidth>
@@ -526,41 +558,40 @@ export default function ShoppingListsPage() {
               label={t("title")}
               fullWidth
             />
-            {editingItems.map((item, index) => {
-              return (
-                <Stack
-                  key={`edit-item-${item._id || index}`}
-                  direction="row"
-                  useFlexGap
-                  sx={{ gap: 2 }}
-                >
-                  <TextField
-                    value={item.description}
-                    onChange={(e) => onEditItemChange(index, e.target.value)}
-                    label={t("itemName")}
-                    InputLabelProps={{ shrink: true }}
-                    placeholder={t("sampleMilk")}
-                    fullWidth
-                  />
-                  <TextField
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      onEditItemQuantityChange(index, e.target.value)
-                    }
-                    label={t("itemQuantity")}
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{ min: 0, max: 100 }}
-                    sx={{ width: 100 }}
-                  />
-                </Stack>
-              );
-            })}
+            <Stack useFlexGap sx={{ rowGap: 2 }}>
+              {editingItems.map((item, index) => {
+                return (
+                  <Stack
+                    key={`edit-item-${item._id || index}`}
+                    direction="row"
+                    useFlexGap
+                    sx={{ gap: 2 }}
+                  >
+                    <TextField
+                      value={item.description}
+                      onChange={(e) => onEditItemChange(index, e.target.value)}
+                      label={t("itemName")}
+                      InputLabelProps={{ shrink: true }}
+                      placeholder={t("sampleMilk")}
+                      fullWidth
+                    />
+                    <TextField
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        onEditItemQuantityChange(index, e.target.value)
+                      }
+                      label={t("itemQuantity")}
+                      InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: 1, max: 100 }}
+                      sx={{ width: 100 }}
+                    />
+                  </Stack>
+                );
+              })}
+            </Stack>
             <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
-              <Button
-                type="button"
-                onClick={addEditItemRow}
-              >
+              <Button type="button" onClick={addEditItemRow}>
                 {t("newItemButton")}
               </Button>
             </Box>

@@ -159,7 +159,13 @@ export default function NavBar() {
 
   return (
     <>
-      <AppBar ref={appBarRef} position="static" color="inherit" elevation={1}>
+      <AppBar
+        ref={appBarRef}
+        position="static"
+        color="inherit"
+        elevation={0}
+        sx={{ boxShadow: "none", borderTop: "none" }}
+      >
       <Toolbar
         sx={{
           py: isMobile ? 1 : 0.5,
