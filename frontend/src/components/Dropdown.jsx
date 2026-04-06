@@ -1,4 +1,5 @@
 import { alpha, FormControl, InputLabel, Select, useTheme } from "@mui/material";
+import { useLanguage } from "../context/LanguageContext";
 
 function toSxArray(sx) {
   if (!sx) return [];
@@ -19,6 +20,8 @@ export default function Dropdown({
   ...selectProps
 }) {
   const theme = useTheme();
+  const { direction } = useLanguage();
+  const isRtl = direction === "rtl";
   const baseMenuItemSx = {
     fontSize: "1rem",
     minHeight: "34px",
@@ -70,7 +73,12 @@ export default function Dropdown({
         sx={[
           {
             fontSize: "1.1rem",
-            transform: "translate(10px, -17px) scale(0.75)",
+            transform: isRtl
+              ? "translate(-10px, -17px) scale(0.75)"
+              : "translate(10px, -17px) scale(0.75)",
+            transformOrigin: isRtl ? "top right" : "top left",
+            right: isRtl ? 0 : "auto",
+            left: isRtl ? "auto" : 0,
           },
           ...toSxArray(inputLabelSx),
         ]}
