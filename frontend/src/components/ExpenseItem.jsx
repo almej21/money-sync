@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
+import PingPongTypography from "./PingPongTypography";
 
 function formatDateTime(value, locale) {
   if (!value) return "-";
@@ -218,6 +219,7 @@ export default function ExpenseItem({
               display: "grid",
               placeItems: "center",
               flexShrink: 0,
+              alignSelf: isEditing ? "flex-start" : "center",
               p: 0,
             }}
           >
@@ -245,19 +247,27 @@ export default function ExpenseItem({
               </Stack>
             ) : (
               <>
-                <Typography
+                <Box
                   dir={direction}
                   sx={{
-                    fontWeight: 700,
-                    textAlign: direction === "rtl" ? "right" : "left",
-                    lineHeight: 1.2,
-                    fontSize: ".95rem",
                     display: "flex",
                     alignItems: "center",
                     gap: 0.5,
+                    minWidth: 0,
                   }}
                 >
-                  {exp.description || "-"}
+                  <PingPongTypography
+                    sx={{
+                      fontWeight: 700,
+                      textAlign: direction === "rtl" ? "right" : "left",
+                      lineHeight: 1.2,
+                      fontSize: ".95rem",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {exp.description || "-"}
+                  </PingPongTypography>
                   {exp.isUserAltered && (
                     <Typography
                       component="span"
@@ -272,7 +282,7 @@ export default function ExpenseItem({
                       {editedLabel}
                     </Typography>
                   )}
-                </Typography>
+                </Box>
                 <Typography
                   dir={direction}
                   sx={{
@@ -324,16 +334,18 @@ export default function ExpenseItem({
           </Box>
           <Stack
             sx={{
-              alignItems: "center",
+              alignItems: isEditing ? "flex-end" : "center",
               width: "fit-content",
               gap: 0.75,
               flexDirection: "column",
+              alignSelf: isEditing ? "stretch" : "center",
+              justifyContent: isEditing ? "space-between" : "center",
             }}
           >
             <Box
               component="span"
               sx={{
-                color: isReturn ? "#00c853" : theme.palette.text.primary,
+                color: isReturn ? "#00c452" : theme.palette.text.primary,
                 display: "inline-flex",
                 alignItems: "baseline",
                 direction: "ltr",

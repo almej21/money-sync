@@ -799,16 +799,27 @@ export default function DashboardPage() {
               </Dropdown>
             )}
           </Stack>
-          <Box sx={{ mb: 2, px: { xs: 0.5, sm: 1 } }}>
-            <Typography variant="body2" color="text.primary" sx={{ mb: 1 }}>
-              {t("amountRange")}: {selectedAmountRange[0].toFixed(2)} -{" "}
-              {selectedAmountRange[1].toFixed(2)}
+          <Box
+            sx={{
+              mb: 2,
+              px: { xs: 0.5, sm: 1 },
+              width: "80%",
+              mx: "auto",
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.primary"
+              sx={{ mb: 1, textAlign: "center" }}
+            >
+              {t("amountRange")}: {Math.round(selectedAmountRange[0])}₪ -{" "}
+              {Math.round(selectedAmountRange[1])}₪
             </Typography>
             <Slider
               value={selectedAmountRange}
               min={0}
               max={maxExpenseAmount}
-              step={0.01}
+              step={1}
               disableSwap
               onChange={(_, newValue) => {
                 const nextRange = Array.isArray(newValue)
@@ -817,7 +828,7 @@ export default function DashboardPage() {
                 setSelectedAmountRange(nextRange);
               }}
               valueLabelDisplay="auto"
-              valueLabelFormat={(value) => Number(value).toFixed(2)}
+              valueLabelFormat={(value) => `${Math.round(Number(value))}₪`}
             />
           </Box>
           {timeRange === "custom_range" && (

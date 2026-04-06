@@ -87,6 +87,9 @@ export default function Dropdown({
             "& .MuiOutlinedInput-notchedOutline": {
               borderColor: "divider",
             },
+            "& .MuiOutlinedInput-notchedOutline legend": {
+              maxWidth: "0.01px",
+            },
             "&:hover .MuiOutlinedInput-notchedOutline": {
               borderColor: "text.secondary",
             },
