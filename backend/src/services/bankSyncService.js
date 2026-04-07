@@ -162,6 +162,12 @@ function oneMonthWindow() {
   return { startDate, endDate };
 }
 
+function getWindowStartDate(lastBankFetchAt, fallbackStartDate) {
+  const parsedLastFetchAt = parseDate(lastBankFetchAt);
+  if (parsedLastFetchAt) return parsedLastFetchAt;
+  return new Date(fallbackStartDate);
+}
+
 function flattenTransactions(scrapeResult) {
   const accounts = Array.isArray(scrapeResult?.accounts)
     ? scrapeResult.accounts
@@ -443,16 +449,21 @@ export async function syncLastMonthExpensesForUser(user) {
   }
 
   const { createScraper, SCRAPERS } = await import("israeli-bank-scrapers");
-  const { startDate } = oneMonthWindow();
+  const { startDate: defaultWindowStartDate } = oneMonthWindow();
   const connectionSummaries = [...connectionErrors];
   const docs = [];
   const attemptedConnectionKeys = new Set();
+  const successfulConnectionKeys = new Set();
   const nowMs = Date.now();
 
   for (const activeCreds of activeConnections) {
     const fetchStartedAt = Date.now();
     const connectionId =
       String(activeCreds.connectionKey || "").trim() || activeCreds.companyId;
+    const windowStartDate = getWindowStartDate(
+      activeCreds.lastBankFetchAt,
+      defaultWindowStartDate,
+    );
     const cooldownInfo = getCooldownInfo(activeCreds.lastBankFetchAt, nowMs);
     if (cooldownInfo) {
       connectionSummaries.push({
@@ -473,7 +484,7 @@ export async function syncLastMonthExpensesForUser(user) {
         reason: "Connection is on cooldown",
         lastFetchAt: cooldownInfo.lastFetchAt,
         nextFetchAt: cooldownInfo.nextFetchAt,
-        windowStartDate: startDate.toISOString(),
+        windowStartDate: windowStartDate.toISOString(),
       });
       continue;
     }
@@ -498,7 +509,7 @@ export async function syncLastMonthExpensesForUser(user) {
         scrapeMode: "validation",
         attemptsUsed: 0,
         reason: errorMessage,
-        windowStartDate: startDate.toISOString(),
+        windowStartDate: windowStartDate.toISOString(),
       });
       continue;
     }
@@ -522,7 +533,7 @@ export async function syncLastMonthExpensesForUser(user) {
         scrapeMode: "validation",
         attemptsUsed: 0,
         reason: errorMessage,
-        windowStartDate: startDate.toISOString(),
+        windowStartDate: windowStartDate.toISOString(),
       });
       continue;
     }
@@ -540,7 +551,7 @@ export async function syncLastMonthExpensesForUser(user) {
         await scrapeWithAutomationFallback({
           createScraper,
           activeCreds,
-          startDate,
+          startDate: windowStartDate,
           envCfg,
           scrapeCredentials,
         });
@@ -597,6 +608,7 @@ export async function syncLastMonthExpensesForUser(user) {
         total: normalized.length,
         status: "success",
       });
+      successfulConnectionKeys.add(connectionId);
       logConnectionResult({
         companyId: activeCreds.companyId,
         connectionId,
@@ -606,7 +618,7 @@ export async function syncLastMonthExpensesForUser(user) {
         scrapeMode,
         attemptsUsed,
         reason: "Fetch completed",
-        windowStartDate: startDate.toISOString(),
+        windowStartDate: windowStartDate.toISOString(),
       });
     } catch (error) {
       const errorMessage = sanitizeErrorMessage(
@@ -631,7 +643,7 @@ export async function syncLastMonthExpensesForUser(user) {
         scrapeMode: error?.scrapeMode || "scrape",
         attemptsUsed: Number(error?.attemptsUsed || 1),
         reason: normalizedErrorMessage,
-        windowStartDate: startDate.toISOString(),
+        windowStartDate: windowStartDate.toISOString(),
       });
     }
   }
@@ -650,6 +662,7 @@ export async function syncLastMonthExpensesForUser(user) {
       total: 0,
       connections: connectionSummaries,
       attemptedConnectionKeys: Array.from(attemptedConnectionKeys),
+      successfulConnectionKeys: Array.from(successfulConnectionKeys),
       reason: allCooldown
         ? "all_connections_on_cooldown"
         : allFailed
@@ -707,7 +720,6 @@ export async function syncLastMonthExpensesForUser(user) {
       upsert: true,
     },
   }));
-
   const result = await Expense.bulkWrite(bulkOps, { ordered: false });
   return {
     imported: result.upsertedCount || 0,
@@ -715,5 +727,6 @@ export async function syncLastMonthExpensesForUser(user) {
     total: docs.length,
     connections: connectionSummaries,
     attemptedConnectionKeys: Array.from(attemptedConnectionKeys),
+    successfulConnectionKeys: Array.from(successfulConnectionKeys),
   };
 }

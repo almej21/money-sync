@@ -18,6 +18,32 @@ export async function listExpenses(req, res) {
   res.json(expenses);
 }
 
+export async function listExpenseChanges(req, res) {
+  triggerExpenseSyncForUser(req.user, "list_expense_changes");
+  const sinceRaw = String(req.query?.since || "").trim();
+  const sinceDate = sinceRaw ? new Date(sinceRaw) : null;
+
+  if (!sinceDate || Number.isNaN(sinceDate.getTime())) {
+    return res.status(400).json({ message: "Invalid since cursor" });
+  }
+
+  const items = await Expense.find({
+    householdId: req.user.householdId,
+    updatedAt: { $gt: sinceDate },
+  }).sort({ updatedAt: 1, _id: 1 });
+
+  const latestUpdatedAt =
+    items.length > 0
+      ? items[items.length - 1]?.updatedAt
+      : sinceDate;
+
+  res.json({
+    items,
+    cursor: latestUpdatedAt ? new Date(latestUpdatedAt).toISOString() : sinceRaw,
+    serverTime: new Date().toISOString(),
+  });
+}
+
 export async function syncStatus(req, res) {
   res.json({
     sync: getExpenseSyncState(req.user._id),

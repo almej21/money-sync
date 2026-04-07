@@ -3,6 +3,7 @@ import {
   createExpense,
   deleteExpense,
   importExpenses,
+  listExpenseChanges,
   listExpenses,
   syncStatus,
   summary,
@@ -14,6 +15,7 @@ const router = Router();
 
 router.use(requireAuth);
 router.get("/", listExpenses);
+router.get("/changes", listExpenseChanges);
 router.get("/sync-status", syncStatus);
 router.get("/summary", summary);
 router.post("/", createExpense);

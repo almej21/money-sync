@@ -1,12 +1,11 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  // <React.StrictMode>
+  <App />,
+  // </React.StrictMode>,
 );
 
 const isLocalhost =
@@ -18,7 +17,9 @@ if (isLocalhost && "serviceWorker" in navigator) {
   navigator.serviceWorker
     .getRegistrations()
     .then((registrations) =>
-      Promise.all(registrations.map((registration) => registration.unregister())),
+      Promise.all(
+        registrations.map((registration) => registration.unregister()),
+      ),
     )
     .catch(() => {});
 

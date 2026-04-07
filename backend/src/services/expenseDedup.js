@@ -21,6 +21,16 @@ function normalizeDate(value) {
   }).format(parsed);
 }
 
+function toDayRange(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const dayStart = new Date(parsed);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(parsed);
+  dayEnd.setHours(23, 59, 59, 999);
+  return { dayStart, dayEnd };
+}
+
 function connectionScope(connectionKey) {
   const normalizedConnectionKey = String(connectionKey || "").trim();
   if (!normalizedConnectionKey) {
@@ -70,35 +80,38 @@ export function buildExpenseUpsertFilter(expense = {}) {
   if (normalizedDedupKey) {
     identityClauses.push({ dedupKey: normalizedDedupKey });
   }
-  if (normalizedExternalId) {
+  // Only fall back to externalId when dedupKey is unavailable.
+  // Some providers may reuse the same externalId for opposite entries
+  // (expense + return), which would otherwise collapse into one row.
+  if (!normalizedDedupKey && normalizedExternalId) {
     identityClauses.push({ externalId: normalizedExternalId });
   }
 
   const normalizedDate = normalizeDate(expense.date);
+  const dayRange = toDayRange(expense.date);
   const normalizedAmount = Number(expense.amount);
   const normalizedMerchant = String(expense.merchant || "").trim();
 
   // Legacy fallback to converge old rows that were created before dedupKey existed.
   if (
     normalizedDate &&
+    dayRange &&
     Number.isFinite(normalizedAmount)
   ) {
+    const normalizedTransactionType = String(
+      expense.transactionType || "expense",
+    )
+      .trim()
+      .toLowerCase();
     identityClauses.push({
       amount: normalizedAmount,
+      transactionType: normalizedTransactionType === "return" ? "return" : "expense",
       sourceCompanyId: String(expense.sourceCompanyId || "").trim(),
       sourceAccountId: String(expense.sourceAccountId || "").trim(),
       merchant: normalizedMerchant,
-      $expr: {
-        $eq: [
-          {
-            $dateToString: {
-              format: "%Y-%m-%d",
-              date: "$date",
-              timezone: "Asia/Jerusalem",
-            },
-          },
-          normalizedDate,
-        ],
+      date: {
+        $gte: dayRange.dayStart,
+        $lte: dayRange.dayEnd,
       },
     });
   }

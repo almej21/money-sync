@@ -42,22 +42,22 @@ export function triggerExpenseSyncForUser(user, reason = "unknown") {
     .then(async () => {
       const result = await syncLastMonthExpensesForUser(user);
       state.lastResult = result || null;
-      const attemptedConnectionKeys = Array.isArray(
-        result?.attemptedConnectionKeys,
+      const successfulConnectionKeys = Array.isArray(
+        result?.successfulConnectionKeys,
       )
-        ? result.attemptedConnectionKeys.filter((value) =>
+        ? result.successfulConnectionKeys.filter((value) =>
             mongoose.isValidObjectId(String(value || "").trim()),
           )
         : [];
-      if (attemptedConnectionKeys.length > 0) {
+      if (successfulConnectionKeys.length > 0) {
         const fetchedItemsCount = Number(result?.total || 0);
         console.log(
           `DONE FETCHING ITEMS! fetched ${fetchedItemsCount} items`,
         );
       }
 
-      if (attemptedConnectionKeys.length > 0) {
-        const attemptedObjectIds = attemptedConnectionKeys.map(
+      if (successfulConnectionKeys.length > 0) {
+        const successfulObjectIds = successfulConnectionKeys.map(
           (value) => new mongoose.Types.ObjectId(String(value)),
         );
         const householdId = String(user?.householdId || "").trim();
@@ -70,7 +70,7 @@ export function triggerExpenseSyncForUser(user, reason = "unknown") {
               },
             },
             {
-              arrayFilters: [{ "connection._id": { $in: attemptedObjectIds } }],
+              arrayFilters: [{ "connection._id": { $in: successfulObjectIds } }],
             },
           );
         }

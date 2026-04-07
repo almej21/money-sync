@@ -22,7 +22,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
 import PingPongTypography from "./PingPongTypography";
 
@@ -115,13 +115,12 @@ function getCategoryIcon(category) {
   return ReceiptLongIcon;
 }
 
-export default function ExpenseItem({
+function ExpenseItem({
   exp,
   showSourceAccountIdAfterCategory = false,
   isExpanded,
   onToggleExpanded,
   onExpenseUpdated,
-  isLast,
   direction,
   locale,
   t,
@@ -430,3 +429,5 @@ export default function ExpenseItem({
     </div>
   );
 }
+
+export default memo(ExpenseItem);

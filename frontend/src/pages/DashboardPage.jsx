@@ -18,7 +18,7 @@ import {
   useTheme,
 } from "@mui/material";
 import NumberFlow from "@number-flow/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
 import Dropdown from "../components/Dropdown";
 import ExpenseItem from "../components/ExpenseItem";
@@ -29,9 +29,23 @@ import {
   getBankCredentialStatus,
   getBankProviders,
 } from "../services/bankService";
-import { getExpenses } from "../services/expenseService";
+import {
+  getExpenseChanges,
+  getExpenses,
+} from "../services/expenseService";
+import {
+  getCachedExpenses,
+  getExpenseCacheMeta,
+  replaceCachedExpenses,
+  setExpenseCacheMeta,
+  upsertCachedExpenses,
+} from "../services/expenseCache";
 
 const CATEGORY_ALL_VALUE = "__all_categories__";
+const CATEGORY_RETURNS_VALUE = "__returns_only__";
+const BACKGROUND_SYNC_INTERVAL_MS = 60 * 60 * 1000;
+const VIRTUAL_ROW_HEIGHT_PX = 94;
+const VIRTUAL_OVERSCAN_ROWS = 10;
 
 function formatDate(value) {
   if (!value) return "-";
@@ -78,6 +92,62 @@ function formatDisplayedRange(start, end) {
   return `${formatDate(startDate)}-${formatDate(endDate)}`;
 }
 
+function getMonthRange(year, monthIndex) {
+  const start = new Date(year, monthIndex, 1);
+  const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+  return { start, end };
+}
+
+function toValidDate(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function getLatestExpenseCursor(items) {
+  const expenses = Array.isArray(items) ? items : [];
+  let latest = null;
+
+  for (const item of expenses) {
+    const candidate = toValidDate(item?.updatedAt || item?.createdAt || item?.date);
+    if (!candidate) continue;
+    if (!latest || candidate.getTime() > latest.getTime()) {
+      latest = candidate;
+    }
+  }
+
+  return latest ? latest.toISOString() : null;
+}
+
+function mergeExpensesById(current, incoming) {
+  const currentItems = Array.isArray(current) ? current : [];
+  const incomingItems = Array.isArray(incoming) ? incoming : [];
+  if (!incomingItems.length) return currentItems;
+
+  const nextMap = new Map(currentItems.map((item) => [item._id, item]));
+  for (const nextItem of incomingItems) {
+    if (!nextItem?._id) continue;
+    const prevItem = nextMap.get(nextItem._id);
+    nextMap.set(nextItem._id, prevItem ? { ...prevItem, ...nextItem } : nextItem);
+  }
+
+  return Array.from(nextMap.values());
+}
+
+function hasFreshSync(lastSyncAtIso, nowMs) {
+  const lastSyncDate = toValidDate(lastSyncAtIso);
+  if (!lastSyncDate) return false;
+  return nowMs - lastSyncDate.getTime() < BACKGROUND_SYNC_INTERVAL_MS;
+}
+
+function isReturnExpense(expense) {
+  const transactionType = String(expense?.transactionType || "")
+    .trim()
+    .toLowerCase();
+  const amount = Number(expense?.amount || 0);
+  return transactionType === "return" || amount < 0;
+}
+
 export default function DashboardPage() {
   const theme = useTheme();
   const ltrSliderTheme = useMemo(
@@ -97,6 +167,7 @@ export default function DashboardPage() {
   const [bankConnections, setBankConnections] = useState([]);
   const [providerLabels, setProviderLabels] = useState({});
   const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
+  const didInitializeAccountFilterSelectionRef = useRef(false);
   const [timeRange, setTimeRange] = useState("this_month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -104,16 +175,79 @@ export default function DashboardPage() {
   const [selectedAmountRange, setSelectedAmountRange] = useState([0, 0]);
   const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
   const [isTotalCalculating, setIsTotalCalculating] = useState(true);
+  const isExpenseBootstrappedRef = useRef(false);
+  const hasTriggeredPendingBankConnectionRefreshRef = useRef(false);
+  const listContainerRef = useRef(null);
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
   const { t, locale, direction } = useLanguage();
-  const loadExpenses = useCallback(async () => {
+
+  const refreshExpenses = useCallback(
+    async ({ forceFullFetch = false, ignoreFreshWindow = false } = {}) => {
+    const nowMs = Date.now();
+    const cacheMeta = await getExpenseCacheMeta().catch(() => ({
+      lastSyncAt: null,
+      syncCursor: null,
+    }));
+
+    if (
+      !forceFullFetch &&
+      !ignoreFreshWindow &&
+      cacheMeta?.syncCursor &&
+      hasFreshSync(cacheMeta?.lastSyncAt, nowMs)
+    ) {
+      return;
+    }
+
+    if (!forceFullFetch && cacheMeta?.syncCursor) {
+      try {
+        const response = await getExpenseChanges(cacheMeta.syncCursor);
+        const changedItems = Array.isArray(response?.items) ? response.items : [];
+        if (changedItems.length > 0) {
+          setExpenses((prev) => mergeExpensesById(prev, changedItems));
+          await upsertCachedExpenses(changedItems).catch(() => {});
+        }
+        const nextCursor = response?.cursor || cacheMeta.syncCursor;
+        await setExpenseCacheMeta({
+          lastSyncAt: response?.serverTime || new Date().toISOString(),
+          syncCursor: nextCursor,
+        }).catch(() => {});
+        return;
+      } catch {
+        // Fall back to full fetch when incremental path fails.
+      }
+    }
+
+    const data = await getExpenses();
+    setExpenses(Array.isArray(data) ? data : []);
+    const fullCursor = getLatestExpenseCursor(data);
+    await replaceCachedExpenses(data).catch(() => {});
+    await setExpenseCacheMeta({
+      lastSyncAt: new Date().toISOString(),
+      syncCursor: fullCursor,
+    }).catch(() => {});
+    },
+    [],
+  );
+
+  const bootstrapExpenses = useCallback(async () => {
+    if (isExpenseBootstrappedRef.current) return;
+    isExpenseBootstrappedRef.current = true;
+
     setIsLoading(true);
     try {
-      const data = await getExpenses();
-      setExpenses(data);
+      const cached = await getCachedExpenses().catch(() => []);
+      if (Array.isArray(cached) && cached.length > 0) {
+        setExpenses(cached);
+        setIsLoading(false);
+      }
+
+      await refreshExpenses({
+        forceFullFetch: !Array.isArray(cached) || cached.length === 0,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshExpenses]);
 
   const loadBankFilterOptions = useCallback(async () => {
     try {
@@ -148,33 +282,59 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadExpenses().catch(console.error);
-  }, [loadExpenses]);
+    bootstrapExpenses().catch(console.error);
+  }, [bootstrapExpenses]);
 
   useEffect(() => {
     loadBankFilterOptions().catch(console.error);
   }, [loadBankFilterOptions]);
 
+  useEffect(() => {
+    const hasPendingConnectionInitialFetch = bankConnections.some(
+      (connection) =>
+        Boolean(connection?.connected) && !connection?.lastBankFetchAt,
+    );
+    if (!hasPendingConnectionInitialFetch) {
+      hasTriggeredPendingBankConnectionRefreshRef.current = false;
+      return;
+    }
+    if (hasTriggeredPendingBankConnectionRefreshRef.current) return;
+
+    hasTriggeredPendingBankConnectionRefreshRef.current = true;
+    refreshExpenses({ ignoreFreshWindow: true }).catch(console.error);
+  }, [bankConnections, refreshExpenses]);
+
   const onSyncRunningChange = useCallback((running) => {
     setIsSyncingExpenses(Boolean(running));
   }, []);
-  useExpenseBackgroundRefresh(loadExpenses, onSyncRunningChange);
+  const refreshExpensesFromBackgroundSync = useCallback(
+    () => refreshExpenses({ ignoreFreshWindow: true }),
+    [refreshExpenses],
+  );
+  useExpenseBackgroundRefresh(
+    refreshExpensesFromBackgroundSync,
+    onSyncRunningChange,
+  );
 
   const onExpenseUpdated = useCallback((updatedExpense) => {
     if (!updatedExpense?._id) return;
-    setExpenses((prev) =>
-      prev.map((item) =>
-        item._id === updatedExpense._id ? { ...item, ...updatedExpense } : item,
-      ),
-    );
+    setExpenses((prev) => mergeExpensesById(prev, [updatedExpense]));
+    upsertCachedExpenses([updatedExpense]).catch(() => {});
+    const updatedCursor = getLatestExpenseCursor([updatedExpense]);
+    if (updatedCursor) {
+      setExpenseCacheMeta({
+        lastSyncAt: new Date().toISOString(),
+        syncCursor: updatedCursor,
+      }).catch(() => {});
+    }
   }, []);
 
-  function toggleExpanded(expenseId) {
+  const toggleExpanded = useCallback((expenseId) => {
     setExpandedIds((prev) => ({
       ...prev,
       [expenseId]: !prev[expenseId],
     }));
-  }
+  }, []);
 
   function matchesTimeRange(dateValue, selectedRange) {
     if (!dateValue) return false;
@@ -183,37 +343,20 @@ export default function DashboardPage() {
     const expenseDate = new Date(dateValue);
     const now = new Date();
 
-    if (selectedRange === "last_7_days") {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 7);
-      return expenseDate >= from && expenseDate <= now;
-    }
-
-    if (selectedRange === "last_30_days") {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 30);
-      return expenseDate >= from && expenseDate <= now;
-    }
-
-    if (selectedRange === "last_month") {
-      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const to = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        0,
-        23,
-        59,
-        59,
-        999,
-      );
-      return expenseDate >= from && expenseDate <= to;
-    }
-
     if (selectedRange === "custom_range") {
       if (!customStartDate || !customEndDate) return false;
       const from = new Date(`${customStartDate}T00:00:00`);
       const to = new Date(`${customEndDate}T23:59:59.999`);
       return expenseDate >= from && expenseDate <= to;
+    }
+
+    if (selectedRange.startsWith("month_")) {
+      const [, yearPart, monthPart] = selectedRange.split("_");
+      const year = Number(yearPart);
+      const monthIndex = Number(monthPart) - 1;
+      if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) return false;
+      const { start, end } = getMonthRange(year, monthIndex);
+      return expenseDate >= start && expenseDate <= end;
     }
 
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -238,6 +381,31 @@ export default function DashboardPage() {
   const allCategoriesSelected =
     selectedCategories.length === 0 ||
     selectedCategories.length === categoryOptions.length;
+  const selectedReturnsOnly = selectedCategories.includes(
+    CATEGORY_RETURNS_VALUE,
+  );
+  const returnsLabel = String(locale || "").toLowerCase().startsWith("he")
+    ? "החזרים"
+    : "returns";
+  const selectedRegularCategories = selectedCategories.filter(
+    (value) => value !== CATEGORY_RETURNS_VALUE,
+  );
+  const lastSixMonthOptions = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(locale, {
+      month: "long",
+      year: "numeric",
+    });
+    const now = new Date();
+    return Array.from({ length: 6 }).map((_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (index + 1), 1);
+      const year = date.getFullYear();
+      const monthIndex = date.getMonth();
+      return {
+        value: `month_${year}_${String(monthIndex + 1).padStart(2, "0")}`,
+        label: formatter.format(date),
+      };
+    });
+  }, [locale]);
 
   const accountFilterOptions = useMemo(() => {
     const connectionById = new Map(
@@ -293,6 +461,10 @@ export default function DashboardPage() {
   }, [accountFilterOptions, bankConnections, providerLabels]);
 
   const shouldShowAccountFilter = accountFilterOptions.length > 1;
+  const hasSingleAccountOption = accountFilterOptions.length === 1;
+  const singleAccountLabel = hasSingleAccountOption
+    ? accountFilterOptions[0]?.label || t("allAccounts")
+    : t("allAccounts");
   const hasHouseholdConnections = accountFilterOptions.length > 0;
   const shouldApplyAccountFilter =
     shouldShowAccountFilter &&
@@ -340,8 +512,11 @@ export default function DashboardPage() {
 
     setSelectedConnectionIds((prevSelected) => {
       if (allAccountIds.length <= 1) return allAccountIds;
-      if (preferredAccountIds.length) return preferredAccountIds;
-      if (!prevSelected.length) return allAccountIds;
+      if (!didInitializeAccountFilterSelectionRef.current) {
+        didInitializeAccountFilterSelectionRef.current = true;
+        if (preferredAccountIds.length) return preferredAccountIds;
+        if (!prevSelected.length) return allAccountIds;
+      }
 
       const retained = prevSelected.filter((id) => allAccountIds.includes(id));
       return retained.length ? retained : allAccountIds;
@@ -367,12 +542,16 @@ export default function DashboardPage() {
     }
 
     const filteredValues = values.filter((value) =>
-      categoryOptions.includes(value),
+      value === CATEGORY_RETURNS_VALUE || categoryOptions.includes(value),
+    );
+    const hasReturnsOnly = filteredValues.includes(CATEGORY_RETURNS_VALUE);
+    const regularValues = filteredValues.filter(
+      (value) => value !== CATEGORY_RETURNS_VALUE,
     );
 
     if (
-      !filteredValues.length ||
-      filteredValues.length === categoryOptions.length
+      !hasReturnsOnly &&
+      (!regularValues.length || regularValues.length === categoryOptions.length)
     ) {
       setSelectedCategories([]);
       return;
@@ -384,10 +563,15 @@ export default function DashboardPage() {
   const displayedExpenses = useMemo(() => {
     const filtered = expenses.filter((exp) => {
       if (!matchesTimeRange(exp.date, timeRange)) return false;
+
+      if (selectedReturnsOnly && !isReturnExpense(exp)) {
+        return false;
+      }
+
       const normalizedCategory = String(exp.category || "").trim();
       if (
-        selectedCategories.length &&
-        !selectedCategories.includes(normalizedCategory)
+        selectedRegularCategories.length &&
+        !selectedRegularCategories.includes(normalizedCategory)
       ) {
         return false;
       }
@@ -410,12 +594,12 @@ export default function DashboardPage() {
       }
       if (sortBy === "amount_desc") {
         return (
-          Math.abs(Number(a.amount || 0)) - Math.abs(Number(b.amount || 0))
+          Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0))
         );
       }
       if (sortBy === "amount_asc") {
         return (
-          Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0))
+          Math.abs(Number(a.amount || 0)) - Math.abs(Number(b.amount || 0))
         );
       }
       return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -425,7 +609,8 @@ export default function DashboardPage() {
     customStartDate,
     expenses,
     accountFilterOptions,
-    selectedCategories,
+    selectedRegularCategories,
+    selectedReturnsOnly,
     selectedConnectionIds,
     selectedAmountRange,
     sortBy,
@@ -469,28 +654,21 @@ export default function DashboardPage() {
       return `${startDay} - ${endDay}/${month}/${year}`;
     }
 
-    if (timeRange === "last_month") {
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const end = new Date(now.getFullYear(), now.getMonth(), 0);
-      return formatDisplayedRange(start, end);
-    }
-
-    if (timeRange === "last_7_days") {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 7);
-      return formatDisplayedRange(start, now);
-    }
-
-    if (timeRange === "last_30_days") {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 30);
-      return formatDisplayedRange(start, now);
-    }
-
     if (timeRange === "custom_range") {
       if (!customStartDate || !customEndDate) return "- - -";
       const start = new Date(`${customStartDate}T00:00:00`);
       const end = new Date(`${customEndDate}T23:59:59.999`);
+      return formatDisplayedRange(start, end);
+    }
+
+    if (timeRange.startsWith("month_")) {
+      const [, yearPart, monthPart] = timeRange.split("_");
+      const year = Number(yearPart);
+      const monthIndex = Number(monthPart) - 1;
+      if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+        return "- - -";
+      }
+      const { start, end } = getMonthRange(year, monthIndex);
       return formatDisplayedRange(start, end);
     }
 
@@ -505,6 +683,89 @@ export default function DashboardPage() {
     return formatDisplayedRange(minDate, maxDate);
   }, [customEndDate, customStartDate, displayedExpenses, timeRange]);
   const shouldShowTotalLoading = isLoading || isTotalCalculating;
+  const renderSelectedCategoriesValue = useCallback(
+    (selected) => {
+      if (allCategoriesSelected) return t("all");
+      const values = Array.isArray(selected) ? selected : [];
+      return values
+        .map((value) =>
+          value === CATEGORY_RETURNS_VALUE ? returnsLabel : value,
+        )
+        .join(", ");
+    },
+    [allCategoriesSelected, returnsLabel, t],
+  );
+  const visibleExpenses = useMemo(() => {
+    if (isLoading) return [];
+    const safeStart = Math.max(0, visibleRange.start);
+    const safeEnd = Math.max(safeStart, visibleRange.end);
+    return displayedExpenses.slice(safeStart, safeEnd + 1);
+  }, [displayedExpenses, isLoading, visibleRange.end, visibleRange.start]);
+  const topSpacerHeight = Math.max(0, visibleRange.start * VIRTUAL_ROW_HEIGHT_PX);
+  const bottomSpacerHeight = Math.max(
+    0,
+    (displayedExpenses.length - (visibleRange.end + 1)) * VIRTUAL_ROW_HEIGHT_PX,
+  );
+
+  useEffect(() => {
+    if (isLoading) return;
+    const rowCount = displayedExpenses.length;
+    if (!rowCount) {
+      setVisibleRange({ start: 0, end: 0 });
+      return;
+    }
+
+    let frameId = null;
+    const calculateRange = () => {
+      const container = listContainerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || 0;
+      const topOffset = Math.max(0, -rect.top);
+      const bottomOffset = Math.max(0, rect.bottom - viewportHeight);
+      const visibleHeight = Math.max(0, viewportHeight - topOffset - bottomOffset);
+
+      const start = Math.max(
+        0,
+        Math.floor(topOffset / VIRTUAL_ROW_HEIGHT_PX) - VIRTUAL_OVERSCAN_ROWS,
+      );
+      const end = Math.min(
+        rowCount - 1,
+        Math.ceil((topOffset + visibleHeight) / VIRTUAL_ROW_HEIGHT_PX) +
+          VIRTUAL_OVERSCAN_ROWS,
+      );
+      setVisibleRange((prev) =>
+        prev.start === start && prev.end === end ? prev : { start, end },
+      );
+    };
+
+    const onScrollOrResize = () => {
+      if (frameId != null) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(calculateRange);
+    };
+
+    onScrollOrResize();
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
+
+    return () => {
+      if (frameId != null) cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [displayedExpenses, isLoading]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    setVisibleRange((prev) => {
+      const maxEnd = Math.max(0, displayedExpenses.length - 1);
+      const nextStart = Math.min(prev.start, maxEnd);
+      const nextEnd = Math.min(Math.max(nextStart, prev.end), maxEnd);
+      if (prev.start === nextStart && prev.end === nextEnd) return prev;
+      return { start: nextStart, end: nextEnd };
+    });
+  }, [displayedExpenses.length, isLoading]);
 
   return (
     <>
@@ -609,9 +870,7 @@ export default function DashboardPage() {
               value={selectedCategories}
               displayEmpty
               onChange={(event) => onCategoryFilterChange(event.target.value)}
-              renderValue={(selected) =>
-                allCategoriesSelected ? t("all") : selected.join(", ")
-              }
+              renderValue={renderSelectedCategoriesValue}
               sx={{ minWidth: 0 }}
             >
               <MenuItem value={CATEGORY_ALL_VALUE}>
@@ -622,6 +881,10 @@ export default function DashboardPage() {
                   }
                 />
                 <ListItemText primary={t("all")} />
+              </MenuItem>
+              <MenuItem value={CATEGORY_RETURNS_VALUE}>
+                <Checkbox checked={allCategoriesSelected || selectedReturnsOnly} />
+                <ListItemText primary={returnsLabel} />
               </MenuItem>
               {categoryOptions.map((category) => (
                 <MenuItem key={category} value={category}>
@@ -639,15 +902,21 @@ export default function DashboardPage() {
             <Dropdown
               labelId="account-filter-label-mobile"
               label={t("accountFilter")}
+              labelShrink
               multiple
+              displayEmpty
               disabled={!shouldShowAccountFilter}
               value={
-                shouldShowAccountFilter ? selectedConnectionIds : []
+                shouldShowAccountFilter
+                  ? selectedConnectionIds
+                  : hasSingleAccountOption
+                    ? [accountFilterOptions[0].id]
+                    : []
               }
               onChange={(event) => onAccountFilterChange(event.target.value)}
               renderValue={(selected) => {
                 if (!shouldShowAccountFilter) {
-                  return t("allAccounts");
+                  return singleAccountLabel;
                 }
 
                 const values = Array.isArray(selected) ? selected : [];
@@ -670,7 +939,7 @@ export default function DashboardPage() {
             >
               {!shouldShowAccountFilter ? (
                 <MenuItem disabled value="">
-                  <ListItemText primary={t("allAccounts")} />
+                  <ListItemText primary={singleAccountLabel} />
                 </MenuItem>
               ) : (
                 accountFilterOptions.map((option) => (
@@ -692,11 +961,13 @@ export default function DashboardPage() {
               sx={{ minWidth: 0 }}
             >
               <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-              <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
-              <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
-              <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
               <MenuItem value="custom_range">{t("customRange")}</MenuItem>
               <MenuItem value="all_time">{t("allTime")}</MenuItem>
+              {lastSixMonthOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
             </Dropdown>
 
             <Dropdown
@@ -726,9 +997,7 @@ export default function DashboardPage() {
               value={selectedCategories}
               displayEmpty
               onChange={(event) => onCategoryFilterChange(event.target.value)}
-              renderValue={(selected) =>
-                allCategoriesSelected ? t("all") : selected.join(", ")
-              }
+              renderValue={renderSelectedCategoriesValue}
               sx={{ flex: 1, minWidth: 0 }}
             >
               <MenuItem value={CATEGORY_ALL_VALUE}>
@@ -739,6 +1008,10 @@ export default function DashboardPage() {
                   }
                 />
                 <ListItemText primary={t("all")} />
+              </MenuItem>
+              <MenuItem value={CATEGORY_RETURNS_VALUE}>
+                <Checkbox checked={allCategoriesSelected || selectedReturnsOnly} />
+                <ListItemText primary={returnsLabel} />
               </MenuItem>
               {categoryOptions.map((category) => (
                 <MenuItem key={category} value={category}>
@@ -761,11 +1034,13 @@ export default function DashboardPage() {
               sx={{ flex: 1, minWidth: 170 }}
             >
               <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-              <MenuItem value="last_month">{t("lastMonth")}</MenuItem>
-              <MenuItem value="last_7_days">{t("last7Days")}</MenuItem>
-              <MenuItem value="last_30_days">{t("last30Days")}</MenuItem>
               <MenuItem value="custom_range">{t("customRange")}</MenuItem>
               <MenuItem value="all_time">{t("allTime")}</MenuItem>
+              {lastSixMonthOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
             </Dropdown>
 
             <Dropdown
@@ -784,15 +1059,21 @@ export default function DashboardPage() {
             <Dropdown
               labelId="account-filter-label"
               label={t("accountFilter")}
+              labelShrink
               multiple
+              displayEmpty
               disabled={!shouldShowAccountFilter}
               value={
-                shouldShowAccountFilter ? selectedConnectionIds : []
+                shouldShowAccountFilter
+                  ? selectedConnectionIds
+                  : hasSingleAccountOption
+                    ? [accountFilterOptions[0].id]
+                    : []
               }
               onChange={(event) => onAccountFilterChange(event.target.value)}
               renderValue={(selected) => {
                 if (!shouldShowAccountFilter) {
-                  return t("allAccounts");
+                  return singleAccountLabel;
                 }
 
                 const values = Array.isArray(selected) ? selected : [];
@@ -815,7 +1096,7 @@ export default function DashboardPage() {
             >
               {!shouldShowAccountFilter ? (
                 <MenuItem disabled value="">
-                  <ListItemText primary={t("allAccounts")} />
+                  <ListItemText primary={singleAccountLabel} />
                 </MenuItem>
               ) : (
                 accountFilterOptions.map((option) => (
@@ -943,7 +1224,7 @@ export default function DashboardPage() {
                 </Typography>
               </Box>
             )}
-          <List disablePadding>
+          <List disablePadding ref={listContainerRef}>
             {isLoading
               ? Array.from({ length: 6 }).map((_, index) => (
                   <Box key={`expense-skeleton-${index}`} sx={{ py: 1 }}>
@@ -958,7 +1239,10 @@ export default function DashboardPage() {
                     {index < 5 && <Divider sx={{ mt: 1 }} />}
                   </Box>
                 ))
-              : displayedExpenses.map((exp, index) => (
+              : (
+                <>
+                  {topSpacerHeight > 0 && <Box sx={{ height: topSpacerHeight }} />}
+                  {visibleExpenses.map((exp) => (
                   <ExpenseItem
                     key={exp._id}
                     exp={exp}
@@ -968,12 +1252,16 @@ export default function DashboardPage() {
                     isExpanded={Boolean(expandedIds[exp._id])}
                     onToggleExpanded={toggleExpanded}
                     onExpenseUpdated={onExpenseUpdated}
-                    isLast={index === displayedExpenses.length - 1}
                     direction={direction}
                     locale={locale}
                     t={t}
                   />
-                ))}
+                  ))}
+                  {bottomSpacerHeight > 0 && (
+                    <Box sx={{ height: bottomSpacerHeight }} />
+                  )}
+                </>
+              )}
           </List>
         </CardContent>
       </Card>

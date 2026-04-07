@@ -36,6 +36,7 @@ const expenseSchema = new mongoose.Schema(
 );
 
 expenseSchema.index({ householdId: 1, date: -1 });
+expenseSchema.index({ householdId: 1, updatedAt: 1, _id: 1 });
 expenseSchema.index({ householdId: 1, externalId: 1 }, { unique: false });
 expenseSchema.index(
   { householdId: 1, source: 1, externalId: 1, sourceConnectionKey: 1 },

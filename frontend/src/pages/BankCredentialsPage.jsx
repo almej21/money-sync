@@ -488,7 +488,7 @@ export default function BankCredentialsPage() {
         <DialogTitle>Are you sure?</DialogTitle>
         <DialogContent>
           <Typography color="text.primary">
-            This will remove the selected bank connection.
+            {t("removeSelectedBankConnectionConfirm")}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -512,7 +512,7 @@ export default function BankCredentialsPage() {
         <DialogTitle>Are you sure?</DialogTitle>
         <DialogContent>
           <Typography color="text.primary">
-            This will remove all configured bank connections.
+            {t("removeAllBankConnectionsConfirm")}
           </Typography>
         </DialogContent>
         <DialogActions>

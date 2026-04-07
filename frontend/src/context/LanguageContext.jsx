@@ -86,7 +86,8 @@ const MESSAGES = {
     sampleMilk: "Milk",
     sampleBread: "Bread",
     bankCredentials: "Bank credentials",
-    configureBankCredentials: "Configure credentials used by bank sync for your account.",
+    configureBankCredentials:
+      "Configure credentials used by bank sync for your account.",
     status: "Status",
     loading: "Loading...",
     loadingBankExpensesPrefix: "Loading",
@@ -120,6 +121,10 @@ const MESSAGES = {
     failedSaveBankCredentials: "Failed to save bank credentials",
     failedRemoveBankConnection: "Failed to remove bank account",
     failedRemoveBankCredentials: "Failed to remove bank credentials",
+    removeSelectedBankConnectionConfirm:
+      "This will remove the selected bank connection.",
+    removeAllBankConnectionsConfirm:
+      "This will remove all configured bank connections.",
     defaultBankAccountsDescription:
       "Choose which bank accounts are selected by default in the dashboard filter.",
     defaultBankAccountsSectionTitle: "Default dashboard accounts",
@@ -131,7 +136,8 @@ const MESSAGES = {
     householdMembers: "Household members",
     myUserInfo: "My info",
     theme: "Theme",
-    themeSectionDescription: "Choose your app color scheme. Changes are saved in this browser only.",
+    themeSectionDescription:
+      "Choose your app color scheme. Changes are saved in this browser only.",
     colorScheme: "Color scheme",
     managerRole: "Manager",
     memberRole: "Member",
@@ -148,7 +154,8 @@ const MESSAGES = {
     failedJoinHousehold: "Failed to join household",
     failedSaveItemNote: "Failed to save item note",
     inviteEmailRequired: "Email is required",
-    deleteListConfirmMessage: "Are you sure you want to delete the {listName} list?",
+    deleteListConfirmMessage:
+      "Are you sure you want to delete the {listName} list?",
     newListButton: "+ New list",
     editListTitle: "Edit list",
     newItemButton: "+ New item",
@@ -239,7 +246,8 @@ const MESSAGES = {
     sampleMilk: "חלב",
     sampleBread: "לחם",
     bankCredentials: "פרטי התחברות לבנק",
-    configureBankCredentials: "הגדר את פרטי ההתחברות לסנכרון הבנק עבור החשבון שלך.",
+    configureBankCredentials:
+      "הגדר את פרטי ההתחברות לסנכרון הבנק עבור החשבון שלך.",
     status: "סטטוס",
     loading: "טוען...",
     loadingBankExpensesPrefix: "טוען הוצאות של",
@@ -249,7 +257,7 @@ const MESSAGES = {
     connectedAccounts: "חשבונות מחוברים:",
     notConnected: "לא מחובר",
     lastUpdated: "עודכן לאחרונה",
-    lastBankFetch: "משיכה אחרונה מהבנק",
+    lastBankFetch: "סנכרון אחרון",
     configuredAccounts: "חשבונות מוגדרים",
     noBankConnections: "עדיין לא חוברו חשבונות בנק.",
     dashboardNoBankConnectionMessage:
@@ -273,6 +281,8 @@ const MESSAGES = {
     failedSaveBankCredentials: "שמירת פרטי ההתחברות לבנק נכשלה",
     failedRemoveBankConnection: "הסרת חשבון הבנק נכשלה",
     failedRemoveBankCredentials: "הסרת פרטי ההתחברות לבנק נכשלה",
+    removeSelectedBankConnectionConfirm: "הפעולה תסיר את חיבור הבנק שנבחר.",
+    removeAllBankConnectionsConfirm: "הפעולה תסיר את כל חיבורי הבנק שהוגדרו.",
     defaultBankAccountsDescription:
       "בחר אילו חשבונות בנק יהיו מסומנים כברירת מחדל במסנן בלוח הבקרה.",
     defaultBankAccountsSectionTitle: "חשבונות ברירת מחדל ",
@@ -284,7 +294,8 @@ const MESSAGES = {
     householdMembers: "חברי משק הבית",
     myUserInfo: "הפרטים שלי",
     theme: "ערכת נושא",
-    themeSectionDescription: "בחר את ערכת הצבעים של האפליקציה. השינוי נשמר בדפדפן זה בלבד.",
+    themeSectionDescription:
+      "בחר את ערכת הצבעים של האפליקציה. השינוי נשמר בדפדפן זה בלבד.",
     colorScheme: "ערכת צבעים",
     managerRole: "מנהל",
     memberRole: "חבר",
@@ -345,7 +356,11 @@ export function LanguageProvider({ children }) {
     [direction, language],
   );
 
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return (
+    <LanguageContext.Provider value={value}>
+      {children}
+    </LanguageContext.Provider>
+  );
 }
 
 export function useLanguage() {
