@@ -226,7 +226,7 @@ export default function ExpenseItem({
             }}
           >
             <CategoryIcon
-              sx={{ color: theme.palette.text.primary, fontSize: 28 }}
+              sx={{ fontSize: 28 }}
             />
           </IconButton>
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -256,6 +256,8 @@ export default function ExpenseItem({
                     alignItems: "center",
                     gap: 0.5,
                     minWidth: 0,
+                    width: "fit-content",
+                    maxWidth: "100%",
                   }}
                 >
                   <PingPongTypography
@@ -264,7 +266,7 @@ export default function ExpenseItem({
                       textAlign: direction === "rtl" ? "right" : "left",
                       lineHeight: 1.2,
                       fontSize: ".95rem",
-                      flex: 1,
+                      flexShrink: 1,
                       minWidth: 0,
                     }}
                   >

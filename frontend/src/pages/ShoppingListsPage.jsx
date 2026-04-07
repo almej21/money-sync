@@ -1,13 +1,16 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EditSquareIcon from "@mui/icons-material/EditSquare";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import {
   Box,
   Button,
   Card,
   CardContent,
   Checkbox,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -63,6 +66,9 @@ export default function ShoppingListsPage() {
   const [editingListTitle, setEditingListTitle] = useState("");
   const [editingItems, setEditingItems] = useState([]);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [expandedNoteEditorKey, setExpandedNoteEditorKey] = useState("");
+  const [noteDrafts, setNoteDrafts] = useState({});
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const listsRef = useRef([]);
 
   async function load() {
@@ -132,6 +138,7 @@ export default function ShoppingListsPage() {
             _id: item._id,
             description: String(item.description || item.text || "").trim(),
             quantity: Number(item.quantity || 1),
+            note: String(item.note || "").trim(),
             completed: Boolean(item.completed),
           }))
         : [{ description: "", quantity: 1, completed: false }],
@@ -255,6 +262,7 @@ export default function ShoppingListsPage() {
         _id: item?._id,
         description: String(item?.description || "").trim(),
         quantity: Math.max(1, Math.min(100, Number(item?.quantity || 1))),
+        note: String(item?.note || "").trim(),
         completed: Boolean(item?.completed),
       }))
       .filter((item) => item.description);
@@ -280,7 +288,63 @@ export default function ShoppingListsPage() {
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleString(locale);
+    return date.toLocaleString(locale, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function getItemNoteEditorKey(listId, itemId) {
+    return `${String(listId || "").trim()}::${String(itemId || "").trim()}`;
+  }
+
+  function getDraftNoteValue(listId, item) {
+    const key = getItemNoteEditorKey(listId, item?._id);
+    if (Object.hasOwn(noteDrafts, key)) {
+      return noteDrafts[key];
+    }
+    return String(item?.note || "");
+  }
+
+  function onNoteDraftChange(listId, itemId, value) {
+    const key = getItemNoteEditorKey(listId, itemId);
+    setNoteDrafts((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function saveItemNote(list, item) {
+    const listId = String(list?._id || "").trim();
+    const itemId = String(item?._id || "").trim();
+    if (!listId || !itemId) return;
+
+    const key = getItemNoteEditorKey(listId, itemId);
+    const nextNote = String(getDraftNoteValue(listId, item)).trim();
+    const currentNote = String(item?.note || "").trim();
+    if (nextNote === currentNote) return;
+
+    const nextItems = (Array.isArray(list?.items) ? list.items : []).map(
+      (listItem) => {
+        if (String(listItem?._id || "") !== itemId) return listItem;
+        return { ...listItem, note: nextNote };
+      },
+    );
+
+    setIsSavingNote(true);
+    try {
+      const updated = await updateShoppingList(listId, { items: nextItems });
+      setLists((prev) =>
+        prev.map((existing) =>
+          String(existing?._id || "") === listId ? updated : existing,
+        ),
+      );
+      setNoteDrafts((prev) => ({ ...prev, [key]: nextNote }));
+    } catch (error) {
+      setErrorMessage(error?.message || t("failedSaveItemNote"));
+    } finally {
+      setIsSavingNote(false);
+    }
   }
 
   return (
@@ -294,16 +358,21 @@ export default function ShoppingListsPage() {
               alignItems="center"
               sx={{ mb: 1 }}
             >
-              <Typography
-                variant="h6"
-                sx={{
-                  textDecoration: "underline",
-                  textDecorationThickness: "2px",
-                  textUnderlineOffset: "5px",
-                }}
-              >
-                {list.title}
-              </Typography>
+              <Stack direction="row" alignItems="baseline" spacing={0.75}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    textDecoration: "underline",
+                    textDecorationThickness: "2px",
+                    textUnderlineOffset: "5px",
+                  }}
+                >
+                  {list.title}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({Array.isArray(list.items) ? list.items.length : 0} {t("itemsCountLabel")})
+                </Typography>
+              </Stack>
               <Box
                 sx={{
                   display: "flex",
@@ -359,10 +428,10 @@ export default function ShoppingListsPage() {
             <List disablePadding>
               {list.items.map((item, index) => (
                 <Box key={item._id}>
-                  <ListItem disableGutters sx={{ py: 1 }}>
+                  <ListItem disableGutters sx={{ py: 0 }}>
                     <Stack
                       direction="row"
-                      justifyContent="space-between"
+                      justifyContent="flex-start"
                       alignItems="center"
                       spacing={1}
                       sx={{ width: "100%" }}
@@ -370,7 +439,7 @@ export default function ShoppingListsPage() {
                       <Stack
                         direction="row"
                         alignItems="center"
-                        sx={{ minWidth: 0 }}
+                        sx={{ minWidth: 0, width: "100%" }}
                       >
                         <Checkbox
                           checked={Boolean(item.completed)}
@@ -391,9 +460,83 @@ export default function ShoppingListsPage() {
                           }}
                           sx={{ my: 0 }}
                         />
+                        {Boolean(String(item?.note || "").trim()) && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              maxWidth: 180,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              fontSize: "0.8rem",
+                              fontWeight: "600",
+                              fontFamily:
+                                '"Guttman Yad", "Segoe Print", "Miriam Libre", "Noto Sans Hebrew", cursive',
+                              color: "text.secondary",
+                            }}
+                          >
+                            {String(item.note || "").trim()}
+                          </Typography>
+                        )}
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            setExpandedNoteEditorKey((prev) =>
+                              prev === getItemNoteEditorKey(list._id, item._id)
+                                ? ""
+                                : getItemNoteEditorKey(list._id, item._id),
+                            )
+                          }
+                          aria-label={t("addNote")}
+                          sx={{ alignSelf: "center" }}
+                        >
+                          <EditSquareIcon fontSize="small" />
+                        </IconButton>
                       </Stack>
                     </Stack>
                   </ListItem>
+                  <Collapse
+                    in={
+                      expandedNoteEditorKey ===
+                      getItemNoteEditorKey(list._id, item._id)
+                    }
+                  >
+                    <Box sx={{ py: 1 }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label={t("note")}
+                          value={getDraftNoteValue(list._id, item)}
+                          onChange={(event) =>
+                            onNoteDraftChange(
+                              list._id,
+                              item._id,
+                              event.target.value,
+                            )
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter") return;
+                            event.preventDefault();
+                            saveItemNote(list, item);
+                            setExpandedNoteEditorKey("");
+                          }}
+                          disabled={isSavingNote}
+                        />
+                        <IconButton
+                          color="primary"
+                          onClick={() => {
+                            saveItemNote(list, item);
+                            setExpandedNoteEditorKey("");
+                          }}
+                          aria-label={t("save")}
+                          disabled={isSavingNote}
+                        >
+                          <SaveOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+                    </Box>
+                  </Collapse>
                   {index < list.items.length - 1 && <Divider />}
                 </Box>
               ))}
@@ -407,7 +550,7 @@ export default function ShoppingListsPage() {
               }}
             >
               <Typography variant="caption" color="text.secondary">
-                {formatCreatedAt(list.createdAt)}
+                {t("createdAtLabel")} {formatCreatedAt(list.createdAt)}
               </Typography>
             </Box>
           </CardContent>
@@ -452,7 +595,7 @@ export default function ShoppingListsPage() {
                     key={`new-item-${index}`}
                     direction="row"
                     useFlexGap
-                    sx={{ gap: 2, mt: .5 }}
+                    sx={{ gap: 2, mt: 0.5 }}
                   >
                     <TextField
                       value={itemValue.description}
@@ -521,8 +664,10 @@ export default function ShoppingListsPage() {
             </Box>
             <Stack
               direction="row"
+              useFlexGap
               spacing={1}
               sx={{
+                gap: 1,
                 mt: 1,
                 pt: 1,
                 borderTop: "1px solid",

@@ -1,4 +1,4 @@
-const CACHE_NAME = "money-sync-v1";
+const CACHE_NAME = "money-sync-v2";
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -26,6 +26,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;
 
   // SPA navigation fallback.
   if (event.request.mode === "navigate") {

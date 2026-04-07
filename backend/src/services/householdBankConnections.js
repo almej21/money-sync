@@ -1,16 +1,5 @@
 import User from "../models/User.js";
 
-function toPlainConnection(connection) {
-  if (!connection) return null;
-  if (typeof connection.toObject === "function") {
-    return connection.toObject();
-  }
-  if (typeof connection === "object") {
-    return { ...connection };
-  }
-  return null;
-}
-
 export function toStoredEncryptedFields(bankCredentials = {}) {
   const encryptedFields = bankCredentials?.encryptedFields;
   if (encryptedFields && typeof encryptedFields.entries === "function") {
@@ -38,17 +27,13 @@ function hasLegacyCredentials(user = {}) {
   );
 }
 
-function hasModernConnections(user = {}) {
-  return Array.isArray(user?.bankConnections) && user.bankConnections.length > 0;
-}
-
 function chooseMigrationSource(users = [], preferredUserId = "") {
   const preferredId = String(preferredUserId || "").trim();
   if (preferredId) {
     const preferredUser = users.find(
       (user) => String(user?._id || "") === preferredId,
     );
-    if (preferredUser && (hasModernConnections(preferredUser) || hasLegacyCredentials(preferredUser))) {
+    if (preferredUser && hasLegacyCredentials(preferredUser)) {
       return preferredUser;
     }
   }
@@ -56,13 +41,11 @@ function chooseMigrationSource(users = [], preferredUserId = "") {
   const managerWithData = users.find(
     (user) =>
       (user?.role || "manager") === "manager" &&
-      (hasModernConnections(user) || hasLegacyCredentials(user)),
+      hasLegacyCredentials(user),
   );
   if (managerWithData) return managerWithData;
 
-  return users.find(
-    (user) => hasModernConnections(user) || hasLegacyCredentials(user),
-  );
+  return users.find((user) => hasLegacyCredentials(user));
 }
 
 function migrateFromLegacyUserSnapshot(user = {}) {
@@ -104,7 +87,6 @@ export async function ensureHouseholdBankConnections(
       {
         _id: 1,
         role: 1,
-        bankConnections: 1,
         bankCredentials: 1,
         expenseSyncMeta: 1,
       },
@@ -119,14 +101,7 @@ export async function ensureHouseholdBankConnections(
     return { migrated: false, sourceUserId: null };
   }
 
-  let nextConnections = [];
-  if (hasModernConnections(sourceUser)) {
-    nextConnections = sourceUser.bankConnections
-      .map((connection) => toPlainConnection(connection))
-      .filter(Boolean);
-  } else {
-    nextConnections = migrateFromLegacyUserSnapshot(sourceUser);
-  }
+  const nextConnections = migrateFromLegacyUserSnapshot(sourceUser);
 
   if (!nextConnections.length) {
     return { migrated: false, sourceUserId: null };

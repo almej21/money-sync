@@ -610,7 +610,7 @@ export default function DashboardPage() {
               displayEmpty
               onChange={(event) => onCategoryFilterChange(event.target.value)}
               renderValue={(selected) =>
-                allCategoriesSelected ? "All" : selected.join(", ")
+                allCategoriesSelected ? t("all") : selected.join(", ")
               }
               sx={{ minWidth: 0 }}
             >
@@ -621,7 +621,7 @@ export default function DashboardPage() {
                     !allCategoriesSelected && selectedCategories.length > 0
                   }
                 />
-                <ListItemText primary="All" />
+                <ListItemText primary={t("all")} />
               </MenuItem>
               {categoryOptions.map((category) => (
                 <MenuItem key={category} value={category}>
@@ -727,7 +727,7 @@ export default function DashboardPage() {
               displayEmpty
               onChange={(event) => onCategoryFilterChange(event.target.value)}
               renderValue={(selected) =>
-                allCategoriesSelected ? "All" : selected.join(", ")
+                allCategoriesSelected ? t("all") : selected.join(", ")
               }
               sx={{ flex: 1, minWidth: 0 }}
             >
@@ -738,7 +738,7 @@ export default function DashboardPage() {
                     !allCategoriesSelected && selectedCategories.length > 0
                   }
                 />
-                <ListItemText primary="All" />
+                <ListItemText primary={t("all")} />
               </MenuItem>
               {categoryOptions.map((category) => (
                 <MenuItem key={category} value={category}>

@@ -79,7 +79,7 @@ export function createThemeColors(base) {
     secondary: {
       main: base.accent,
       light: base.white,
-      dark: base.secondary,
+      dark: base.accent,
       contrastText: base.text,
     },
     background: {
@@ -88,7 +88,7 @@ export function createThemeColors(base) {
     },
     text: {
       primary: base.text,
-      secondary: base.secondary,
+      secondary: base.text,
     },
     menu: {
       background: base.text,

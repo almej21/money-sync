@@ -4,6 +4,7 @@ const shoppingItemSchema = new mongoose.Schema(
   {
     description: { type: String, required: true },
     quantity: { type: Number, default: 1 },
+    note: { type: String, default: "" },
     completed: { type: Boolean, default: false },
     completedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

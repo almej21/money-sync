@@ -9,6 +9,7 @@ function normalizeItems(items = []) {
     return {
       description,
       quantity: Number(item?.quantity || 1),
+      note: String(item?.note || "").trim(),
       completed: Boolean(item?.completed),
       completedBy: item?.completedBy || null,
     };

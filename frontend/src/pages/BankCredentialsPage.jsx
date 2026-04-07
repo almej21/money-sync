@@ -1,3 +1,4 @@
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   Box,
   Button,
@@ -32,10 +33,27 @@ function buildEmptyCredentials(fields = []) {
   return Object.fromEntries(fields.map((field) => [field.name, ""]));
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatFetchTimestamp(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const hours = pad2(date.getHours());
+  const minutes = pad2(date.getMinutes());
+  const day = pad2(date.getDate());
+  const month = pad2(date.getMonth() + 1);
+  const year = pad2(date.getFullYear() % 100);
+  return `${hours}:${minutes}, ${day}/${month}/${year}`;
+}
+
 export default function BankCredentialsPage() {
   const theme = useTheme();
   const { user } = useAuth();
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const [providers, setProviders] = useState([]);
   const [connections, setConnections] = useState([]);
   const [connectedCount, setConnectedCount] = useState(0);
@@ -254,7 +272,7 @@ export default function BankCredentialsPage() {
             <Typography>{`${t("status")}: ${statusText}`}</Typography>
             {!loading && updatedAt && (
               <Typography color="text.primary">
-                {t("lastUpdated")}: {new Date(updatedAt).toLocaleString(locale)}
+                {t("lastUpdated")}: {formatFetchTimestamp(updatedAt)}
               </Typography>
             )}
           </Stack>
@@ -269,10 +287,14 @@ export default function BankCredentialsPage() {
               </Typography>
             )}
             {connections.map((connection) => (
-              <Card key={connection.id} variant="outlined">
+              <Card
+                key={connection.id}
+                variant="outlined"
+                sx={{ border: `2px solid ${theme.palette.primary.main}` }}
+              >
                 <CardContent
                   sx={{
-                    backgroundColor: theme.palette.primary.main,
+                    backgroundColor: theme.palette.secondary.main,
                     display: "flex",
                     alignItems: "center",
                     py: 2,
@@ -292,24 +314,47 @@ export default function BankCredentialsPage() {
                       <Typography
                         sx={{
                           fontWeight: 600,
-                          color: theme.palette.primary.contrastText,
+                          color: theme.palette.text.contrastText,
                         }}
                       >
                         {providerLabelById[connection.companyId] ||
                           connection.companyId}
                       </Typography>
+                      {connection.lastBankFetchAt && (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: theme.palette.text.contrastText }}
+                        >
+                          {t("lastBankFetch")}:{" "}
+                          {formatFetchTimestamp(connection.lastBankFetchAt)}
+                        </Typography>
+                      )}
                     </Stack>
                     <Button
-                      sx={{
-                        color: theme.palette.primary.contrastText,
-                        border: `1px solid ${theme.palette.primary.contrastText}`,
-                      }}
                       type="button"
-                      variant="inherit"
+                      variant="outlined"
+                      color="error"
+                      size="small"
                       onClick={() => openRemoveConfirmation(connection.id)}
                       disabled={saving || loading || !canManageBankConnections}
+                      sx={{
+                        minWidth: 0,
+                        width: 32,
+                        height: 32,
+                        p: 0,
+                        mr: 0.5,
+                        borderRadius: 1,
+                        borderColor: "error.main",
+                        border: "2px solid",
+                        color: "error.main",
+                        "&:hover": {
+                          bgcolor: "error.main",
+                          borderColor: "error.main",
+                          color: "common.white",
+                        },
+                      }}
                     >
-                      {t("removeConnection")}
+                      <DeleteOutlineIcon fontSize="small" />
                     </Button>
                   </Stack>
                 </CardContent>

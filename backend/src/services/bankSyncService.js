@@ -661,7 +661,49 @@ export async function syncLastMonthExpensesForUser(user) {
   const bulkOps = docs.map((doc) => ({
     updateOne: {
       filter: buildExpenseUpsertFilter(doc),
-      update: { $set: doc },
+      update: [
+        {
+          $set: {
+            householdId: doc.householdId,
+            source: doc.source,
+            externalId: doc.externalId,
+            sourceCompanyId: doc.sourceCompanyId,
+            sourceConnectionKey: doc.sourceConnectionKey,
+            sourceAccountId: doc.sourceAccountId,
+            sourceAccountName: doc.sourceAccountName,
+            dedupKey: doc.dedupKey,
+            date: doc.date,
+            amount: doc.amount,
+            transactionType: doc.transactionType,
+            currency: doc.currency,
+            merchant: doc.merchant,
+            notes: doc.notes,
+            tags: doc.tags,
+            description: {
+              $cond: [
+                { $eq: ["$isUserAltered", true] },
+                "$description",
+                { $literal: doc.description },
+              ],
+            },
+            category: {
+              $cond: [
+                { $eq: ["$isUserAltered", true] },
+                "$category",
+                { $literal: doc.category },
+              ],
+            },
+            createdBy: { $ifNull: ["$createdBy", doc.createdBy] },
+            editedBy: {
+              $cond: [
+                { $eq: ["$isUserAltered", true] },
+                "$editedBy",
+                doc.editedBy,
+              ],
+            },
+          },
+        },
+      ],
       upsert: true,
     },
   }));

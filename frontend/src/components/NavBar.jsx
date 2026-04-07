@@ -138,6 +138,7 @@ export default function NavBar() {
             : "unknown";
   const isRouteActive = (path) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+  const activePageBorderColor = alpha(theme.palette.primary.contrastText, 0.22);
 
   const getNavButtonSx = (path, isMobileNav = false) => {
     const active = isRouteActive(path);
@@ -147,7 +148,7 @@ export default function NavBar() {
       ...base,
       bgcolor: active ? alpha(theme.palette.primary.dark, 0.32) : "transparent",
       boxShadow: active
-        ? `inset 0 0 0 1px ${alpha(theme.palette.primary.contrastText, 0.22)}`
+        ? `inset 0 0 0 1px ${activePageBorderColor}`
         : "none",
       "&:hover": {
         bgcolor: active
@@ -370,6 +371,7 @@ export default function NavBar() {
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 1,
               bgcolor: theme.palette.primary.main,
+              borderTop: `1px solid ${activePageBorderColor}`,
               transition: "top 180ms ease",
             }}
           >

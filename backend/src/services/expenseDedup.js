@@ -13,7 +13,12 @@ function normalizeAmount(value) {
 function normalizeDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString();
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jerusalem",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parsed);
 }
 
 function connectionScope(connectionKey) {
@@ -71,20 +76,30 @@ export function buildExpenseUpsertFilter(expense = {}) {
 
   const normalizedDate = normalizeDate(expense.date);
   const normalizedAmount = Number(expense.amount);
-  const normalizedDescription = String(expense.description || "").trim();
+  const normalizedMerchant = String(expense.merchant || "").trim();
 
   // Legacy fallback to converge old rows that were created before dedupKey existed.
   if (
     normalizedDate &&
-    Number.isFinite(normalizedAmount) &&
-    normalizedDescription
+    Number.isFinite(normalizedAmount)
   ) {
     identityClauses.push({
-      date: new Date(normalizedDate),
       amount: normalizedAmount,
-      description: normalizedDescription,
       sourceCompanyId: String(expense.sourceCompanyId || "").trim(),
       sourceAccountId: String(expense.sourceAccountId || "").trim(),
+      merchant: normalizedMerchant,
+      $expr: {
+        $eq: [
+          {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$date",
+              timezone: "Asia/Jerusalem",
+            },
+          },
+          normalizedDate,
+        ],
+      },
     });
   }
 

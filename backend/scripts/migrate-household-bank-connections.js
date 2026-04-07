@@ -52,7 +52,6 @@ async function clearLegacyUserBankData(householdId) {
     { householdId },
     {
       $set: {
-        bankConnections: [],
         bankCredentials: {
           companyId: "",
           usernameEnc: "",
@@ -112,7 +111,6 @@ async function runMigration() {
       {
         _id: 1,
         role: 1,
-        bankConnections: 1,
         bankCredentials: 1,
         expenseSyncMeta: 1,
       },

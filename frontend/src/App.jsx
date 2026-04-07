@@ -131,6 +131,18 @@ function AppContent() {
               },
             },
           },
+          MuiIconButton: {
+            styleOverrides: {
+              root: {
+                color: themeColors.text.primary,
+                transition: "background-color 160ms ease, color 160ms ease",
+                "&:hover": {
+                  backgroundColor: themeColors.text.primary,
+                  color: themeColors.secondary.dark,
+                },
+              },
+            },
+          },
           MuiOutlinedInput: {
             defaultProps: {
               notched: false,
@@ -170,22 +182,23 @@ function AppContent() {
                 "&.MuiInputLabel-outlined": {
                   transform:
                     direction === "rtl"
-                      ? "translate(-14px, -11px) scale(1)"
+                      ? "translate(-18px, -11px) scale(1)"
                       : "translate(14px, -11px) scale(1)",
                 },
                 ...(direction === "rtl"
                   ? {
-                      right: 14,
+                      right: 16,
                       left: "auto",
                       transformOrigin: "top right",
                     }
                   : {}),
                 "&.MuiInputLabel-shrink": {
-                  transformOrigin: direction === "rtl" ? "top right" : "top left",
+                  transformOrigin:
+                    direction === "rtl" ? "top right" : "top left",
                   transform:
                     direction === "rtl"
-                      ? "translate(5px, -14px) scale(0.75)"
-                      : "translate(5px, -14px) scale(0.75)",
+                      ? "translate(-7px, -16px) scale(0.75)"
+                      : "translate(5px, -16px) scale(0.75)",
                 },
                 "&.Mui-focused": {
                   color: colors.text,

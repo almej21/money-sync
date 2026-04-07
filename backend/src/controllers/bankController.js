@@ -103,6 +103,7 @@ function getSerializedConnections(household) {
     companyId: String(connection?.companyId || "").trim(),
     connectionName: String(connection?.connectionName || "").trim(),
     updatedAt: connection?.updatedAt || null,
+    lastBankFetchAt: connection?.lastBankFetchAt || null,
     connected: hasConnectionCredentials(connection),
   }));
 }
@@ -299,6 +300,7 @@ export async function setBankCredentials(req, res) {
       companyId: savedConnection?.companyId || "",
       connectionName: savedConnection?.connectionName || "",
       updatedAt: savedConnection?.updatedAt || null,
+      lastBankFetchAt: savedConnection?.lastBankFetchAt || null,
       connected: hasConnectionCredentials(savedConnection),
     },
   });
