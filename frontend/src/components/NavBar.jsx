@@ -165,7 +165,12 @@ export default function NavBar() {
         position="static"
         color="inherit"
         elevation={0}
-        sx={{ boxShadow: "none", borderTop: "none" }}
+        sx={{
+          boxShadow: "none",
+          borderTop: 0,
+          borderBottom: 0,
+          backgroundImage: "none",
+        }}
       >
       <Toolbar
         sx={{

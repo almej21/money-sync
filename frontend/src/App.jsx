@@ -88,6 +88,9 @@ function AppContent() {
         components: {
           MuiCssBaseline: {
             styleOverrides: {
+              html: {
+                backgroundColor: themeColors.background.default,
+              },
               body: {
                 backgroundColor: themeColors.background.default,
               },
