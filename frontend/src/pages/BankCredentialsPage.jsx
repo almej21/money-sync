@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Collapse,
   Dialog,
   DialogActions,
@@ -28,6 +29,8 @@ import {
   removeBankConnection,
   saveBankCredentials,
 } from "../services/bankService";
+
+const HIDDEN_COMPANY_IDS = new Set(["isracard"]);
 
 function buildEmptyCredentials(fields = []) {
   return Object.fromEntries(fields.map((field) => [field.name, ""]));
@@ -90,9 +93,6 @@ export default function BankCredentialsPage() {
       ),
     [providers],
   );
-  const statusText = loading
-    ? t("loading")
-    : `${t("connectedAccounts")} ${connectedCount}`;
 
   async function loadBankConfig() {
     setLoading(true);
@@ -104,7 +104,10 @@ export default function BankCredentialsPage() {
       ]);
 
       const nextProviders = Array.isArray(providersData.providers)
-        ? providersData.providers
+        ? providersData.providers.filter(
+            (provider) =>
+              !HIDDEN_COMPANY_IDS.has(String(provider?.companyId || "").trim()),
+          )
         : [];
       const nextConnections = Array.isArray(statusData.connections)
         ? statusData.connections
@@ -269,7 +272,14 @@ export default function BankCredentialsPage() {
           </Typography>
 
           <Stack spacing={1} sx={{ mb: 2 }}>
-            <Typography>{`${t("status")}: ${statusText}`}</Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography>{`${t("status")}:`}</Typography>
+              {loading ? (
+                <CircularProgress size={16} />
+              ) : (
+                <Typography>{`${t("connectedAccounts")} ${connectedCount}`}</Typography>
+              )}
+            </Stack>
             {!loading && updatedAt && (
               <Typography color="text.primary">
                 {t("lastUpdated")}: {formatFetchTimestamp(updatedAt)}

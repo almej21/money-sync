@@ -11,11 +11,16 @@ export default function AppSnackbar({
     xs: "calc(env(safe-area-inset-top, 0px) + 122px)",
     sm: "calc(env(safe-area-inset-top, 0px) + 16px)",
   },
+  bottomOffset = {
+    xs: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+    sm: "24px",
+  },
   snackbarSx,
   alertSx,
   variant = "filled",
 }) {
   const isTopAnchored = anchorOrigin?.vertical === "top";
+  const isBottomAnchored = anchorOrigin?.vertical === "bottom";
 
   return (
     <Snackbar
@@ -25,8 +30,12 @@ export default function AppSnackbar({
       anchorOrigin={anchorOrigin}
       sx={[
         {
-          zIndex: 2147483647,
+          zIndex: (theme) => theme.zIndex.snackbar + 10,
+          left: { xs: 8, sm: "auto" },
+          right: { xs: 8, sm: "auto" },
+          maxWidth: { xs: "calc(100vw - 16px)", sm: "min(560px, calc(100vw - 32px))" },
           ...(isTopAnchored ? { top: topOffset } : {}),
+          ...(isBottomAnchored ? { bottom: bottomOffset } : {}),
         },
         ...(Array.isArray(snackbarSx)
           ? snackbarSx

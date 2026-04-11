@@ -336,9 +336,15 @@ export default function AccountPage() {
                 </Typography>
 
                 {loading ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      py: 1,
+                    }}
+                  >
                     <CircularProgress size={20} />
-                    <Typography>{t("loading")}</Typography>
                   </Box>
                 ) : !sourceAccountOptions.length ? (
                   <Typography color="text.secondary">
@@ -384,8 +390,19 @@ export default function AccountPage() {
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
-                {!householdMembers.length ? (
-                  <Typography color="text.secondary">{t("loading")}</Typography>
+                {loading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      py: 1,
+                    }}
+                  >
+                    <CircularProgress size={20} />
+                  </Box>
+                ) : !householdMembers.length ? (
+                  <Typography color="text.secondary">-</Typography>
                 ) : (
                   <Stack spacing={0.5}>
                     {householdMembers.map((member) => (

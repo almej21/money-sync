@@ -5,7 +5,6 @@ import {
   createTheme,
   CssBaseline,
   ThemeProvider,
-  Typography,
 } from "@mui/material";
 import { useMemo } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -37,10 +36,7 @@ function ProtectedRoutes() {
         }}
         dir={direction}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <CircularProgress size={22} thickness={5} />
-          <Typography variant="body1">Loading...</Typography>
-        </Box>
+        <CircularProgress size={22} thickness={5} />
       </Container>
     );
   }

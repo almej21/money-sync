@@ -128,6 +128,13 @@ export default function ShoppingListsPage() {
     setNewListItems((prev) => [...prev, { description: "", quantity: 1 }]);
   }
 
+  function removeItemRow(index) {
+    setNewListItems((prev) => {
+      if (prev.length <= 1) return [{ description: "", quantity: 1 }];
+      return prev.filter((_, itemIndex) => itemIndex !== index);
+    });
+  }
+
   function openEditModal(list) {
     if (!list?._id) return;
     setEditingListId(String(list._id));
@@ -179,6 +186,13 @@ export default function ShoppingListsPage() {
       ...prev,
       { description: "", quantity: 1, completed: false },
     ]);
+  }
+
+  function removeEditItemRow(index) {
+    setEditingItems((prev) => {
+      if (prev.length <= 1) return [{ description: "", quantity: 1, completed: false }];
+      return prev.filter((_, itemIndex) => itemIndex !== index);
+    });
   }
 
   async function createList(e) {
@@ -653,6 +667,14 @@ export default function ShoppingListsPage() {
                       }
                       sx={{ width: 100 }}
                     />
+                    <IconButton
+                      aria-label="Delete item"
+                      color="error"
+                      onClick={() => removeItemRow(index)}
+                      sx={{ alignSelf: "center", mt: 0.25 }}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
                   </Stack>
                 );
               })}
@@ -731,6 +753,15 @@ export default function ShoppingListsPage() {
                       inputProps={{ min: 1, max: 100 }}
                       sx={{ width: 100 }}
                     />
+                    <IconButton
+                      aria-label="Delete item"
+                      color="error"
+                      onClick={() => removeEditItemRow(index)}
+                      disabled={isSavingEdit}
+                      sx={{ alignSelf: "center", mt: 0.25 }}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
                   </Stack>
                 );
               })}

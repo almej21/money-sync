@@ -3,24 +3,19 @@ import {
   Box,
   Card,
   CardContent,
-  Checkbox,
   Divider,
   List,
-  ListItemText,
-  MenuItem,
   Skeleton,
-  Slider,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
-  createTheme,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
-import Dropdown from "../components/Dropdown";
+import DashboardFilters from "../components/DashboardFilters";
 import ExpenseItem from "../components/ExpenseItem";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -150,14 +145,7 @@ function isReturnExpense(expense) {
 
 export default function DashboardPage() {
   const theme = useTheme();
-  const ltrSliderTheme = useMemo(
-    () =>
-      createTheme({
-        ...theme,
-        direction: "ltr",
-      }),
-    [theme],
-  );
+  const isMobileListView = useMediaQuery(theme.breakpoints.down("sm"));
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -697,18 +685,30 @@ export default function DashboardPage() {
   );
   const visibleExpenses = useMemo(() => {
     if (isLoading) return [];
+    if (isMobileListView) return displayedExpenses;
     const safeStart = Math.max(0, visibleRange.start);
     const safeEnd = Math.max(safeStart, visibleRange.end);
     return displayedExpenses.slice(safeStart, safeEnd + 1);
-  }, [displayedExpenses, isLoading, visibleRange.end, visibleRange.start]);
-  const topSpacerHeight = Math.max(0, visibleRange.start * VIRTUAL_ROW_HEIGHT_PX);
+  }, [
+    displayedExpenses,
+    isLoading,
+    isMobileListView,
+    visibleRange.end,
+    visibleRange.start,
+  ]);
+  const topSpacerHeight = isMobileListView
+    ? 0
+    : Math.max(0, visibleRange.start * VIRTUAL_ROW_HEIGHT_PX);
   const bottomSpacerHeight = Math.max(
     0,
-    (displayedExpenses.length - (visibleRange.end + 1)) * VIRTUAL_ROW_HEIGHT_PX,
+    isMobileListView
+      ? 0
+      : (displayedExpenses.length - (visibleRange.end + 1)) *
+          VIRTUAL_ROW_HEIGHT_PX,
   );
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || isMobileListView) return;
     const rowCount = displayedExpenses.length;
     if (!rowCount) {
       setVisibleRange({ start: 0, end: 0 });
@@ -754,10 +754,10 @@ export default function DashboardPage() {
       window.removeEventListener("scroll", onScrollOrResize);
       window.removeEventListener("resize", onScrollOrResize);
     };
-  }, [displayedExpenses, isLoading]);
+  }, [displayedExpenses, isLoading, isMobileListView]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || isMobileListView) return;
     setVisibleRange((prev) => {
       const maxEnd = Math.max(0, displayedExpenses.length - 1);
       const nextStart = Math.min(prev.start, maxEnd);
@@ -765,7 +765,7 @@ export default function DashboardPage() {
       if (prev.start === nextStart && prev.end === nextEnd) return prev;
       return { start: nextStart, end: nextEnd };
     });
-  }, [displayedExpenses.length, isLoading]);
+  }, [displayedExpenses.length, isLoading, isMobileListView]);
 
   return (
     <>
@@ -854,303 +854,32 @@ export default function DashboardPage() {
             py: { xs: 2.5, sm: 3 },
           }}
         >
-          <Box
-            sx={{
-              display: { xs: "grid", md: "none" },
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: 2,
-              mb: 2,
-            }}
-          >
-            <Dropdown
-              labelId="category-filter-label-mobile"
-              label={t("categoryFilter")}
-              labelShrink
-              multiple
-              value={selectedCategories}
-              displayEmpty
-              onChange={(event) => onCategoryFilterChange(event.target.value)}
-              renderValue={renderSelectedCategoriesValue}
-              sx={{ minWidth: 0 }}
-            >
-              <MenuItem value={CATEGORY_ALL_VALUE}>
-                <Checkbox
-                  checked={allCategoriesSelected}
-                  indeterminate={
-                    !allCategoriesSelected && selectedCategories.length > 0
-                  }
-                />
-                <ListItemText primary={t("all")} />
-              </MenuItem>
-              <MenuItem value={CATEGORY_RETURNS_VALUE}>
-                <Checkbox checked={allCategoriesSelected || selectedReturnsOnly} />
-                <ListItemText primary={returnsLabel} />
-              </MenuItem>
-              {categoryOptions.map((category) => (
-                <MenuItem key={category} value={category}>
-                  <Checkbox
-                    checked={
-                      allCategoriesSelected ||
-                      selectedCategories.includes(category)
-                    }
-                  />
-                  <ListItemText primary={category} />
-                </MenuItem>
-              ))}
-            </Dropdown>
-
-            <Dropdown
-              labelId="account-filter-label-mobile"
-              label={t("accountFilter")}
-              labelShrink
-              multiple
-              displayEmpty
-              disabled={!shouldShowAccountFilter}
-              value={
-                shouldShowAccountFilter
-                  ? selectedConnectionIds
-                  : hasSingleAccountOption
-                    ? [accountFilterOptions[0].id]
-                    : []
-              }
-              onChange={(event) => onAccountFilterChange(event.target.value)}
-              renderValue={(selected) => {
-                if (!shouldShowAccountFilter) {
-                  return singleAccountLabel;
-                }
-
-                const values = Array.isArray(selected) ? selected : [];
-                if (
-                  !values.length ||
-                  values.length === accountFilterOptions.length
-                ) {
-                  return t("allAccounts");
-                }
-
-                return values
-                  .map(
-                    (id) =>
-                      accountFilterOptions.find((option) => option.id === id)
-                        ?.label || id,
-                  )
-                  .join(", ");
-              }}
-              sx={{ minWidth: 0 }}
-            >
-              {!shouldShowAccountFilter ? (
-                <MenuItem disabled value="">
-                  <ListItemText primary={singleAccountLabel} />
-                </MenuItem>
-              ) : (
-                accountFilterOptions.map((option) => (
-                  <MenuItem key={option.id} value={option.id}>
-                    <Checkbox
-                      checked={selectedConnectionIds.includes(option.id)}
-                    />
-                    <ListItemText primary={option.label} />
-                  </MenuItem>
-                ))
-              )}
-            </Dropdown>
-
-            <Dropdown
-              labelId="time-range-label-mobile"
-              value={timeRange}
-              label={t("timeRange")}
-              onChange={(event) => setTimeRange(event.target.value)}
-              sx={{ minWidth: 0 }}
-            >
-              <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-              <MenuItem value="custom_range">{t("customRange")}</MenuItem>
-              <MenuItem value="all_time">{t("allTime")}</MenuItem>
-              {lastSixMonthOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Dropdown>
-
-            <Dropdown
-              labelId="sort-by-label-mobile"
-              value={sortBy}
-              label={t("sortBy")}
-              onChange={(event) => setSortBy(event.target.value)}
-              sx={{ minWidth: 0 }}
-            >
-              <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
-              <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
-              <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
-              <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
-            </Dropdown>
-          </Box>
-
-          <Stack
-            direction="row"
-            useFlexGap
-            sx={{ display: { xs: "none", md: "flex" }, mb: 2, gap: 3 }}
-          >
-            <Dropdown
-              labelId="category-filter-label"
-              label={t("categoryFilter")}
-              labelShrink
-              multiple
-              value={selectedCategories}
-              displayEmpty
-              onChange={(event) => onCategoryFilterChange(event.target.value)}
-              renderValue={renderSelectedCategoriesValue}
-              sx={{ flex: 1, minWidth: 0 }}
-            >
-              <MenuItem value={CATEGORY_ALL_VALUE}>
-                <Checkbox
-                  checked={allCategoriesSelected}
-                  indeterminate={
-                    !allCategoriesSelected && selectedCategories.length > 0
-                  }
-                />
-                <ListItemText primary={t("all")} />
-              </MenuItem>
-              <MenuItem value={CATEGORY_RETURNS_VALUE}>
-                <Checkbox checked={allCategoriesSelected || selectedReturnsOnly} />
-                <ListItemText primary={returnsLabel} />
-              </MenuItem>
-              {categoryOptions.map((category) => (
-                <MenuItem key={category} value={category}>
-                  <Checkbox
-                    checked={
-                      allCategoriesSelected ||
-                      selectedCategories.includes(category)
-                    }
-                  />
-                  <ListItemText primary={category} />
-                </MenuItem>
-              ))}
-            </Dropdown>
-
-            <Dropdown
-              labelId="time-range-label"
-              value={timeRange}
-              label={t("timeRange")}
-              onChange={(event) => setTimeRange(event.target.value)}
-              sx={{ flex: 1, minWidth: 170 }}
-            >
-              <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-              <MenuItem value="custom_range">{t("customRange")}</MenuItem>
-              <MenuItem value="all_time">{t("allTime")}</MenuItem>
-              {lastSixMonthOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Dropdown>
-
-            <Dropdown
-              labelId="sort-by-label"
-              value={sortBy}
-              label={t("sortBy")}
-              onChange={(event) => setSortBy(event.target.value)}
-              sx={{ flex: 1, minWidth: 170 }}
-            >
-              <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
-              <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
-              <MenuItem value="amount_desc">{t("sortPriceHighToLow")}</MenuItem>
-              <MenuItem value="amount_asc">{t("sortPriceLowToHigh")}</MenuItem>
-            </Dropdown>
-
-            <Dropdown
-              labelId="account-filter-label"
-              label={t("accountFilter")}
-              labelShrink
-              multiple
-              displayEmpty
-              disabled={!shouldShowAccountFilter}
-              value={
-                shouldShowAccountFilter
-                  ? selectedConnectionIds
-                  : hasSingleAccountOption
-                    ? [accountFilterOptions[0].id]
-                    : []
-              }
-              onChange={(event) => onAccountFilterChange(event.target.value)}
-              renderValue={(selected) => {
-                if (!shouldShowAccountFilter) {
-                  return singleAccountLabel;
-                }
-
-                const values = Array.isArray(selected) ? selected : [];
-                if (
-                  !values.length ||
-                  values.length === accountFilterOptions.length
-                ) {
-                  return t("allAccounts");
-                }
-
-                return values
-                  .map(
-                    (id) =>
-                      accountFilterOptions.find((option) => option.id === id)
-                        ?.label || id,
-                  )
-                  .join(", ");
-              }}
-              sx={{ flex: 1, minWidth: 0 }}
-            >
-              {!shouldShowAccountFilter ? (
-                <MenuItem disabled value="">
-                  <ListItemText primary={singleAccountLabel} />
-                </MenuItem>
-              ) : (
-                accountFilterOptions.map((option) => (
-                  <MenuItem key={option.id} value={option.id}>
-                    <Checkbox
-                      checked={selectedConnectionIds.includes(option.id)}
-                    />
-                    <ListItemText primary={option.label} />
-                  </MenuItem>
-                ))
-              )}
-            </Dropdown>
-          </Stack>
-          <Box
-            sx={{
-              mb: 2,
-              px: { xs: 0.5, sm: 1 },
-              width: "80%",
-              mx: "auto",
-            }}
-          >
-            <Typography
-              variant="body2"
-              color="text.primary"
-              sx={{ mb: 1, textAlign: "center" }}
-            >
-              {t("amountRange")}:{" "}
-              <Box
-                component="span"
-                sx={{ direction: "ltr", unicodeBidi: "isolate" }}
-              >
-                {Math.round(selectedAmountRange[0])}₪ -{" "}
-                {Math.round(selectedAmountRange[1])}₪
-              </Box>
-            </Typography>
-            <ThemeProvider theme={ltrSliderTheme}>
-              <Slider
-                value={selectedAmountRange}
-                min={0}
-                max={maxExpenseAmount}
-                step={1}
-                disableSwap
-                onChange={(_, newValue) => {
-                  const nextRange = Array.isArray(newValue)
-                    ? newValue
-                    : [0, maxExpenseAmount];
-                  setSelectedAmountRange(nextRange);
-                }}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `${Math.round(Number(value))}₪`}
-                sx={{ direction: "ltr" }}
-              />
-            </ThemeProvider>
-          </Box>
+          <DashboardFilters
+            t={t}
+            categoryAllValue={CATEGORY_ALL_VALUE}
+            categoryReturnsValue={CATEGORY_RETURNS_VALUE}
+            selectedCategories={selectedCategories}
+            allCategoriesSelected={allCategoriesSelected}
+            selectedReturnsOnly={selectedReturnsOnly}
+            returnsLabel={returnsLabel}
+            categoryOptions={categoryOptions}
+            onCategoryFilterChange={onCategoryFilterChange}
+            renderSelectedCategoriesValue={renderSelectedCategoriesValue}
+            shouldShowAccountFilter={shouldShowAccountFilter}
+            selectedConnectionIds={selectedConnectionIds}
+            hasSingleAccountOption={hasSingleAccountOption}
+            accountFilterOptions={accountFilterOptions}
+            singleAccountLabel={singleAccountLabel}
+            onAccountFilterChange={onAccountFilterChange}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+            lastSixMonthOptions={lastSixMonthOptions}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            selectedAmountRange={selectedAmountRange}
+            maxExpenseAmount={maxExpenseAmount}
+            onAmountRangeChange={setSelectedAmountRange}
+          />
           {timeRange === "custom_range" && (
             <Stack
               direction={{ xs: "column", sm: "row" }}

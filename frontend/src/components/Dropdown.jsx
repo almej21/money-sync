@@ -46,6 +46,12 @@ export default function Dropdown({
     anchorOrigin: { vertical: "bottom", horizontal: "left" },
     transformOrigin: { vertical: "top", horizontal: "left" },
     anchorReference: "anchorEl",
+    sx: [
+      {
+        zIndex: (theme) => theme.zIndex.modal + 5,
+      },
+      ...toSxArray(incomingMenuProps?.sx),
+    ],
     ...incomingMenuProps,
     PaperProps: {
       ...(incomingMenuProps?.PaperProps || {}),

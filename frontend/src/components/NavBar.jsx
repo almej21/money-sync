@@ -14,8 +14,8 @@ import {
   DialogContent,
   DialogContentText,
   Stack,
-  Tooltip,
   Toolbar,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -47,7 +47,8 @@ export default function NavBar() {
   const appBarRef = useRef(null);
   const nextLanguage = language === "en" ? "he" : "en";
   const toggleLanguage = () => setLanguage(nextLanguage);
-  const nextLanguageFlagIcon = nextLanguage === "en" ? usaFlagIcon : israelFlagIcon;
+  const nextLanguageFlagIcon =
+    nextLanguage === "en" ? usaFlagIcon : israelFlagIcon;
   const openLogoutModal = () => setIsLogoutModalOpen(true);
   const closeLogoutModal = () => setIsLogoutModalOpen(false);
   const confirmLogout = () => {
@@ -75,7 +76,9 @@ export default function NavBar() {
       try {
         const data = await getMyHouseholdInvitations();
         if (!isMounted) return;
-        const invitations = Array.isArray(data?.invitations) ? data.invitations : [];
+        const invitations = Array.isArray(data?.invitations)
+          ? data.invitations
+          : [];
         setPendingInvitationCount(invitations.length);
       } catch {
         if (!isMounted) return;
@@ -84,15 +87,11 @@ export default function NavBar() {
     }
 
     refreshInvitationCount().catch(() => {});
-    const timer = setInterval(() => {
-      refreshInvitationCount().catch(() => {});
-    }, 30000);
 
     return () => {
       isMounted = false;
-      clearInterval(timer);
     };
-  }, [user, location.pathname]);
+  }, [user]);
 
   const hasPendingInvitations = pendingInvitationCount > 0;
 
@@ -137,7 +136,9 @@ export default function NavBar() {
             ? "xs"
             : "unknown";
   const isRouteActive = (path) =>
-    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+    path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(path);
   const activePageBorderColor = alpha(theme.palette.primary.contrastText, 0.22);
 
   const getNavButtonSx = (path, isMobileNav = false) => {
@@ -147,9 +148,7 @@ export default function NavBar() {
     return {
       ...base,
       bgcolor: active ? alpha(theme.palette.primary.dark, 0.32) : "transparent",
-      boxShadow: active
-        ? `inset 0 0 0 1px ${activePageBorderColor}`
-        : "none",
+      boxShadow: active ? `inset 0 0 0 1px ${activePageBorderColor}` : "none",
       "&:hover": {
         bgcolor: active
           ? alpha(theme.palette.primary.dark, 0.32)
@@ -172,194 +171,198 @@ export default function NavBar() {
           backgroundImage: "none",
         }}
       >
-      <Toolbar
-        sx={{
-          py: isMobile ? 1 : 0.5,
-          px: { xs: 2, sm: 3 },
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <Typography
-          variant={isMobile ? "subtitle1" : "h6"}
+        <Toolbar
           sx={{
-            flexGrow: 1,
-            fontWeight: 700,
-            minWidth: 0,
-            pr: 1,
+            py: isMobile ? 1 : 0.5,
+            px: { xs: 0, sm: 3 },
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          {t("appTitle")}
-        </Typography>
-        {SHOW_SCREEN_SIZE_INDICATOR && (
           <Typography
-            variant="caption"
+            variant={isMobile ? "subtitle1" : "h6"}
             sx={{
-              mr: 1.5,
-              px: 1,
-              py: 0.25,
-              borderRadius: 1,
-              bgcolor: alpha(theme.palette.primary.dark, 0.2),
-              color: "inherit",
+              flexGrow: 1,
               fontWeight: 700,
-              letterSpacing: 0.4,
-              textTransform: "uppercase",
+              minWidth: 0,
+              px: 2,
             }}
           >
-            {currentScreenSize}
+            {t("appTitle")}
           </Typography>
-        )}
-        {user &&
-          (isMobile ? (
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Tooltip title={t("account")}>
-                <Button
-                  component={Link}
-                  to="/account"
-                  color="inherit"
-                  aria-label={t("account")}
-                  sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-                >
-                  <Badge
-                    color="error"
-                    variant="dot"
-                    invisible={!hasPendingInvitations}
-                    overlap="circular"
-                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                  >
-                    <ManageAccountsIcon />
-                  </Badge>
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("language")}>
-                <Button
-                  onClick={toggleLanguage}
-                  aria-label={t("language")}
-                  title={nextLanguage === "en" ? t("english") : t("hebrew")}
-                  sx={{
-                    minWidth: 0,
-                    px: 1,
-                    py: 0.6,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={nextLanguageFlagIcon}
-                    alt={nextLanguage === "en" ? t("english") : t("hebrew")}
-                    sx={{ width: 20, height: 20, display: "block" }}
-                  />
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("logout")}>
-                <Button
-                  color="inherit"
-                  onClick={openLogoutModal}
-                  aria-label={t("logout")}
-                  sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-                >
-                  <LogoutIcon />
-                </Button>
-              </Tooltip>
-            </Stack>
-          ) : (
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{ flexWrap: "wrap" }}
+          {SHOW_SCREEN_SIZE_INDICATOR && (
+            <Typography
+              variant="caption"
+              sx={{
+                mr: 1.5,
+                px: 1,
+                py: 0.25,
+                borderRadius: 1,
+                bgcolor: alpha(theme.palette.primary.dark, 0.2),
+                color: "inherit",
+                fontWeight: 700,
+                letterSpacing: 0.4,
+                textTransform: "uppercase",
+              }}
             >
-              <Tooltip title={t("dashboard")}>
-                <Button
-                  component={Link}
-                  to="/"
-                  color="inherit"
-                  aria-label={t("dashboard")}
-                  sx={getNavButtonSx("/")}
-                >
-                  <FormatListBulletedIcon sx={navIconSx} />
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("shoppingLists")}>
-                <Button
-                  component={Link}
-                  to="/shopping-lists"
-                  color="inherit"
-                  aria-label={t("shoppingLists")}
-                  sx={getNavButtonSx("/shopping-lists")}
-                >
-                  <AddShoppingCartIcon sx={navIconSx} />
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("bank")}>
-                <Button
-                  component={Link}
-                  to="/bank"
-                  color="inherit"
-                  aria-label={t("bank")}
-                  sx={getNavButtonSx("/bank")}
-                >
-                  <WalletIcon sx={navIconSx} />
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("account")}>
-                <Button
-                  component={Link}
-                  to="/account"
-                  color="inherit"
-                  aria-label={t("account")}
-                  sx={getNavButtonSx("/account")}
-                >
-                  <Badge
-                    color="error"
-                    variant="dot"
-                    invisible={!hasPendingInvitations}
-                    overlap="circular"
-                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              {currentScreenSize}
+            </Typography>
+          )}
+          {user &&
+            (isMobile ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Tooltip title={t("account")}>
+                  <Button
+                    component={Link}
+                    to="/account"
+                    color="inherit"
+                    aria-label={t("account")}
+                    sx={{ ...mobileNavButtonSx, minWidth: 0 }}
                   >
-                    <ManageAccountsIcon sx={navIconSx} />
-                  </Badge>
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("language")}>
-                <Button
-                  onClick={toggleLanguage}
-                  aria-label={t("language")}
-                  title={nextLanguage === "en" ? t("english") : t("hebrew")}
-                  sx={{ minWidth: 0, px: 1 }}
-                >
-                  <Box
-                    component="img"
-                    src={nextLanguageFlagIcon}
-                    alt={nextLanguage === "en" ? t("english") : t("hebrew")}
-                    sx={{ width: 20, height: 20, display: "block" }}
-                  />
-                </Button>
-              </Tooltip>
-              <Tooltip title={t("logout")}>
-                <Button
-                  color="inherit"
-                  onClick={openLogoutModal}
-                  aria-label={t("logout")}
-                  sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-                >
-                  <LogoutIcon />
-                </Button>
-              </Tooltip>
-            </Stack>
-          ))}
-        <Dialog open={isLogoutModalOpen} onClose={closeLogoutModal}>
-          <DialogContent>
-            <DialogContentText>{t("logoutConfirmMessage")}</DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={closeLogoutModal}>{t("cancel")}</Button>
-            <Button onClick={confirmLogout} variant="contained" color="primary">
-              {t("logout")}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Toolbar>
+                    <Badge
+                      color="error"
+                      variant="dot"
+                      invisible={!hasPendingInvitations}
+                      overlap="circular"
+                      anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                    >
+                      <ManageAccountsIcon />
+                    </Badge>
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("language")}>
+                  <Button
+                    onClick={toggleLanguage}
+                    aria-label={t("language")}
+                    title={nextLanguage === "en" ? t("english") : t("hebrew")}
+                    sx={{
+                      minWidth: 0,
+                      px: 1,
+                      py: 0.6,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={nextLanguageFlagIcon}
+                      alt={nextLanguage === "en" ? t("english") : t("hebrew")}
+                      sx={{ width: 20, height: 20, display: "block" }}
+                    />
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("logout")}>
+                  <Button
+                    color="inherit"
+                    onClick={openLogoutModal}
+                    aria-label={t("logout")}
+                    sx={{ ...mobileNavButtonSx, minWidth: 0 }}
+                  >
+                    <LogoutIcon />
+                  </Button>
+                </Tooltip>
+              </Stack>
+            ) : (
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ flexWrap: "wrap" }}
+              >
+                <Tooltip title={t("dashboard")}>
+                  <Button
+                    component={Link}
+                    to="/"
+                    color="inherit"
+                    aria-label={t("dashboard")}
+                    sx={getNavButtonSx("/")}
+                  >
+                    <FormatListBulletedIcon sx={navIconSx} />
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("shoppingLists")}>
+                  <Button
+                    component={Link}
+                    to="/shopping-lists"
+                    color="inherit"
+                    aria-label={t("shoppingLists")}
+                    sx={getNavButtonSx("/shopping-lists")}
+                  >
+                    <AddShoppingCartIcon sx={navIconSx} />
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("bank")}>
+                  <Button
+                    component={Link}
+                    to="/bank"
+                    color="inherit"
+                    aria-label={t("bank")}
+                    sx={getNavButtonSx("/bank")}
+                  >
+                    <WalletIcon sx={navIconSx} />
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("account")}>
+                  <Button
+                    component={Link}
+                    to="/account"
+                    color="inherit"
+                    aria-label={t("account")}
+                    sx={getNavButtonSx("/account")}
+                  >
+                    <Badge
+                      color="error"
+                      variant="dot"
+                      invisible={!hasPendingInvitations}
+                      overlap="circular"
+                      anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                    >
+                      <ManageAccountsIcon sx={navIconSx} />
+                    </Badge>
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("language")}>
+                  <Button
+                    onClick={toggleLanguage}
+                    aria-label={t("language")}
+                    title={nextLanguage === "en" ? t("english") : t("hebrew")}
+                    sx={{ minWidth: 0, px: 1 }}
+                  >
+                    <Box
+                      component="img"
+                      src={nextLanguageFlagIcon}
+                      alt={nextLanguage === "en" ? t("english") : t("hebrew")}
+                      sx={{ width: 20, height: 20, display: "block" }}
+                    />
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("logout")}>
+                  <Button
+                    color="inherit"
+                    onClick={openLogoutModal}
+                    aria-label={t("logout")}
+                    sx={{ ...mobileNavButtonSx, minWidth: 0 }}
+                  >
+                    <LogoutIcon />
+                  </Button>
+                </Tooltip>
+              </Stack>
+            ))}
+          <Dialog open={isLogoutModalOpen} onClose={closeLogoutModal}>
+            <DialogContent>
+              <DialogContentText>{t("logoutConfirmMessage")}</DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeLogoutModal}>{t("cancel")}</Button>
+              <Button
+                onClick={confirmLogout}
+                variant="contained"
+                color="primary"
+              >
+                {t("logout")}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Toolbar>
       </AppBar>
       {user && isMobile && (
         <>
@@ -381,7 +384,12 @@ export default function NavBar() {
             }}
           >
             <Tooltip title={t("dashboard")}>
-              <Button component={Link} to="/" sx={getNavButtonSx("/", true)} aria-label={t("dashboard")}>
+              <Button
+                component={Link}
+                to="/"
+                sx={getNavButtonSx("/", true)}
+                aria-label={t("dashboard")}
+              >
                 <FormatListBulletedIcon sx={navIconSx} />
               </Button>
             </Tooltip>
@@ -396,7 +404,12 @@ export default function NavBar() {
               </Button>
             </Tooltip>
             <Tooltip title={t("bank")}>
-              <Button component={Link} to="/bank" sx={getNavButtonSx("/bank", true)} aria-label={t("bank")}>
+              <Button
+                component={Link}
+                to="/bank"
+                sx={getNavButtonSx("/bank", true)}
+                aria-label={t("bank")}
+              >
                 <WalletIcon sx={navIconSx} />
               </Button>
             </Tooltip>

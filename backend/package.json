@@ -10,7 +10,8 @@
     "migrate:household-bank-connections": "node scripts/migrate-household-bank-connections.js",
     "migrate:expense-transaction-type": "node scripts/migrate-expense-transaction-type.js",
     "migrate:flip-scraped-expense-transaction-type": "node scripts/flip-scraped-expense-transaction-type.js",
-    "cleanup:duplicate-expenses": "node scripts/cleanup-duplicate-expenses.js"
+    "cleanup:duplicate-expenses": "node scripts/cleanup-duplicate-expenses.js",
+    "test:bank-scrapers": "node scripts/test-bank-scrapers.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

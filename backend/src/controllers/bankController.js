@@ -15,7 +15,6 @@ const COMPANY_LABELS = {
   otsarHahayal: "Otsar HaHayal",
   max: "MAX",
   visaCal: "CAL",
-  isracard: "Isracard",
   amex: "American Express",
   union: "Union Bank",
   beinleumi: "First International",
@@ -26,6 +25,7 @@ const COMPANY_LABELS = {
   behatsdaa: "BeHatsdaa",
   pagi: "Pagi",
 };
+const HIDDEN_COMPANY_IDS = new Set(["isracard"]);
 
 const FIELD_META = {
   username: { label: "Username", type: "text" },
@@ -47,7 +47,9 @@ const ONE_ZERO_API_REQUIRED_FIELDS = new Set([
 ]);
 
 function getCompany(companyId = "") {
-  return SCRAPERS[String(companyId).trim()] || null;
+  const normalizedCompanyId = String(companyId).trim();
+  if (HIDDEN_COMPANY_IDS.has(normalizedCompanyId)) return null;
+  return SCRAPERS[normalizedCompanyId] || null;
 }
 
 function getApiLoginFields(companyId = "") {
@@ -67,11 +69,13 @@ function getApiLoginFields(companyId = "") {
 }
 
 function getProviders() {
-  return Object.keys(SCRAPERS).map((companyId) => ({
-    companyId,
-    label: COMPANY_LABELS[companyId] || companyId,
-    fields: getApiLoginFields(companyId),
-  }));
+  return Object.keys(SCRAPERS)
+    .filter((companyId) => !HIDDEN_COMPANY_IDS.has(companyId))
+    .map((companyId) => ({
+      companyId,
+      label: COMPANY_LABELS[companyId] || companyId,
+      fields: getApiLoginFields(companyId),
+    }));
 }
 
 function hasConnectionCredentials(bankConnection = {}) {

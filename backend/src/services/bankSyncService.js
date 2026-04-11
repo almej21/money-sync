@@ -28,7 +28,6 @@ const BANK_COMPANY_LABELS = {
   otsarHahayal: "Otsar HaHayal",
   max: "MAX",
   visaCal: "CAL",
-  isracard: "Isracard",
   amex: "American Express",
   union: "Union Bank",
   beinleumi: "First International",
