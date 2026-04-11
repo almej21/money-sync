@@ -224,26 +224,88 @@ function ExpenseItem({
               p: 0,
             }}
           >
-            <CategoryIcon
-              sx={{ fontSize: 28 }}
-            />
+            <CategoryIcon sx={{ fontSize: 28 }} />
           </IconButton>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {isEditing ? (
-              <Stack sx={{ gap: 0.75 }}>
+              <Stack sx={{ gap: 1.3, py: 1 }}>
                 <TextField
+                  variant="outlined"
                   size="small"
                   fullWidth
                   value={draftDescription}
                   onChange={(event) => setDraftDescription(event.target.value)}
                   label={t("description")}
+                  InputLabelProps={{
+                    shrink: true,
+                    sx: {
+                      "&.MuiInputLabel-outlined": {
+                        transform:
+                          direction === "rtl"
+                            ? "translate(-14px, -9px) scale(0.75) !important"
+                            : "translate(14px, -9px) scale(0.75) !important",
+                        transformOrigin:
+                          direction === "rtl" ? "top right" : "top left",
+                      },
+                      "&.MuiInputLabel-shrink": {
+                        transform:
+                          direction === "rtl"
+                            ? "translate(-14px, -9px) scale(0.75) !important"
+                            : "translate(14px, -9px) scale(0.75) !important",
+                        transformOrigin:
+                          direction === "rtl" ? "top right" : "top left",
+                      },
+                    },
+                  }}
+                  InputProps={{ notched: true }}
+                  sx={{
+                    "& .MuiOutlinedInput-input": {
+                      paddingTop: 1,
+                      paddingBottom: 1,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline legend": {
+                      maxWidth: "1000px !important",
+                    },
+                  }}
                 />
                 <TextField
+                  variant="outlined"
                   size="small"
                   fullWidth
                   value={draftCategory}
                   onChange={(event) => setDraftCategory(event.target.value)}
                   label={t("category")}
+                  InputLabelProps={{
+                    shrink: true,
+                    sx: {
+                      "&.MuiInputLabel-outlined": {
+                        transform:
+                          direction === "rtl"
+                            ? "translate(-14px, -9px) scale(0.75) !important"
+                            : "translate(14px, -9px) scale(0.75) !important",
+                        transformOrigin:
+                          direction === "rtl" ? "top right" : "top left",
+                      },
+                      "&.MuiInputLabel-shrink": {
+                        transform:
+                          direction === "rtl"
+                            ? "translate(-14px, -9px) scale(0.75) !important"
+                            : "translate(14px, -9px) scale(0.75) !important",
+                        transformOrigin:
+                          direction === "rtl" ? "top right" : "top left",
+                      },
+                    },
+                  }}
+                  InputProps={{ notched: true }}
+                  sx={{
+                    "& .MuiOutlinedInput-input": {
+                      paddingTop: 1,
+                      paddingBottom: 1,
+                    },
+                    "& .MuiOutlinedInput-notchedOutline legend": {
+                      maxWidth: "1000px !important",
+                    },
+                  }}
                 />
               </Stack>
             ) : (
@@ -339,7 +401,7 @@ function ExpenseItem({
             sx={{
               alignItems: isEditing ? "flex-end" : "center",
               width: "fit-content",
-              gap: 0.75,
+              gap: 1.2,
               flexDirection: "column",
               alignSelf: isEditing ? "stretch" : "center",
               justifyContent: isEditing ? "space-between" : "center",

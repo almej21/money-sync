@@ -181,6 +181,16 @@ export default function ShoppingListsPage() {
     });
   }
 
+  function incrementEditItemQuantity(index) {
+    const current = Number(editingItems[index]?.quantity || 1);
+    onEditItemQuantityChange(index, Math.min(100, current + 1));
+  }
+
+  function decrementEditItemQuantity(index) {
+    const current = Number(editingItems[index]?.quantity || 1);
+    onEditItemQuantityChange(index, Math.max(1, current - 1));
+  }
+
   function addEditItemRow() {
     setEditingItems((prev) => [
       ...prev,
@@ -750,7 +760,44 @@ export default function ShoppingListsPage() {
                       }
                       label={t("itemQuantity")}
                       InputLabelProps={{ shrink: true }}
-                      inputProps={{ min: 1, max: 100 }}
+                      inputProps={{
+                        min: 1,
+                        max: 100,
+                        inputMode: isMobile ? "none" : "numeric",
+                        readOnly: isMobile,
+                      }}
+                      InputProps={
+                        isMobile
+                          ? {
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Stack spacing={0} sx={{ mr: -1 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        incrementEditItemQuantity(index)
+                                      }
+                                      aria-label="Increase quantity"
+                                      tabIndex={-1}
+                                    >
+                                      <KeyboardArrowUpIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() =>
+                                        decrementEditItemQuantity(index)
+                                      }
+                                      aria-label="Decrease quantity"
+                                      tabIndex={-1}
+                                    >
+                                      <KeyboardArrowDownIcon fontSize="small" />
+                                    </IconButton>
+                                  </Stack>
+                                </InputAdornment>
+                              ),
+                            }
+                          : undefined
+                      }
                       sx={{ width: 100 }}
                     />
                     <IconButton
