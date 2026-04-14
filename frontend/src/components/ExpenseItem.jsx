@@ -233,38 +233,16 @@ function ExpenseItem({
                   variant="outlined"
                   size="small"
                   fullWidth
+                  dir={direction}
                   value={draftDescription}
                   onChange={(event) => setDraftDescription(event.target.value)}
                   label={t("description")}
-                  InputLabelProps={{
-                    shrink: true,
-                    sx: {
-                      "&.MuiInputLabel-outlined": {
-                        transform:
-                          direction === "rtl"
-                            ? "translate(-14px, -9px) scale(0.75) !important"
-                            : "translate(14px, -9px) scale(0.75) !important",
-                        transformOrigin:
-                          direction === "rtl" ? "top right" : "top left",
-                      },
-                      "&.MuiInputLabel-shrink": {
-                        transform:
-                          direction === "rtl"
-                            ? "translate(-14px, -9px) scale(0.75) !important"
-                            : "translate(14px, -9px) scale(0.75) !important",
-                        transformOrigin:
-                          direction === "rtl" ? "top right" : "top left",
-                      },
-                    },
-                  }}
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{ notched: true }}
                   sx={{
                     "& .MuiOutlinedInput-input": {
                       paddingTop: 1,
                       paddingBottom: 1,
-                    },
-                    "& .MuiOutlinedInput-notchedOutline legend": {
-                      maxWidth: "1000px !important",
                     },
                   }}
                 />
@@ -272,38 +250,16 @@ function ExpenseItem({
                   variant="outlined"
                   size="small"
                   fullWidth
+                  dir={direction}
                   value={draftCategory}
                   onChange={(event) => setDraftCategory(event.target.value)}
                   label={t("category")}
-                  InputLabelProps={{
-                    shrink: true,
-                    sx: {
-                      "&.MuiInputLabel-outlined": {
-                        transform:
-                          direction === "rtl"
-                            ? "translate(-14px, -9px) scale(0.75) !important"
-                            : "translate(14px, -9px) scale(0.75) !important",
-                        transformOrigin:
-                          direction === "rtl" ? "top right" : "top left",
-                      },
-                      "&.MuiInputLabel-shrink": {
-                        transform:
-                          direction === "rtl"
-                            ? "translate(-14px, -9px) scale(0.75) !important"
-                            : "translate(14px, -9px) scale(0.75) !important",
-                        transformOrigin:
-                          direction === "rtl" ? "top right" : "top left",
-                      },
-                    },
-                  }}
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{ notched: true }}
                   sx={{
                     "& .MuiOutlinedInput-input": {
                       paddingTop: 1,
                       paddingBottom: 1,
-                    },
-                    "& .MuiOutlinedInput-notchedOutline legend": {
-                      maxWidth: "1000px !important",
                     },
                   }}
                 />

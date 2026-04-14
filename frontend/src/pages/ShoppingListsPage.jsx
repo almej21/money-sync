@@ -17,7 +17,6 @@ import {
   DialogTitle,
   Divider,
   IconButton,
-  InputAdornment,
   List,
   ListItem,
   ListItemText,
@@ -200,7 +199,8 @@ export default function ShoppingListsPage() {
 
   function removeEditItemRow(index) {
     setEditingItems((prev) => {
-      if (prev.length <= 1) return [{ description: "", quantity: 1, completed: false }];
+      if (prev.length <= 1)
+        return [{ description: "", quantity: 1, completed: false }];
       return prev.filter((_, itemIndex) => itemIndex !== index);
     });
   }
@@ -394,7 +394,8 @@ export default function ShoppingListsPage() {
                   {list.title}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  ({Array.isArray(list.items) ? list.items.length : 0} {t("itemsCountLabel")})
+                  ({Array.isArray(list.items) ? list.items.length : 0}{" "}
+                  {t("itemsCountLabel")})
                 </Typography>
               </Stack>
               <Box
@@ -629,54 +630,74 @@ export default function ShoppingListsPage() {
                       placeholder={t("sampleMilk")}
                       fullWidth
                     />
-                    <TextField
-                      type="number"
-                      value={itemValue.quantity}
-                      onChange={(e) =>
-                        onItemQuantityChange(index, e.target.value)
-                      }
-                      label={t("itemQuantity")}
-                      InputLabelProps={{ shrink: true }}
-                      inputProps={{
-                        min: 1,
-                        max: 100,
-                        inputMode: isMobile ? "none" : "numeric",
-                        readOnly: isMobile,
-                      }}
-                      InputProps={
-                        isMobile
-                          ? {
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <Stack spacing={0} sx={{ mr: -1 }}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() =>
-                                        incrementItemQuantity(index)
-                                      }
-                                      aria-label="Increase quantity"
-                                      tabIndex={-1}
-                                    >
-                                      <KeyboardArrowUpIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() =>
-                                        decrementItemQuantity(index)
-                                      }
-                                      aria-label="Decrease quantity"
-                                      tabIndex={-1}
-                                    >
-                                      <KeyboardArrowDownIcon fontSize="small" />
-                                    </IconButton>
-                                  </Stack>
-                                </InputAdornment>
-                              ),
-                            }
-                          : undefined
-                      }
-                      sx={{ width: 100 }}
-                    />
+                    {isMobile ? (
+                      <Box
+                        sx={{
+                          width: 124,
+                          height: 56,
+                          boxSizing: "border-box",
+                          bgcolor: "background.default",
+                          border: "1px solid",
+                          borderColor: "primary.light",
+                          borderRadius: (muiTheme) =>
+                            `${muiTheme.shape.borderRadius}px`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          px: 1,
+                        }}
+                      >
+                        <Typography
+                          dir="ltr"
+                          sx={{
+                            minWidth: 20,
+                            textAlign: "center",
+                            fontWeight: 600,
+                            color: "text.primary",
+                          }}
+                        >
+                          {Math.max(
+                            1,
+                            Math.min(100, Number(itemValue.quantity || 1)),
+                          )}
+                        </Typography>
+                        <Stack spacing={0}>
+                          <IconButton
+                            size="small"
+                            onClick={() => incrementItemQuantity(index)}
+                            aria-label="Increase quantity"
+                            tabIndex={-1}
+                          >
+                            <KeyboardArrowUpIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => decrementItemQuantity(index)}
+                            aria-label="Decrease quantity"
+                            tabIndex={-1}
+                          >
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Box>
+                    ) : (
+                      <TextField
+                        type="number"
+                        dir="ltr"
+                        value={itemValue.quantity}
+                        onChange={(e) =>
+                          onItemQuantityChange(index, e.target.value)
+                        }
+                        label={t("itemQuantity")}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{
+                          min: 1,
+                          max: 100,
+                          inputMode: "numeric",
+                        }}
+                        sx={{ width: 100 }}
+                      />
+                    )}
                     <IconButton
                       aria-label="Delete item"
                       color="error"
@@ -742,7 +763,7 @@ export default function ShoppingListsPage() {
                     key={`edit-item-${item._id || index}`}
                     direction="row"
                     useFlexGap
-                    sx={{ gap: 2 }}
+                    sx={{ gap: 0.5 }}
                   >
                     <TextField
                       value={item.description}
@@ -752,54 +773,74 @@ export default function ShoppingListsPage() {
                       placeholder={t("sampleMilk")}
                       fullWidth
                     />
-                    <TextField
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        onEditItemQuantityChange(index, e.target.value)
-                      }
-                      label={t("itemQuantity")}
-                      InputLabelProps={{ shrink: true }}
-                      inputProps={{
-                        min: 1,
-                        max: 100,
-                        inputMode: isMobile ? "none" : "numeric",
-                        readOnly: isMobile,
-                      }}
-                      InputProps={
-                        isMobile
-                          ? {
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <Stack spacing={0} sx={{ mr: -1 }}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() =>
-                                        incrementEditItemQuantity(index)
-                                      }
-                                      aria-label="Increase quantity"
-                                      tabIndex={-1}
-                                    >
-                                      <KeyboardArrowUpIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() =>
-                                        decrementEditItemQuantity(index)
-                                      }
-                                      aria-label="Decrease quantity"
-                                      tabIndex={-1}
-                                    >
-                                      <KeyboardArrowDownIcon fontSize="small" />
-                                    </IconButton>
-                                  </Stack>
-                                </InputAdornment>
-                              ),
-                            }
-                          : undefined
-                      }
-                      sx={{ width: 100 }}
-                    />
+                    {isMobile ? (
+                      <Box
+                        sx={{
+                          width: 124,
+                          height: 43,
+                          boxSizing: "border-box",
+                          bgcolor: "background.default",
+                          border: "1px solid",
+                          borderColor: "primary.light",
+                          borderRadius: (muiTheme) =>
+                            `${muiTheme.shape.borderRadius}px`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          px: 1,
+                        }}
+                      >
+                        <Typography
+                          dir="ltr"
+                          sx={{
+                            minWidth: 20,
+                            textAlign: "center",
+                            fontWeight: 600,
+                            color: "text.primary",
+                          }}
+                        >
+                          {Math.max(
+                            1,
+                            Math.min(100, Number(item.quantity || 1)),
+                          )}
+                        </Typography>
+                        <Stack spacing={0}>
+                          <IconButton
+                            size="small"
+                            onClick={() => incrementEditItemQuantity(index)}
+                            aria-label="Increase quantity"
+                            tabIndex={-1}
+                          >
+                            <KeyboardArrowUpIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => decrementEditItemQuantity(index)}
+                            aria-label="Decrease quantity"
+                            tabIndex={-1}
+                          >
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Box>
+                    ) : (
+                      <TextField
+                        type="number"
+                        dir="ltr"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          onEditItemQuantityChange(index, e.target.value)
+                        }
+                        label={t("itemQuantity")}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{
+                          min: 1,
+                          max: 100,
+                          inputMode: "numeric",
+                        }}
+                        sx={{ width: 100 }}
+                      />
+                    )}
                     <IconButton
                       aria-label="Delete item"
                       color="error"
