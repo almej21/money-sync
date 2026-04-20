@@ -19,6 +19,7 @@ const ONE_ZERO_REQUIRED_FIELDS = new Set([
 const AUTOMATION_BLOCK_PATTERN =
   /(block automation|status:\s*429|too many requests|automation)/i;
 const FETCH_COOLDOWN_MS = 60 * 60 * 1000;
+const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 15_000;
 const BANK_COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
   leumi: "Bank Leumi",
@@ -345,6 +346,9 @@ async function scrapeWithAutomationFallback({
   scrapeCredentials,
   browserLaunchOverrides,
 }) {
+  const scrapeAttemptTimeoutMs = Number(
+    process.env.BANK_SCRAPE_ATTEMPT_TIMEOUT_MS || DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+  );
   const attempts = [];
   attempts.push({
     label: "full",
@@ -378,7 +382,19 @@ async function scrapeWithAutomationFallback({
         ...browserLaunchOverrides,
       });
 
-      const scrapeResult = await scraper.scrape(scrapeCredentials);
+      const scrapeResult = await Promise.race([
+        scraper.scrape(scrapeCredentials),
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            const timeoutError = new Error(
+              `Scrape attempt timed out after ${scrapeAttemptTimeoutMs}ms`,
+            );
+            timeoutError.scrapeMode = attempt.label;
+            timeoutError.attemptsUsed = attemptNumber;
+            reject(timeoutError);
+          }, scrapeAttemptTimeoutMs);
+        }),
+      ]);
       if (scrapeResult?.success) {
         return {
           scrapeResult,

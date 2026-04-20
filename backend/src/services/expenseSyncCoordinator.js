@@ -4,6 +4,7 @@ import { syncLastMonthExpensesForUser } from "./bankSyncService.js";
 
 const syncStateByUserId = new Map();
 const runningSyncPromiseByUserId = new Map();
+const DEFAULT_SYNC_TIMEOUT_MS = 25_000;
 
 function toIso(value) {
   return value instanceof Date ? value.toISOString() : null;
@@ -35,6 +36,25 @@ function waitForPromiseWithTimeout(promise, timeoutMs) {
   ]);
 }
 
+async function runWithTimeout(promise, timeoutMs, errorMessage) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
+  let timer = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const timeoutError = new Error(errorMessage);
+          timeoutError.code = "SYNC_TIMEOUT";
+          reject(timeoutError);
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function triggerExpenseSyncForUser(
   user,
   reason = "unknown",
@@ -62,17 +82,26 @@ export async function triggerExpenseSyncForUser(
   state.lastStartedAt = new Date();
   state.lastError = null;
   const fetchStartedAt = state.lastStartedAt;
+  const syncTimeoutMs = Number(
+    process.env.BANK_SYNC_TIMEOUT_MS || DEFAULT_SYNC_TIMEOUT_MS,
+  );
 
   const syncPromise = Promise.resolve()
     .then(async () => {
       console.log(`[BANK SYNC COORD] started userId=${userId} reason=${reason}`);
-      const result = await syncLastMonthExpensesForUser(user);
+      const result = await runWithTimeout(
+        syncLastMonthExpensesForUser(user),
+        syncTimeoutMs,
+        `Bank sync timed out after ${syncTimeoutMs}ms`,
+      );
       state.lastResult = result || null;
-      if (result?.reason) {
-        console.log(
-          `[BANK SYNC COORD] completed userId=${userId} reason=${result.reason}`,
-        );
-      }
+      console.log(
+        `[BANK SYNC COORD] completed userId=${userId} reason=${reason} imported=${Number(
+          result?.imported || 0,
+        )} total=${Number(result?.total || 0)} resultReason=${String(
+          result?.reason || "-",
+        )}`,
+      );
       const successfulConnectionKeys = Array.isArray(
         result?.successfulConnectionKeys,
       )
