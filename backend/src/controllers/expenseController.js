@@ -1,4 +1,5 @@
 import Expense from "../models/Expense.js";
+import Household from "../models/Household.js";
 import { normalizeScrapedTransactions } from "../services/bankImporter.js";
 import {
   buildExpenseUpsertFilter,
@@ -13,6 +14,78 @@ function normalizeExpenseStatus(statusValue) {
   return String(statusValue || "").trim().toLowerCase() === "pending"
     ? "pending"
     : "posted";
+}
+
+function toIso(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+function latestIso(...values) {
+  const dates = values
+    .map((value) => {
+      const parsed = value ? new Date(value) : null;
+      return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+    })
+    .filter(Boolean);
+
+  if (!dates.length) return null;
+  const latest = dates.reduce((max, current) =>
+    current.getTime() > max.getTime() ? current : max,
+  );
+  return latest.toISOString();
+}
+
+async function getGlobalSyncStateForHousehold(householdId) {
+  if (!householdId) return null;
+
+  const household = await Household.findById(householdId)
+    .select(
+      "bankSync.lockUntil bankSync.lockOwner bankSync.lastStartedAt bankSync.lastCompletedAt bankSync.lastReason",
+    )
+    .lean();
+  if (!household?.bankSync) return null;
+
+  const lockUntilDate = household.bankSync.lockUntil
+    ? new Date(household.bankSync.lockUntil)
+    : null;
+  const hasActiveLock =
+    Boolean(String(household.bankSync.lockOwner || "").trim()) &&
+    Boolean(lockUntilDate) &&
+    !Number.isNaN(lockUntilDate.getTime()) &&
+    lockUntilDate.getTime() > Date.now();
+
+  return {
+    running: hasActiveLock,
+    lastStartedAt: toIso(household.bankSync.lastStartedAt),
+    lastCompletedAt: toIso(household.bankSync.lastCompletedAt),
+    lastReason: String(household.bankSync.lastReason || "").trim() || null,
+  };
+}
+
+async function getMergedSyncState(user) {
+  const inMemory = getExpenseSyncState(user?._id);
+  const global = await getGlobalSyncStateForHousehold(user?.householdId);
+
+  const running = Boolean(inMemory?.running || global?.running);
+  const lastStartedAt = latestIso(inMemory?.lastStartedAt, global?.lastStartedAt);
+  const lastCompletedAt = latestIso(
+    inMemory?.lastCompletedAt,
+    global?.lastCompletedAt,
+  );
+
+  return {
+    running,
+    lastStartedAt,
+    lastCompletedAt,
+    lastError: inMemory?.lastError || null,
+    lastResult:
+      inMemory?.lastResult ||
+      (global?.lastReason ? { reason: global.lastReason } : null),
+    lastTriggerReason:
+      inMemory?.lastTriggerReason || global?.lastReason || null,
+  };
 }
 
 export async function listExpenses(req, res) {
@@ -55,7 +128,7 @@ export async function syncStatus(req, res) {
   res.set("Pragma", "no-cache");
   res.set("Expires", "0");
 
-  const stateBefore = getExpenseSyncState(req.user._id);
+  const stateBefore = await getMergedSyncState(req.user);
   if (
     !stateBefore.running &&
     !stateBefore.lastStartedAt &&
@@ -68,7 +141,7 @@ export async function syncStatus(req, res) {
   }
 
   res.json({
-    sync: getExpenseSyncState(req.user._id),
+    sync: await getMergedSyncState(req.user),
   });
 }
 

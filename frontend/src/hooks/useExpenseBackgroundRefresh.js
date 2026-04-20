@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { getExpenseSyncStatus } from "../services/expenseService";
 
 const POLL_INTERVAL_MS = 4000;
-const MAX_POLLS = 8;
+const MAX_POLL_DURATION_MS = 5 * 60 * 1000;
 
 export function useExpenseBackgroundRefresh(
   loadExpenses,
@@ -27,11 +27,15 @@ export function useExpenseBackgroundRefresh(
       }
 
       const startedAt = initial.sync.lastStartedAt;
-      let polls = 0;
+      const pollStartedAtMs = Date.now();
 
       const poll = async () => {
         if (!active) return;
-        polls += 1;
+
+        if (Date.now() - pollStartedAtMs >= MAX_POLL_DURATION_MS) {
+          onRunningChange(false);
+          return;
+        }
 
         const status = await getExpenseSyncStatus().catch(() => null);
         if (!active || !status?.sync) return;
@@ -50,10 +54,6 @@ export function useExpenseBackgroundRefresh(
           return;
         }
 
-        if (polls >= MAX_POLLS) {
-          onRunningChange(false);
-          return;
-        }
         timer = setTimeout(poll, POLL_INTERVAL_MS);
       };
 
