@@ -51,6 +51,22 @@ export async function listExpenseChanges(req, res) {
 }
 
 export async function syncStatus(req, res) {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+
+  const stateBefore = getExpenseSyncState(req.user._id);
+  if (
+    !stateBefore.running &&
+    !stateBefore.lastStartedAt &&
+    !stateBefore.lastCompletedAt
+  ) {
+    await triggerExpenseSyncForUser(req.user, "sync_status", {
+      awaitCompletion: true,
+      timeoutMs: 12000,
+    });
+  }
+
   res.json({
     sync: getExpenseSyncState(req.user._id),
   });
