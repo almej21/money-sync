@@ -5,6 +5,7 @@ import { syncLastMonthExpensesForUser } from "./bankSyncService.js";
 const syncStateByUserId = new Map();
 const runningSyncPromiseByUserId = new Map();
 const DEFAULT_SYNC_TIMEOUT_MS = 25_000;
+const DEFAULT_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000;
 
 function toIso(value) {
   return value instanceof Date ? value.toISOString() : null;
@@ -66,6 +67,10 @@ export async function triggerExpenseSyncForUser(
   const awaitCompletion = Boolean(options?.awaitCompletion);
   const timeoutMs = Number(options?.timeoutMs || 0);
   const state = getOrCreateState(userId);
+  const now = Date.now();
+  const minIntervalMs = Number(
+    process.env.BANK_SYNC_MIN_INTERVAL_MS || DEFAULT_SYNC_MIN_INTERVAL_MS,
+  );
 
   state.lastTriggerReason = reason;
   if (state.running) {
@@ -77,9 +82,20 @@ export async function triggerExpenseSyncForUser(
     }
     return state;
   }
+  const lastStartedMs = state.lastStartedAt instanceof Date
+    ? state.lastStartedAt.getTime()
+    : null;
+  const isWithinThrottleWindow =
+    Number.isFinite(minIntervalMs) &&
+    minIntervalMs > 0 &&
+    Number.isFinite(lastStartedMs) &&
+    now - lastStartedMs < minIntervalMs;
+  if (isWithinThrottleWindow && !awaitCompletion) {
+    return state;
+  }
 
   state.running = true;
-  state.lastStartedAt = new Date();
+  state.lastStartedAt = new Date(now);
   state.lastError = null;
   const fetchStartedAt = state.lastStartedAt;
   const syncTimeoutMs = Number(
