@@ -6,6 +6,43 @@ const syncStateByUserId = new Map();
 const runningSyncPromiseByUserId = new Map();
 const DEFAULT_SYNC_TIMEOUT_MS = 25_000;
 const DEFAULT_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000;
+const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 15_000;
+const DEFAULT_SCRAPE_RETRY_DELAY_MS = 1_500;
+const DEFAULT_SYNC_TIMEOUT_BUFFER_MS = 5_000;
+
+function parseBoolean(value) {
+  return String(value).trim().toLowerCase() === "true";
+}
+
+function toPositiveNumber(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+function resolveEffectiveSyncTimeoutMs() {
+  const configuredTimeoutMs = toPositiveNumber(
+    process.env.BANK_SYNC_TIMEOUT_MS,
+    DEFAULT_SYNC_TIMEOUT_MS,
+  );
+  const scrapeAttemptTimeoutMs = toPositiveNumber(
+    process.env.BANK_SCRAPE_ATTEMPT_TIMEOUT_MS,
+    DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+  );
+  const scrapeRetryDelayMs = toPositiveNumber(
+    process.env.BANK_SCRAPER_RETRY_DELAY_MS,
+    DEFAULT_SCRAPE_RETRY_DELAY_MS,
+  );
+  const expectedAttempts = parseBoolean(process.env.BANK_SCRAPER_SHOW_BROWSER)
+    ? 2
+    : 3;
+  const minimumReasonableTimeoutMs =
+    expectedAttempts * scrapeAttemptTimeoutMs +
+    Math.max(0, expectedAttempts - 1) * scrapeRetryDelayMs +
+    DEFAULT_SYNC_TIMEOUT_BUFFER_MS;
+
+  return Math.max(configuredTimeoutMs, minimumReasonableTimeoutMs);
+}
 
 function toIso(value) {
   return value instanceof Date ? value.toISOString() : null;
@@ -82,9 +119,8 @@ export async function triggerExpenseSyncForUser(
     }
     return state;
   }
-  const lastStartedMs = state.lastStartedAt instanceof Date
-    ? state.lastStartedAt.getTime()
-    : null;
+  const lastStartedMs =
+    state.lastStartedAt instanceof Date ? state.lastStartedAt.getTime() : null;
   const isWithinThrottleWindow =
     Number.isFinite(minIntervalMs) &&
     minIntervalMs > 0 &&
@@ -98,13 +134,13 @@ export async function triggerExpenseSyncForUser(
   state.lastStartedAt = new Date(now);
   state.lastError = null;
   const fetchStartedAt = state.lastStartedAt;
-  const syncTimeoutMs = Number(
-    process.env.BANK_SYNC_TIMEOUT_MS || DEFAULT_SYNC_TIMEOUT_MS,
-  );
+  const syncTimeoutMs = resolveEffectiveSyncTimeoutMs();
 
   const syncPromise = Promise.resolve()
     .then(async () => {
-      console.log(`[BANK SYNC COORD] started userId=${userId} reason=${reason}`);
+      console.log(
+        `[BANK SYNC COORD] started userId=${userId} reason=${reason} timeoutMs=${syncTimeoutMs}`,
+      );
       const result = await runWithTimeout(
         syncLastMonthExpensesForUser(user),
         syncTimeoutMs,
@@ -127,9 +163,7 @@ export async function triggerExpenseSyncForUser(
         : [];
       if (successfulConnectionKeys.length > 0) {
         const fetchedItemsCount = Number(result?.total || 0);
-        console.log(
-          `DONE FETCHING ITEMS! fetched ${fetchedItemsCount} items`,
-        );
+        console.log(`DONE FETCHING ITEMS! fetched ${fetchedItemsCount} items`);
       }
 
       if (successfulConnectionKeys.length > 0) {
@@ -146,7 +180,9 @@ export async function triggerExpenseSyncForUser(
               },
             },
             {
-              arrayFilters: [{ "connection._id": { $in: successfulObjectIds } }],
+              arrayFilters: [
+                { "connection._id": { $in: successfulObjectIds } },
+              ],
             },
           );
         }
