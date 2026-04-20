@@ -105,4 +105,5 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
           CLIENT_URL: ${{ secrets.CLIENT_URL }}
+          BANK_SCRAPER_ENABLED: "true"
           BANK_CREDENTIALS_SECRET: ${{ secrets.BANK_CREDENTIALS_SECRET }}

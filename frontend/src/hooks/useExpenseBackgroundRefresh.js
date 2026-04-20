@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { getExpenseSyncStatus } from "../services/expenseService";
 
-const POLL_INTERVAL_MS = 2500;
+const POLL_INTERVAL_MS = 4000;
 const MAX_POLLS = 12;
 
-export function useExpenseBackgroundRefresh(loadExpenses, onRunningChange = () => {}) {
+export function useExpenseBackgroundRefresh(
+  loadExpenses,
+  onRunningChange = () => {},
+) {
   useEffect(() => {
     let active = true;
     let timer = null;
