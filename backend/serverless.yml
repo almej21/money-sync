@@ -6,7 +6,7 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
-  timeout: 30
+  timeout: ${env:LAMBDA_TIMEOUT_SECONDS, 90}
   environment:
     MONGODB_URI: ${env:MONGODB_URI}
     JWT_SECRET: ${env:JWT_SECRET}
@@ -20,6 +20,7 @@ provider:
     BANK_SCRAPER_RETRY_DELAY_MS: ${env:BANK_SCRAPER_RETRY_DELAY_MS, '1500'}
     BANK_SYNC_TIMEOUT_MS: ${env:BANK_SYNC_TIMEOUT_MS, '25000'}
     BANK_SYNC_MIN_INTERVAL_MS: ${env:BANK_SYNC_MIN_INTERVAL_MS, '120000'}
+    BANK_SYNC_LOCK_MS: ${env:BANK_SYNC_LOCK_MS, ''}
     BANK_COMPANY_ID: ${env:BANK_COMPANY_ID, ''}
     BANK_USERNAME: ${env:BANK_USERNAME, ''}
     BANK_NATIONAL_ID: ${env:BANK_NATIONAL_ID, ''}

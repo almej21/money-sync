@@ -328,6 +328,47 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function runScrapeWithTimeout({
+  scraper,
+  scrapeCredentials,
+  scrapeAttemptTimeoutMs,
+  scrapeMode,
+  attemptsUsed,
+}) {
+  let timer = null;
+  try {
+    return await Promise.race([
+      scraper.scrape(scrapeCredentials),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const timeoutError = new Error(
+            `Scrape attempt timed out after ${scrapeAttemptTimeoutMs}ms`,
+          );
+          timeoutError.isScrapeTimeout = true;
+          timeoutError.scrapeMode = scrapeMode;
+          timeoutError.attemptsUsed = attemptsUsed;
+          reject(timeoutError);
+        }, scrapeAttemptTimeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function terminateTimedOutScraper(scraper) {
+  if (!scraper || typeof scraper.terminate !== "function") return;
+  try {
+    await scraper.terminate(false);
+  } catch (error) {
+    console.warn(
+      `[BANK SYNC] Failed to terminate timed-out scraper: ${sanitizeErrorMessage(
+        error?.message,
+      )}`,
+    );
+  }
+}
+
 function parseDate(value) {
   if (!value) return null;
   const parsed = new Date(value);
@@ -366,6 +407,7 @@ async function scrapeWithAutomationFallback({
     process.env.BANK_SCRAPER_RETRY_DELAY_MS,
     DEFAULT_RETRY_DELAY_MS,
   );
+  const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
   const attempts = [];
   attempts.push({
     label: "full",
@@ -377,7 +419,7 @@ async function scrapeWithAutomationFallback({
     additionalTransactionInformation: false,
     showBrowser: envCfg.showBrowser,
   });
-  if (!envCfg.showBrowser) {
+  if (!envCfg.showBrowser && !isLambdaRuntime) {
     attempts.push({
       label: "reduced-browser",
       additionalTransactionInformation: false,
@@ -389,8 +431,9 @@ async function scrapeWithAutomationFallback({
 
   for (const attempt of attempts) {
     attemptsUsed += 1;
+    let scraper = null;
     try {
-      const scraper = createScraper({
+      scraper = createScraper({
         companyId: activeCreds.companyId,
         startDate,
         showBrowser: attempt.showBrowser,
@@ -400,20 +443,13 @@ async function scrapeWithAutomationFallback({
         ...browserLaunchOverrides,
       });
 
-      const scrapeResult = await Promise.race([
-        scraper.scrape(scrapeCredentials),
-        new Promise((_, reject) => {
-          setTimeout(() => {
-            const timeoutError = new Error(
-              `Scrape attempt timed out after ${scrapeAttemptTimeoutMs}ms`,
-            );
-            timeoutError.isScrapeTimeout = true;
-            timeoutError.scrapeMode = attempt.label;
-            timeoutError.attemptsUsed = attemptsUsed;
-            reject(timeoutError);
-          }, scrapeAttemptTimeoutMs);
-        }),
-      ]);
+      const scrapeResult = await runScrapeWithTimeout({
+        scraper,
+        scrapeCredentials,
+        scrapeAttemptTimeoutMs,
+        scrapeMode: attempt.label,
+        attemptsUsed,
+      });
       if (scrapeResult?.success) {
         return {
           scrapeResult,
@@ -438,6 +474,9 @@ async function scrapeWithAutomationFallback({
       );
       lastErrorMessage = message;
       const timedOut = Boolean(error?.isScrapeTimeout) || isLikelyTimeout(message);
+      if (timedOut) {
+        await terminateTimedOutScraper(scraper);
+      }
 
       if (
         (attempt.label === "full" || attempt.label === "reduced") &&

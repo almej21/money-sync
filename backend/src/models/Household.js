@@ -26,6 +26,14 @@ const householdSchema = new mongoose.Schema(
       type: [bankConnectionSchema],
       default: [],
     },
+    bankSync: {
+      lockUntil: { type: Date, default: null },
+      lockOwner: { type: String, default: "" },
+      lastStartedAt: { type: Date, default: null },
+      lastCompletedAt: { type: Date, default: null },
+      lastReason: { type: String, default: "" },
+      updatedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true },
 );
