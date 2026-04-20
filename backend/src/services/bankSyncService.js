@@ -18,8 +18,10 @@ const ONE_ZERO_REQUIRED_FIELDS = new Set([
 ]);
 const AUTOMATION_BLOCK_PATTERN =
   /(block automation|status:\s*429|too many requests|automation)/i;
+const TIMEOUT_PATTERN = /(timed out|timeout)/i;
 const FETCH_COOLDOWN_MS = 60 * 60 * 1000;
 const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 15_000;
+const DEFAULT_RETRY_DELAY_MS = 1_500;
 const BANK_COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
   leumi: "Bank Leumi",
@@ -42,6 +44,12 @@ const BANK_COMPANY_LABELS = {
 
 function parseBoolean(value) {
   return String(value).trim().toLowerCase() === "true";
+}
+
+function toNonNegativeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return parsed;
 }
 
 function isNodeVersionSupported() {
@@ -265,6 +273,10 @@ function isLikelyAutomationBlock(message) {
   return AUTOMATION_BLOCK_PATTERN.test(String(message || ""));
 }
 
+function isLikelyTimeout(message) {
+  return TIMEOUT_PATTERN.test(String(message || ""));
+}
+
 function getBankName(companyId) {
   return BANK_COMPANY_LABELS[companyId] || companyId || "Unknown";
 }
@@ -346,8 +358,13 @@ async function scrapeWithAutomationFallback({
   scrapeCredentials,
   browserLaunchOverrides,
 }) {
-  const scrapeAttemptTimeoutMs = Number(
-    process.env.BANK_SCRAPE_ATTEMPT_TIMEOUT_MS || DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+  const scrapeAttemptTimeoutMs = toNonNegativeNumber(
+    process.env.BANK_SCRAPE_ATTEMPT_TIMEOUT_MS,
+    DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+  );
+  const retryDelayMs = toNonNegativeNumber(
+    process.env.BANK_SCRAPER_RETRY_DELAY_MS,
+    DEFAULT_RETRY_DELAY_MS,
   );
   const attempts = [];
   attempts.push({
@@ -368,9 +385,10 @@ async function scrapeWithAutomationFallback({
     });
   }
   let lastErrorMessage = "";
+  let attemptsUsed = 0;
 
   for (const attempt of attempts) {
-    const attemptNumber = attempts.indexOf(attempt) + 1;
+    attemptsUsed += 1;
     try {
       const scraper = createScraper({
         companyId: activeCreds.companyId,
@@ -389,8 +407,9 @@ async function scrapeWithAutomationFallback({
             const timeoutError = new Error(
               `Scrape attempt timed out after ${scrapeAttemptTimeoutMs}ms`,
             );
+            timeoutError.isScrapeTimeout = true;
             timeoutError.scrapeMode = attempt.label;
-            timeoutError.attemptsUsed = attemptNumber;
+            timeoutError.attemptsUsed = attemptsUsed;
             reject(timeoutError);
           }, scrapeAttemptTimeoutMs);
         }),
@@ -401,7 +420,7 @@ async function scrapeWithAutomationFallback({
           usedFallback: attempt.label === "reduced",
           usedBrowserFallback: attempt.label === "reduced-browser",
           scrapeMode: attempt.label,
-          attemptsUsed: attempts.indexOf(attempt) + 1,
+          attemptsUsed,
         };
       }
 
@@ -409,36 +428,28 @@ async function scrapeWithAutomationFallback({
         toScrapeFailureMessage(scrapeResult) ||
         "Failed to scrape bank transactions";
       lastErrorMessage = sanitizeErrorMessage(reason);
-
-      if (
-        (attempt.label === "full" || attempt.label === "reduced") &&
-        isLikelyAutomationBlock(reason)
-      ) {
-        await wait(1500);
-        continue;
-      }
-
       const attemptError = new Error(lastErrorMessage);
       attemptError.scrapeMode = attempt.label;
-      attemptError.attemptsUsed = attemptNumber;
+      attemptError.attemptsUsed = attemptsUsed;
       throw attemptError;
     } catch (error) {
       const message = sanitizeErrorMessage(
         error?.message || "Failed to scrape bank transactions",
       );
       lastErrorMessage = message;
+      const timedOut = Boolean(error?.isScrapeTimeout) || isLikelyTimeout(message);
 
       if (
         (attempt.label === "full" || attempt.label === "reduced") &&
-        isLikelyAutomationBlock(message)
+        (isLikelyAutomationBlock(message) || timedOut)
       ) {
-        await wait(1500);
+        if (retryDelayMs > 0) await wait(retryDelayMs);
         continue;
       }
 
       const attemptError = new Error(message);
       attemptError.scrapeMode = attempt.label;
-      attemptError.attemptsUsed = attemptNumber;
+      attemptError.attemptsUsed = attemptsUsed;
       throw attemptError;
     }
   }
@@ -447,7 +458,7 @@ async function scrapeWithAutomationFallback({
     lastErrorMessage || "Failed to scrape bank transactions",
   );
   terminalError.scrapeMode = "unknown";
-  terminalError.attemptsUsed = attempts.length;
+  terminalError.attemptsUsed = attemptsUsed || attempts.length;
   throw terminalError;
 }
 
