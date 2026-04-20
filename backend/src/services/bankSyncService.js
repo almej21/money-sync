@@ -435,6 +435,9 @@ async function scrapeWithAutomationFallback({
     DEFAULT_RETRY_DELAY_MS,
   );
   const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const allowLambdaBrowserFallback = parseBoolean(
+    process.env.BANK_SCRAPER_ALLOW_BROWSER_FALLBACK_IN_LAMBDA,
+  );
   const connectionId =
     String(activeCreds.connectionKey || "").trim() || activeCreds.companyId;
   const attempts = [];
@@ -448,7 +451,10 @@ async function scrapeWithAutomationFallback({
     additionalTransactionInformation: false,
     showBrowser: envCfg.showBrowser,
   });
-  if (!envCfg.showBrowser && !isLambdaRuntime) {
+  if (
+    !envCfg.showBrowser &&
+    (!isLambdaRuntime || allowLambdaBrowserFallback)
+  ) {
     attempts.push({
       label: "reduced-browser",
       additionalTransactionInformation: false,
@@ -460,7 +466,7 @@ async function scrapeWithAutomationFallback({
       activeCreds.companyId,
     )} connectionId=${formatLogValue(
       connectionId,
-    )} startDate=${startDate instanceof Date ? startDate.toISOString() : formatLogValue(startDate)} attemptTimeoutMs=${effectiveAttemptTimeoutMs} retryDelayMs=${retryDelayMs} attempts=${attempts.map((attempt) => attempt.label).join("|")} lambdaRuntime=${isLambdaRuntime} showBrowserCfg=${envCfg.showBrowser}`,
+    )} startDate=${startDate instanceof Date ? startDate.toISOString() : formatLogValue(startDate)} attemptTimeoutMs=${effectiveAttemptTimeoutMs} retryDelayMs=${retryDelayMs} attempts=${attempts.map((attempt) => attempt.label).join("|")} lambdaRuntime=${isLambdaRuntime} showBrowserCfg=${envCfg.showBrowser} allowLambdaBrowserFallback=${allowLambdaBrowserFallback}`,
   );
   let lastErrorMessage = "";
   let attemptsUsed = 0;

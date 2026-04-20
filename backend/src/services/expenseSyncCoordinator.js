@@ -11,6 +11,8 @@ const DEFAULT_SCRAPE_RETRY_DELAY_MS = 1_500;
 const DEFAULT_SYNC_TIMEOUT_BUFFER_MS = 5_000;
 const DEFAULT_SCRAPE_TIMEOUT_CLEANUP_MS = 5_000;
 const DEFAULT_SYNC_LOCK_BUFFER_MS = 10_000;
+const DEFAULT_LAMBDA_TIMEOUT_SECONDS = 180;
+const LAMBDA_WAIT_SAFETY_BUFFER_MS = 2_000;
 
 function parseBoolean(value) {
   return String(value).trim().toLowerCase() === "true";
@@ -33,6 +35,26 @@ function summarizeError(error) {
   return { message, code, stack: stack || "-" };
 }
 
+function resolveExpectedAttempts() {
+  const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const showBrowser = parseBoolean(process.env.BANK_SCRAPER_SHOW_BROWSER);
+  const allowLambdaBrowserFallback = parseBoolean(
+    process.env.BANK_SCRAPER_ALLOW_BROWSER_FALLBACK_IN_LAMBDA,
+  );
+  if (showBrowser) return 2;
+  if (!isLambdaRuntime) return 3;
+  return allowLambdaBrowserFallback ? 3 : 2;
+}
+
+function resolveLambdaMaxWaitMs() {
+  const timeoutSeconds = toPositiveNumber(
+    process.env.LAMBDA_TIMEOUT_SECONDS,
+    DEFAULT_LAMBDA_TIMEOUT_SECONDS,
+  );
+  const maxWaitMs = timeoutSeconds * 1000 - LAMBDA_WAIT_SAFETY_BUFFER_MS;
+  return Math.max(1_000, maxWaitMs);
+}
+
 function resolveEffectiveSyncTimeoutMs() {
   const configuredTimeoutMs = toPositiveNumber(
     process.env.BANK_SYNC_TIMEOUT_MS,
@@ -50,12 +72,7 @@ function resolveEffectiveSyncTimeoutMs() {
     process.env.BANK_SCRAPER_RETRY_DELAY_MS,
     DEFAULT_SCRAPE_RETRY_DELAY_MS,
   );
-  const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
-  const expectedAttempts = parseBoolean(process.env.BANK_SCRAPER_SHOW_BROWSER)
-    ? 2
-    : isLambdaRuntime
-      ? 2
-      : 3;
+  const expectedAttempts = resolveExpectedAttempts();
   const minimumReasonableTimeoutMs =
     expectedAttempts * scrapeAttemptTimeoutMs +
     Math.max(0, expectedAttempts - 1) * scrapeRetryDelayMs +
@@ -193,9 +210,10 @@ export async function triggerExpenseSyncForUser(
   const awaitCompletion = Boolean(options?.awaitCompletion);
   const timeoutMs = Number(options?.timeoutMs || 0);
   const syncBudgetMs = resolveEffectiveSyncTimeoutMs();
+  const lambdaMaxWaitMs = isLambdaRuntime ? resolveLambdaMaxWaitMs() : null;
   const waitTimeoutMs = awaitCompletion
     ? isLambdaRuntime
-      ? Math.max(timeoutMs, syncBudgetMs)
+      ? Math.min(Math.max(timeoutMs, syncBudgetMs), lambdaMaxWaitMs)
       : timeoutMs
     : timeoutMs;
   const state = getOrCreateState(userId);
