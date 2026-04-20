@@ -22,9 +22,17 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22.12.0
+          node-version: 22.17.1
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Validate required backend deploy secrets
+        run: |
+          test -n "${{ secrets.MONGODB_URI }}" || { echo "Missing required secret: MONGODB_URI"; exit 1; }
+          test -n "${{ secrets.JWT_SECRET }}" || { echo "Missing required secret: JWT_SECRET"; exit 1; }
+          test -n "${{ secrets.JWT_EXPIRES_IN }}" || { echo "Missing required secret: JWT_EXPIRES_IN"; exit 1; }
+          test -n "${{ secrets.CLIENT_URL }}" || { echo "Missing required secret: CLIENT_URL"; exit 1; }
+          test -n "${{ secrets.BANK_CREDENTIALS_SECRET }}" || { echo "Missing required secret: BANK_CREDENTIALS_SECRET"; exit 1; }
 
       - name: Install backend runtime dependencies locally
         env:
@@ -97,3 +105,4 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
           CLIENT_URL: ${{ secrets.CLIENT_URL }}
+          BANK_CREDENTIALS_SECRET: ${{ secrets.BANK_CREDENTIALS_SECRET }}
