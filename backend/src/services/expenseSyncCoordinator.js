@@ -6,9 +6,10 @@ const syncStateByUserId = new Map();
 const runningSyncPromiseByUserId = new Map();
 const DEFAULT_SYNC_TIMEOUT_MS = 25_000;
 const DEFAULT_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000;
-const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 15_000;
+const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 30_000;
 const DEFAULT_SCRAPE_RETRY_DELAY_MS = 1_500;
 const DEFAULT_SYNC_TIMEOUT_BUFFER_MS = 5_000;
+const DEFAULT_SCRAPE_TIMEOUT_CLEANUP_MS = 5_000;
 const DEFAULT_SYNC_LOCK_BUFFER_MS = 10_000;
 
 function parseBoolean(value) {
@@ -37,9 +38,13 @@ function resolveEffectiveSyncTimeoutMs() {
     process.env.BANK_SYNC_TIMEOUT_MS,
     DEFAULT_SYNC_TIMEOUT_MS,
   );
-  const scrapeAttemptTimeoutMs = toPositiveNumber(
+  const configuredAttemptTimeoutMs = toPositiveNumber(
     process.env.BANK_SCRAPE_ATTEMPT_TIMEOUT_MS,
     DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+  );
+  const scrapeAttemptTimeoutMs = Math.max(
+    DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+    configuredAttemptTimeoutMs,
   );
   const scrapeRetryDelayMs = toPositiveNumber(
     process.env.BANK_SCRAPER_RETRY_DELAY_MS,
@@ -54,6 +59,7 @@ function resolveEffectiveSyncTimeoutMs() {
   const minimumReasonableTimeoutMs =
     expectedAttempts * scrapeAttemptTimeoutMs +
     Math.max(0, expectedAttempts - 1) * scrapeRetryDelayMs +
+    expectedAttempts * DEFAULT_SCRAPE_TIMEOUT_CLEANUP_MS +
     DEFAULT_SYNC_TIMEOUT_BUFFER_MS;
 
   return Math.max(configuredTimeoutMs, minimumReasonableTimeoutMs);
@@ -174,25 +180,6 @@ function waitForPromiseWithTimeout(promise, timeoutMs) {
   ]);
 }
 
-async function runWithTimeout(promise, timeoutMs, errorMessage) {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
-  let timer = null;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        timer = setTimeout(() => {
-          const timeoutError = new Error(errorMessage);
-          timeoutError.code = "SYNC_TIMEOUT";
-          reject(timeoutError);
-        }, timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
 export async function triggerExpenseSyncForUser(
   user,
   reason = "unknown",
@@ -205,10 +192,10 @@ export async function triggerExpenseSyncForUser(
   const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
   const awaitCompletion = Boolean(options?.awaitCompletion);
   const timeoutMs = Number(options?.timeoutMs || 0);
-  const syncTimeoutMs = resolveEffectiveSyncTimeoutMs();
+  const syncBudgetMs = resolveEffectiveSyncTimeoutMs();
   const waitTimeoutMs = awaitCompletion
     ? isLambdaRuntime
-      ? Math.max(timeoutMs, syncTimeoutMs)
+      ? Math.max(timeoutMs, syncBudgetMs)
       : timeoutMs
     : timeoutMs;
   const state = getOrCreateState(userId);
@@ -252,7 +239,7 @@ export async function triggerExpenseSyncForUser(
     return state;
   }
 
-  const lockMs = resolveDistributedLockMs(syncTimeoutMs);
+  const lockMs = resolveDistributedLockMs(syncBudgetMs);
   const lockOwner = `${userId}:${new mongoose.Types.ObjectId().toString()}`;
   const lockResult = await acquireDistributedSyncLock({
     householdId,
@@ -280,13 +267,9 @@ export async function triggerExpenseSyncForUser(
   const syncPromise = Promise.resolve()
     .then(async () => {
       console.log(
-        `[BANK SYNC COORD] started userId=${userId} householdId=${householdId || "-"} reason=${reason} timeoutMs=${syncTimeoutMs} lockMs=${lockMs} lockOwner=${lockOwner}`,
+        `[BANK SYNC COORD] started userId=${userId} householdId=${householdId || "-"} reason=${reason} syncBudgetMs=${syncBudgetMs} lockMs=${lockMs} lockOwner=${lockOwner}`,
       );
-      const result = await runWithTimeout(
-        syncLastMonthExpensesForUser(user),
-        syncTimeoutMs,
-        `Bank sync timed out after ${syncTimeoutMs}ms`,
-      );
+      const result = await syncLastMonthExpensesForUser(user);
       state.lastResult = result || null;
       console.log(
         `[BANK SYNC COORD] completed userId=${userId} reason=${reason} imported=${Number(

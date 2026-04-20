@@ -20,7 +20,7 @@ const AUTOMATION_BLOCK_PATTERN =
   /(block automation|status:\s*429|too many requests|automation)/i;
 const TIMEOUT_PATTERN = /(timed out|timeout)/i;
 const FETCH_COOLDOWN_MS = 60 * 60 * 1000;
-const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 15_000;
+const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 30_000;
 const DEFAULT_RETRY_DELAY_MS = 1_500;
 const BANK_COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
@@ -297,6 +297,16 @@ function formatLogValue(value) {
   return String(value);
 }
 
+function serializeForLog(value, maxLength = 12_000) {
+  try {
+    const serialized = JSON.stringify(value);
+    if (serialized.length <= maxLength) return serialized;
+    return `${serialized.slice(0, maxLength)}...<truncated>`;
+  } catch {
+    return '"[unserializable]"';
+  }
+}
+
 function normalizeExpenseStatus(statusValue) {
   return String(statusValue || "").trim().toLowerCase() === "pending"
     ? "pending"
@@ -416,6 +426,10 @@ async function scrapeWithAutomationFallback({
     process.env.BANK_SCRAPE_ATTEMPT_TIMEOUT_MS,
     DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
   );
+  const effectiveAttemptTimeoutMs = Math.max(
+    DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS,
+    scrapeAttemptTimeoutMs,
+  );
   const retryDelayMs = toNonNegativeNumber(
     process.env.BANK_SCRAPER_RETRY_DELAY_MS,
     DEFAULT_RETRY_DELAY_MS,
@@ -446,7 +460,7 @@ async function scrapeWithAutomationFallback({
       activeCreds.companyId,
     )} connectionId=${formatLogValue(
       connectionId,
-    )} startDate=${startDate instanceof Date ? startDate.toISOString() : formatLogValue(startDate)} attemptTimeoutMs=${scrapeAttemptTimeoutMs} retryDelayMs=${retryDelayMs} attempts=${attempts.map((attempt) => attempt.label).join("|")} lambdaRuntime=${isLambdaRuntime} showBrowserCfg=${envCfg.showBrowser}`,
+    )} startDate=${startDate instanceof Date ? startDate.toISOString() : formatLogValue(startDate)} attemptTimeoutMs=${effectiveAttemptTimeoutMs} retryDelayMs=${retryDelayMs} attempts=${attempts.map((attempt) => attempt.label).join("|")} lambdaRuntime=${isLambdaRuntime} showBrowserCfg=${envCfg.showBrowser}`,
   );
   let lastErrorMessage = "";
   let attemptsUsed = 0;
@@ -490,7 +504,7 @@ async function scrapeWithAutomationFallback({
       const scrapeResult = await runScrapeWithTimeout({
         scraper,
         scrapeCredentials,
-        scrapeAttemptTimeoutMs,
+        scrapeAttemptTimeoutMs: effectiveAttemptTimeoutMs,
         scrapeMode: attempt.label,
         attemptsUsed,
       });
@@ -771,17 +785,32 @@ export async function syncLastMonthExpensesForUser(user) {
       for (let index = 0; index < normalized.length; index += 1) {
         const normalizedItem = normalized[index];
         const transactionMeta = rawTransactions[index] || {};
+        const rawItem = transactionMeta.txn || null;
         const normalizedAmount = Number(normalizedItem.amount);
         const normalizedStatus = normalizeExpenseStatus(normalizedItem.status);
+        const itemIndex = index + 1;
+        const itemPosition = `${itemIndex}/${normalized.length}`;
         if (
           !Number.isFinite(normalizedAmount) ||
           (normalizedAmount === 0 && normalizedStatus !== "pending")
         ) {
+          const skipReason = !Number.isFinite(normalizedAmount)
+            ? "invalid_amount"
+            : "zero_amount_non_pending";
+          console.log(
+            `[BANK SYNC ITEM] skipped companyId=${formatLogValue(
+              activeCreds.companyId,
+            )} connectionId=${formatLogValue(
+              connectionId,
+            )} item=${itemPosition} reason=${skipReason} normalized=${serializeForLog(
+              normalizedItem,
+            )} raw=${serializeForLog(rawItem)}`,
+          );
           continue;
         }
         const normalizedTransactionType =
           normalizedItem.transactionType === "return" ? "return" : "expense";
-        docs.push({
+        const preparedDoc = {
           ...normalizedItem,
           amount: Math.abs(normalizedAmount),
           transactionType: normalizedTransactionType,
@@ -801,7 +830,21 @@ export async function syncLastMonthExpensesForUser(user) {
           householdId: household._id,
           createdBy: user._id,
           editedBy: user._id,
-        });
+        };
+        docs.push(preparedDoc);
+        console.log(
+          `[BANK SYNC ITEM] fetched companyId=${formatLogValue(
+            activeCreds.companyId,
+          )} connectionId=${formatLogValue(
+            connectionId,
+          )} item=${itemPosition} accountId=${formatLogValue(
+            transactionMeta.accountId,
+          )} accountName=${formatLogValue(
+            transactionMeta.accountName,
+          )} normalized=${serializeForLog(
+            preparedDoc,
+          )} raw=${serializeForLog(rawItem)}`,
+        );
       }
 
       connectionSummaries.push({
