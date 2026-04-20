@@ -21,6 +21,11 @@ const expenseSchema = new mongoose.Schema(
       enum: ["expense", "return"],
       default: "expense",
     },
+    status: {
+      type: String,
+      enum: ["posted", "pending"],
+      default: "posted",
+    },
     currency: { type: String, default: "₪" },
     description: { type: String, required: true },
     merchant: { type: String },

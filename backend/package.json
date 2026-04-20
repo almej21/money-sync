@@ -11,9 +11,11 @@
     "migrate:expense-transaction-type": "node scripts/migrate-expense-transaction-type.js",
     "migrate:flip-scraped-expense-transaction-type": "node scripts/flip-scraped-expense-transaction-type.js",
     "cleanup:duplicate-expenses": "node scripts/cleanup-duplicate-expenses.js",
-    "test:bank-scrapers": "node scripts/test-bank-scrapers.js"
+    "test:bank-scrapers": "node scripts/test-bank-scrapers.js",
+    "test:bank-scrapers:interactive": "node scripts/test-bank-scrapers-interactive.js"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^147.0.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

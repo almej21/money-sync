@@ -19,6 +19,7 @@ import {
   ListItem,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -146,6 +147,10 @@ function ExpenseItem({
     String(exp.transactionType || "")
       .trim()
       .toLowerCase() === "return";
+  const isPending =
+    String(exp.status || "")
+      .trim()
+      .toLowerCase() === "pending";
   const categoryText = String(exp.category || "").trim() || "-";
   const sourceAccountIdText = String(exp.sourceAccountId || "").trim();
   const shouldShowSourceAccountId =
@@ -302,6 +307,41 @@ function ExpenseItem({
                     >
                       {editedLabel}
                     </Typography>
+                  )}
+                  {isPending && (
+                    <Tooltip
+                      title={t("pendingStatusTooltip")}
+                      arrow
+                      slotProps={{
+                        tooltip: {
+                          sx: {
+                            fontFamily: theme.typography.fontFamily,
+                          },
+                        },
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          borderRadius: 0.9,
+                          px: 0.6,
+                          py: 0.4,
+                          bgcolor: theme.palette.warning.main,
+                          color: theme.palette.warning.contrastText,
+                          fontFamily: theme.typography.fontFamily,
+                          fontWeight: 700,
+                          fontSize: ".6rem",
+                          lineHeight: 1,
+                          textTransform: "none",
+                          cursor: "help",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {t("pendingStatus")}
+                      </Box>
+                    </Tooltip>
                   )}
                 </Box>
                 <PingPongTypography

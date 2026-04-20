@@ -9,6 +9,12 @@ import {
   triggerExpenseSyncForUser,
 } from "../services/expenseSyncCoordinator.js";
 
+function normalizeExpenseStatus(statusValue) {
+  return String(statusValue || "").trim().toLowerCase() === "pending"
+    ? "pending"
+    : "posted";
+}
+
 export async function listExpenses(req, res) {
   triggerExpenseSyncForUser(req.user, "list_expenses");
   const expenses = await Expense.find({
@@ -84,6 +90,7 @@ export async function createExpense(req, res) {
     String(req.body.transactionType || "").trim().toLowerCase() === "return"
       ? "return"
       : "expense";
+  const status = normalizeExpenseStatus(req.body.status);
   const expense = await Expense.create({
     householdId: req.user.householdId,
     source: req.body.source || "manual",
@@ -91,6 +98,7 @@ export async function createExpense(req, res) {
     date: req.body.date,
     amount: normalizedAmount,
     transactionType,
+    status,
     currency: req.body.currency || "₪",
     description: req.body.description,
     merchant: req.body.merchant || "",
@@ -175,10 +183,12 @@ export async function importExpenses(req, res) {
     const normalizedAmount = Math.abs(Number(t.amount || 0));
     const transactionType =
       t.transactionType === "return" ? "return" : "expense";
+    const status = normalizeExpenseStatus(t.status);
     return {
       ...t,
       amount: normalizedAmount,
       transactionType,
+      status,
       dedupKey: createExpenseDedupKey({
         ...t,
         amount: normalizedAmount,
@@ -211,6 +221,7 @@ export async function importExpenses(req, res) {
             date: doc.date,
             amount: doc.amount,
             transactionType: doc.transactionType,
+            status: doc.status,
             currency: doc.currency,
             merchant: doc.merchant,
             notes: doc.notes,

@@ -27,6 +27,9 @@ const MESSAGES = {
     password: "Password",
     allExpenses: "All expenses",
     amount: "Amount",
+    pendingStatus: "Pending",
+    pendingStatusTooltip:
+      "This transaction is pending and may change when the bank finalizes it.",
     role: "Role",
     description: "Description",
     category: "Category",
@@ -187,6 +190,8 @@ const MESSAGES = {
     password: "סיסמה",
     allExpenses: "כל ההוצאות",
     amount: "סכום",
+    pendingStatus: "ממתין",
+    pendingStatusTooltip: "העסקה עדיין ממתינה ועשויה להשתנות לאחר אישור סופי מהבנק.",
     role: "תפקיד",
     description: "תיאור",
     category: "קטגוריה",

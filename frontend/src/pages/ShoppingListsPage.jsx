@@ -20,6 +20,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -52,6 +53,7 @@ export default function ShoppingListsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [lists, setLists] = useState([]);
+  const [isLoadingLists, setIsLoadingLists] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newListTitle, setNewListTitle] = useState(getDefaultListTitle);
   const [newListItems, setNewListItems] = useState([
@@ -71,8 +73,15 @@ export default function ShoppingListsPage() {
   const listsRef = useRef([]);
 
   async function load() {
-    const data = await getShoppingLists();
-    setLists(data);
+    setIsLoadingLists(true);
+    try {
+      const data = await getShoppingLists();
+      setLists(data);
+    } catch (error) {
+      setErrorMessage(error?.message || "Failed to load shopping lists");
+    } finally {
+      setIsLoadingLists(false);
+    }
   }
 
   useEffect(() => {
@@ -372,8 +381,74 @@ export default function ShoppingListsPage() {
   }
 
   return (
-    <Stack spacing={2}>
-      {lists.map((list) => (
+      <Stack spacing={2}>
+      {isLoadingLists
+        ? Array.from({ length: 3 }).map((_, index) => (
+            <Card key={`shopping-list-skeleton-${index}`}>
+              <CardContent>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
+                  <Stack direction="row" alignItems="baseline" spacing={0.75}>
+                    <Skeleton variant="text" width={180} height={34} />
+                    <Skeleton variant="text" width={72} height={18} />
+                  </Stack>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "row",
+                      direction: "ltr",
+                      alignItems: "flex-start",
+                      columnGap: 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Skeleton variant="rounded" width={32} height={32} />
+                    <Skeleton variant="rounded" width={32} height={32} />
+                  </Box>
+                </Stack>
+                <Divider sx={{ mb: 1.5 }} />
+                <List disablePadding>
+                  {Array.from({ length: 3 }).map((__, itemIndex) => (
+                    <Box key={`shopping-list-skeleton-item-${index}-${itemIndex}`}>
+                      <ListItem disableGutters sx={{ py: 0.7 }}>
+                        <Stack
+                          direction="row"
+                          justifyContent="flex-start"
+                          alignItems="center"
+                          spacing={1}
+                          sx={{ width: "100%" }}
+                        >
+                          <Skeleton variant="circular" width={22} height={22} />
+                          <Skeleton
+                            variant="text"
+                            width={itemIndex === 1 ? "55%" : "68%"}
+                            height={24}
+                          />
+                        </Stack>
+                      </ListItem>
+                      {itemIndex < 2 && <Divider />}
+                    </Box>
+                  ))}
+                </List>
+                <Box
+                  sx={{
+                    mt: 1.25,
+                    display: "flex",
+                    direction: "ltr",
+                    justifyContent:
+                      direction === "rtl" ? "flex-start" : "flex-end",
+                  }}
+                >
+                  <Skeleton variant="text" width={150} height={18} />
+                </Box>
+              </CardContent>
+            </Card>
+          ))
+        : lists.map((list) => (
         <Card key={list._id}>
           <CardContent>
             <Stack

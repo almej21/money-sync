@@ -28,6 +28,12 @@ function resolveTransactionType(rawAmount) {
   return Number(rawAmount) > 0 ? "return" : "expense";
 }
 
+function normalizeExpenseStatus(statusValue) {
+  return String(statusValue || "").trim().toLowerCase() === "pending"
+    ? "pending"
+    : "posted";
+}
+
 export function normalizeScrapedTransactions(scraped = []) {
   return scraped.map((t) => {
     const rawAmount = resolveTransactionAmount(t);
@@ -41,6 +47,7 @@ export function normalizeScrapedTransactions(scraped = []) {
       date: t.date,
       amount,
       transactionType,
+      status: normalizeExpenseStatus(t.status),
       currency: "₪",
       description: t.description || t.memo || "Bank transaction",
       merchant: t.description || "",

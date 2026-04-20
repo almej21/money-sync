@@ -60,6 +60,32 @@ function getConfig() {
   };
 }
 
+async function resolveBrowserLaunchOverrides() {
+  const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+  if (!isLambdaRuntime) return {};
+
+  try {
+    const chromiumModule = await import("@sparticuz/chromium");
+    const chromium = chromiumModule.default || chromiumModule;
+    const executablePath =
+      process.env.BANK_SCRAPER_EXECUTABLE_PATH ||
+      (await chromium.executablePath());
+    if (!executablePath) return {};
+
+    return {
+      executablePath,
+      args: Array.isArray(chromium.args) ? chromium.args : undefined,
+    };
+  } catch (error) {
+    console.warn(
+      `[BANK SYNC] Failed to load Lambda Chromium overrides: ${sanitizeErrorMessage(
+        error?.message,
+      )}`,
+    );
+    return {};
+  }
+}
+
 function sanitizeCredentials(creds = {}) {
   const output = {};
   for (const [key, value] of Object.entries(creds)) {
@@ -247,6 +273,12 @@ function formatLogValue(value) {
   return String(value);
 }
 
+function normalizeExpenseStatus(statusValue) {
+  return String(statusValue || "").trim().toLowerCase() === "pending"
+    ? "pending"
+    : "posted";
+}
+
 function logConnectionResult({
   companyId,
   connectionId,
@@ -311,6 +343,7 @@ async function scrapeWithAutomationFallback({
   startDate,
   envCfg,
   scrapeCredentials,
+  browserLaunchOverrides,
 }) {
   const attempts = [];
   attempts.push({
@@ -342,6 +375,7 @@ async function scrapeWithAutomationFallback({
         verbose: envCfg.verbose,
         additionalTransactionInformation:
           attempt.additionalTransactionInformation,
+        ...browserLaunchOverrides,
       });
 
       const scrapeResult = await scraper.scrape(scrapeCredentials);
@@ -448,6 +482,7 @@ export async function syncLastMonthExpensesForUser(user) {
   }
 
   const { createScraper, SCRAPERS } = await import("israeli-bank-scrapers");
+  const browserLaunchOverrides = await resolveBrowserLaunchOverrides();
   const { startDate: defaultWindowStartDate } = oneMonthWindow();
   const connectionSummaries = [...connectionErrors];
   const docs = [];
@@ -553,6 +588,7 @@ export async function syncLastMonthExpensesForUser(user) {
           startDate: windowStartDate,
           envCfg,
           scrapeCredentials,
+          browserLaunchOverrides,
         });
       if (usedFallback) {
         console.warn(
@@ -574,7 +610,11 @@ export async function syncLastMonthExpensesForUser(user) {
         const normalizedItem = normalized[index];
         const transactionMeta = rawTransactions[index] || {};
         const normalizedAmount = Number(normalizedItem.amount);
-        if (!Number.isFinite(normalizedAmount) || normalizedAmount === 0) {
+        const normalizedStatus = normalizeExpenseStatus(normalizedItem.status);
+        if (
+          !Number.isFinite(normalizedAmount) ||
+          (normalizedAmount === 0 && normalizedStatus !== "pending")
+        ) {
           continue;
         }
         const normalizedTransactionType =
@@ -583,6 +623,7 @@ export async function syncLastMonthExpensesForUser(user) {
           ...normalizedItem,
           amount: Math.abs(normalizedAmount),
           transactionType: normalizedTransactionType,
+          status: normalizedStatus,
           sourceCompanyId: activeCreds.companyId,
           sourceConnectionKey: connectionId,
           sourceAccountId: transactionMeta.accountId || "",
@@ -687,6 +728,7 @@ export async function syncLastMonthExpensesForUser(user) {
             date: doc.date,
             amount: doc.amount,
             transactionType: doc.transactionType,
+            status: doc.status,
             currency: doc.currency,
             merchant: doc.merchant,
             notes: doc.notes,

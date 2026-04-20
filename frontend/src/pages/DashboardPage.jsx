@@ -459,16 +459,55 @@ export default function DashboardPage() {
     selectedConnectionIds.length > 0 &&
     selectedConnectionIds.length < accountFilterOptions.length;
   const hasMultipleSelectedAccounts = selectedConnectionIds.length > 1;
+
+  const expensesMatchingBaseFilters = useMemo(
+    () =>
+      expenses.filter((exp) => {
+        if (!matchesTimeRange(exp.date, timeRange)) return false;
+
+        if (selectedReturnsOnly && !isReturnExpense(exp)) {
+          return false;
+        }
+
+        const normalizedCategory = String(exp.category || "").trim();
+        if (
+          selectedRegularCategories.length &&
+          !selectedRegularCategories.includes(normalizedCategory)
+        ) {
+          return false;
+        }
+
+        const amount = Math.abs(Number(exp.amount || 0));
+        if (!Number.isFinite(amount)) return false;
+
+        if (!shouldApplyAccountFilter) return true;
+
+        const sourceAccountId = String(exp.sourceAccountId || "").trim();
+        if (!sourceAccountId) return false;
+        return selectedConnectionIds.includes(sourceAccountId);
+      }),
+    [
+      customEndDate,
+      customStartDate,
+      expenses,
+      selectedRegularCategories,
+      selectedReturnsOnly,
+      selectedConnectionIds,
+      shouldApplyAccountFilter,
+      timeRange,
+    ],
+  );
+
   const maxExpenseAmount = useMemo(
     () =>
       Math.max(
         0,
-        ...expenses.map((exp) => {
+        ...expensesMatchingBaseFilters.map((exp) => {
           const amount = Math.abs(Number(exp.amount || 0));
           return Number.isFinite(amount) ? amount : 0;
         }),
       ),
-    [expenses],
+    [expensesMatchingBaseFilters],
   );
 
   useEffect(() => {
@@ -549,31 +588,12 @@ export default function DashboardPage() {
   }
 
   const displayedExpenses = useMemo(() => {
-    const filtered = expenses.filter((exp) => {
-      if (!matchesTimeRange(exp.date, timeRange)) return false;
-
-      if (selectedReturnsOnly && !isReturnExpense(exp)) {
-        return false;
-      }
-
-      const normalizedCategory = String(exp.category || "").trim();
-      if (
-        selectedRegularCategories.length &&
-        !selectedRegularCategories.includes(normalizedCategory)
-      ) {
-        return false;
-      }
+    const filtered = expensesMatchingBaseFilters.filter((exp) => {
       const amount = Math.abs(Number(exp.amount || 0));
-      if (!Number.isFinite(amount)) return false;
       if (amount < selectedAmountRange[0] || amount > selectedAmountRange[1]) {
         return false;
       }
-
-      if (!shouldApplyAccountFilter) return true;
-
-      const sourceAccountId = String(exp.sourceAccountId || "").trim();
-      if (!sourceAccountId) return false;
-      return selectedConnectionIds.includes(sourceAccountId);
+      return true;
     });
 
     return filtered.sort((a, b) => {
@@ -593,18 +613,22 @@ export default function DashboardPage() {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   }, [
-    customEndDate,
-    customStartDate,
-    expenses,
-    accountFilterOptions,
-    selectedRegularCategories,
-    selectedReturnsOnly,
-    selectedConnectionIds,
+    expensesMatchingBaseFilters,
     selectedAmountRange,
     sortBy,
-    shouldApplyAccountFilter,
-    timeRange,
   ]);
+
+  const currentMaxAmountInList = useMemo(
+    () =>
+      Math.max(
+        0,
+        ...displayedExpenses.map((exp) => {
+          const amount = Math.abs(Number(exp.amount || 0));
+          return Number.isFinite(amount) ? amount : 0;
+        }),
+      ),
+    [displayedExpenses],
+  );
 
   const displayedAmountTotal = useMemo(
     () =>
@@ -878,6 +902,7 @@ export default function DashboardPage() {
             onSortByChange={setSortBy}
             selectedAmountRange={selectedAmountRange}
             maxExpenseAmount={maxExpenseAmount}
+            currentMaxAmountInList={currentMaxAmountInList}
             onAmountRangeChange={setSelectedAmountRange}
           />
           {timeRange === "custom_range" && (
