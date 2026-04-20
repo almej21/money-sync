@@ -269,6 +269,17 @@ function sanitizeErrorMessage(message) {
   return firstLine || normalized;
 }
 
+function summarizeError(error) {
+  const message = sanitizeErrorMessage(error?.message);
+  const code = String(error?.code || "-");
+  const stack = String(error?.stack || "")
+    .split("\n")
+    .slice(0, 2)
+    .join(" | ")
+    .trim();
+  return { message, code, stack: stack || "-" };
+}
+
 function isLikelyAutomationBlock(message) {
   return AUTOMATION_BLOCK_PATTERN.test(String(message || ""));
 }
@@ -356,15 +367,17 @@ async function runScrapeWithTimeout({
   }
 }
 
-async function terminateTimedOutScraper(scraper) {
+async function terminateTimedOutScraper(scraper, context = {}) {
   if (!scraper || typeof scraper.terminate !== "function") return;
+  const contextText = `companyId=${formatLogValue(context.companyId)} connectionId=${formatLogValue(context.connectionId)} scrapeMode=${formatLogValue(context.scrapeMode)} attempts=${Math.max(0, Number(context.attemptsUsed || 0))}`;
+  console.warn(`[BANK SYNC ATTEMPT] timeout_cleanup_started ${contextText}`);
   try {
     await scraper.terminate(false);
+    console.warn(`[BANK SYNC ATTEMPT] timeout_cleanup_completed ${contextText}`);
   } catch (error) {
+    const errSummary = summarizeError(error);
     console.warn(
-      `[BANK SYNC] Failed to terminate timed-out scraper: ${sanitizeErrorMessage(
-        error?.message,
-      )}`,
+      `[BANK SYNC ATTEMPT] timeout_cleanup_failed ${contextText} error="${errSummary.message}" code=${errSummary.code} stack="${errSummary.stack}"`,
     );
   }
 }
@@ -408,6 +421,8 @@ async function scrapeWithAutomationFallback({
     DEFAULT_RETRY_DELAY_MS,
   );
   const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const connectionId =
+    String(activeCreds.connectionKey || "").trim() || activeCreds.companyId;
   const attempts = [];
   attempts.push({
     label: "full",
@@ -426,13 +441,30 @@ async function scrapeWithAutomationFallback({
       showBrowser: true,
     });
   }
+  console.log(
+    `[BANK SYNC ATTEMPT] configured companyId=${formatLogValue(
+      activeCreds.companyId,
+    )} connectionId=${formatLogValue(
+      connectionId,
+    )} startDate=${startDate instanceof Date ? startDate.toISOString() : formatLogValue(startDate)} attemptTimeoutMs=${scrapeAttemptTimeoutMs} retryDelayMs=${retryDelayMs} attempts=${attempts.map((attempt) => attempt.label).join("|")} lambdaRuntime=${isLambdaRuntime} showBrowserCfg=${envCfg.showBrowser}`,
+  );
   let lastErrorMessage = "";
   let attemptsUsed = 0;
 
-  for (const attempt of attempts) {
+  for (let attemptIndex = 0; attemptIndex < attempts.length; attemptIndex += 1) {
+    const attempt = attempts[attemptIndex];
+    const nextAttempt = attempts[attemptIndex + 1] || null;
     attemptsUsed += 1;
     let scraper = null;
+    const attemptStartedAtMs = Date.now();
     try {
+      console.log(
+        `[BANK SYNC ATTEMPT] start companyId=${formatLogValue(
+          activeCreds.companyId,
+        )} connectionId=${formatLogValue(
+          connectionId,
+        )} scrapeMode=${attempt.label} attemptNumber=${attemptsUsed}/${attempts.length} showBrowser=${attempt.showBrowser} additionalInfo=${attempt.additionalTransactionInformation}`,
+      );
       scraper = createScraper({
         companyId: activeCreds.companyId,
         startDate,
@@ -442,6 +474,18 @@ async function scrapeWithAutomationFallback({
           attempt.additionalTransactionInformation,
         ...browserLaunchOverrides,
       });
+      if (typeof scraper.onProgress === "function") {
+        scraper.onProgress((companyId, payload) => {
+          const progressType = String(payload?.type || "-");
+          console.log(
+            `[BANK SYNC ATTEMPT] progress companyId=${formatLogValue(
+              companyId || activeCreds.companyId,
+            )} connectionId=${formatLogValue(
+              connectionId,
+            )} scrapeMode=${attempt.label} progressType=${progressType}`,
+          );
+        });
+      }
 
       const scrapeResult = await runScrapeWithTimeout({
         scraper,
@@ -451,6 +495,16 @@ async function scrapeWithAutomationFallback({
         attemptsUsed,
       });
       if (scrapeResult?.success) {
+        const accountsCount = Array.isArray(scrapeResult?.accounts)
+          ? scrapeResult.accounts.length
+          : 0;
+        console.log(
+          `[BANK SYNC ATTEMPT] success companyId=${formatLogValue(
+            activeCreds.companyId,
+          )} connectionId=${formatLogValue(
+            connectionId,
+          )} scrapeMode=${attempt.label} attemptNumber=${attemptsUsed}/${attempts.length} durationMs=${Date.now() - attemptStartedAtMs} accounts=${accountsCount}`,
+        );
         return {
           scrapeResult,
           usedFallback: attempt.label === "reduced",
@@ -469,19 +523,38 @@ async function scrapeWithAutomationFallback({
       attemptError.attemptsUsed = attemptsUsed;
       throw attemptError;
     } catch (error) {
-      const message = sanitizeErrorMessage(
-        error?.message || "Failed to scrape bank transactions",
-      );
-      lastErrorMessage = message;
+      const errSummary = summarizeError(error);
+      const message = errSummary.message;
+      lastErrorMessage = errSummary.message;
       const timedOut = Boolean(error?.isScrapeTimeout) || isLikelyTimeout(message);
+      const automationBlocked = isLikelyAutomationBlock(message);
+      console.warn(
+        `[BANK SYNC ATTEMPT] failed companyId=${formatLogValue(
+          activeCreds.companyId,
+        )} connectionId=${formatLogValue(
+          connectionId,
+        )} scrapeMode=${attempt.label} attemptNumber=${attemptsUsed}/${attempts.length} durationMs=${Date.now() - attemptStartedAtMs} timedOut=${timedOut} automationBlocked=${automationBlocked} error="${message}" code=${errSummary.code} stack="${errSummary.stack}"`,
+      );
       if (timedOut) {
-        await terminateTimedOutScraper(scraper);
+        await terminateTimedOutScraper(scraper, {
+          companyId: activeCreds.companyId,
+          connectionId,
+          scrapeMode: attempt.label,
+          attemptsUsed,
+        });
       }
 
       if (
         (attempt.label === "full" || attempt.label === "reduced") &&
-        (isLikelyAutomationBlock(message) || timedOut)
+        (automationBlocked || timedOut)
       ) {
+        console.warn(
+          `[BANK SYNC ATTEMPT] fallback_triggered companyId=${formatLogValue(
+            activeCreds.companyId,
+          )} connectionId=${formatLogValue(
+            connectionId,
+          )} fromMode=${attempt.label} nextMode=${formatLogValue(nextAttempt?.label)} reason="${message}"`,
+        );
         if (retryDelayMs > 0) await wait(retryDelayMs);
         continue;
       }
@@ -496,6 +569,13 @@ async function scrapeWithAutomationFallback({
   const terminalError = new Error(
     lastErrorMessage || "Failed to scrape bank transactions",
   );
+  console.warn(
+    `[BANK SYNC ATTEMPT] exhausted companyId=${formatLogValue(
+      activeCreds.companyId,
+    )} connectionId=${formatLogValue(
+      connectionId,
+    )} attemptsUsed=${attemptsUsed} lastError="${sanitizeErrorMessage(lastErrorMessage)}"`,
+  );
   terminalError.scrapeMode = "unknown";
   terminalError.attemptsUsed = attemptsUsed || attempts.length;
   throw terminalError;
@@ -506,6 +586,12 @@ export async function syncLastMonthExpensesForUser(user) {
   if (!envCfg.enabled) {
     return { imported: 0, reason: "disabled" };
   }
+  const syncRunStartedAtMs = Date.now();
+  const userId = String(user?._id || "").trim() || "-";
+  const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+  console.log(
+    `[BANK SYNC RUN] started userId=${userId} lambdaRuntime=${isLambdaRuntime} showBrowserCfg=${envCfg.showBrowser} verboseCfg=${envCfg.verbose}`,
+  );
 
   const householdId = String(user?.householdId || "").trim();
   if (!householdId) {
@@ -536,6 +622,9 @@ export async function syncLastMonthExpensesForUser(user) {
   });
   const activeConnections =
     householdConnections.length > 0 ? householdConnections : [fallbackConnection];
+  console.log(
+    `[BANK SYNC RUN] connections_loaded userId=${userId} householdId=${householdId} activeConnections=${activeConnections.length} decryptErrors=${connectionErrors.length} usingFallbackConnection=${householdConnections.length === 0}`,
+  );
 
   if (!activeConnections.some((connection) => connection.companyId)) {
     throw new Error("Missing bank credentials for this user");
@@ -563,6 +652,13 @@ export async function syncLastMonthExpensesForUser(user) {
     const windowStartDate = getWindowStartDate(
       activeCreds.lastBankFetchAt,
       defaultWindowStartDate,
+    );
+    console.log(
+      `[BANK SYNC RUN] connection_started userId=${userId} householdId=${householdId} companyId=${formatLogValue(
+        activeCreds.companyId,
+      )} connectionId=${formatLogValue(
+        connectionId,
+      )} windowStart=${windowStartDate.toISOString()}`,
     );
     const cooldownInfo = getCooldownInfo(activeCreds.lastBankFetchAt, nowMs);
     if (cooldownInfo) {
@@ -730,9 +826,19 @@ export async function syncLastMonthExpensesForUser(user) {
       const errorMessage = sanitizeErrorMessage(
         error?.message || "Failed to scrape bank transactions",
       );
+      const errSummary = summarizeError(error);
       const normalizedErrorMessage = isLikelyAutomationBlock(errorMessage)
         ? `Provider blocked automation request (HTTP 429). ${errorMessage}`
         : errorMessage;
+      console.warn(
+        `[BANK SYNC RUN] connection_failed userId=${userId} householdId=${householdId} companyId=${formatLogValue(
+          activeCreds.companyId,
+        )} connectionId=${formatLogValue(
+          connectionId,
+        )} scrapeMode=${formatLogValue(
+          error?.scrapeMode || "scrape",
+        )} attempts=${Math.max(0, Number(error?.attemptsUsed || 1))} durationMs=${Date.now() - fetchStartedAt} error="${normalizedErrorMessage}" code=${errSummary.code} stack="${errSummary.stack}"`,
+      );
       connectionSummaries.push({
         connectionKey: connectionId,
         companyId: activeCreds.companyId,
@@ -761,6 +867,14 @@ export async function syncLastMonthExpensesForUser(user) {
     const allCooldown =
       connectionSummaries.length > 0 &&
       connectionSummaries.every((summary) => summary.status === "cooldown");
+    const resultReason = allCooldown
+      ? "all_connections_on_cooldown"
+      : allFailed
+        ? "all_connections_failed"
+        : "no_transactions";
+    console.warn(
+      `[BANK SYNC RUN] completed_no_docs userId=${userId} householdId=${householdId} reason=${resultReason} attemptedConnections=${attemptedConnectionKeys.size} successfulConnections=${successfulConnectionKeys.size} durationMs=${Date.now() - syncRunStartedAtMs}`,
+    );
 
     return {
       imported: 0,
@@ -769,11 +883,7 @@ export async function syncLastMonthExpensesForUser(user) {
       connections: connectionSummaries,
       attemptedConnectionKeys: Array.from(attemptedConnectionKeys),
       successfulConnectionKeys: Array.from(successfulConnectionKeys),
-      reason: allCooldown
-        ? "all_connections_on_cooldown"
-        : allFailed
-          ? "all_connections_failed"
-          : "no_transactions",
+      reason: resultReason,
     };
   }
 
@@ -828,6 +938,11 @@ export async function syncLastMonthExpensesForUser(user) {
     },
   }));
   const result = await Expense.bulkWrite(bulkOps, { ordered: false });
+  console.log(
+    `[BANK SYNC RUN] completed userId=${userId} householdId=${householdId} imported=${Number(
+      result.upsertedCount || 0,
+    )} updated=${Number(result.modifiedCount || 0)} total=${docs.length} attemptedConnections=${attemptedConnectionKeys.size} successfulConnections=${successfulConnectionKeys.size} durationMs=${Date.now() - syncRunStartedAtMs}`,
+  );
   return {
     imported: result.upsertedCount || 0,
     updated: result.modifiedCount || 0,
