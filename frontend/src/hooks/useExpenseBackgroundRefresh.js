@@ -14,13 +14,14 @@ export function useExpenseBackgroundRefresh(
 
     async function run() {
       const pollStartedAtMs = Date.now();
+      // Show the loading snackbar immediately when a polling cycle starts.
+      onRunningChange(true);
       const initial = await getExpenseSyncStatus().catch(() => null);
       if (!active) return;
       if (!initial?.sync) {
         timer = setTimeout(run, POLL_INTERVAL_MS);
         return;
       }
-      onRunningChange(Boolean(initial.sync.running));
       const initialReason = String(initial.sync.lastResult?.reason || "");
       if (
         !initial.sync.running &&

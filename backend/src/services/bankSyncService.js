@@ -340,11 +340,7 @@ function logFetchedExpenseItems({
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index] || {};
     console.log(
-      `[BANK SYNC ITEM PARAMS] companyId=${formatLogValue(
-        companyId,
-      )} connectionId=${formatLogValue(
-        connectionId,
-      )} item=${index + 1}/${items.length} sourceAccountId=${formatLogValue(
+      `[BANK SYNC ITEM] sourceAccountId=${formatLogValue(
         item.sourceAccountId,
       )} date=${toIsoForLog(item.date)} amount=${formatLogValue(
         item.amount,
@@ -917,19 +913,6 @@ export async function syncLastMonthExpensesForUser(user) {
           description: preparedDoc.description,
           category: preparedDoc.category,
         });
-        console.log(
-          `[BANK SYNC ITEM] fetched companyId=${formatLogValue(
-            activeCreds.companyId,
-          )} connectionId=${formatLogValue(
-            connectionId,
-          )} item=${itemPosition} accountId=${formatLogValue(
-            transactionMeta.accountId,
-          )} accountName=${formatLogValue(
-            transactionMeta.accountName,
-          )} normalized=${serializeForLog(
-            preparedDoc,
-          )} raw=${serializeForLog(rawItem)}`,
-        );
       }
       logFetchedExpenseItems({
         companyId: activeCreds.companyId,
