@@ -5,6 +5,7 @@ import {
   registerUser,
   updateUserPreferences,
 } from "../services/authService";
+import { clearExpenseCache } from "../services/expenseCache";
 
 const AuthContext = createContext(null);
 
@@ -52,6 +53,7 @@ export function AuthProvider({ children }) {
         })
       : await loginUser({ email, password });
     localStorage.setItem("token", data.token);
+    clearExpenseCache().catch(() => {});
     setUser(data.user);
   };
 
@@ -63,6 +65,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    clearExpenseCache().catch(() => {});
     setUser(null);
   };
 

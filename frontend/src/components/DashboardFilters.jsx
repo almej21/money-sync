@@ -44,8 +44,8 @@ export default function DashboardFilters({
   sortBy,
   onSortByChange,
   selectedAmountRange,
+  minExpenseAmount,
   maxExpenseAmount,
-  currentMaxAmountInList,
   onAmountRangeChange,
 }) {
   const theme = useTheme();
@@ -267,20 +267,20 @@ export default function DashboardFilters({
                     sx={{ direction: "ltr", unicodeBidi: "isolate" }}
                   >
                     {Math.round(selectedAmountRange[0])}₪ -{" "}
-                    {Math.round(currentMaxAmountInList)}₪
+                    {Math.round(selectedAmountRange[1])}₪
                   </Box>
                 </Typography>
                 <ThemeProvider theme={ltrSliderTheme}>
                   <Slider
                     value={selectedAmountRange}
-                    min={0}
+                    min={minExpenseAmount}
                     max={maxExpenseAmount}
                     step={1}
                     disableSwap
                     onChange={(_, newValue) => {
                       const nextRange = Array.isArray(newValue)
                         ? newValue
-                        : [0, maxExpenseAmount];
+                        : [minExpenseAmount, maxExpenseAmount];
                       onAmountRangeChange(nextRange);
                     }}
                     valueLabelDisplay="auto"

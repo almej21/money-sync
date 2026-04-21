@@ -59,6 +59,9 @@ function migrateFromLegacyUserSnapshot(user = {}) {
     {
       companyId: legacyCompanyId,
       connectionName: "",
+      visibilityScope: "shared",
+      ownerUserId: null,
+      accountVisibilityRules: [],
       usernameEnc: user?.bankCredentials?.usernameEnc || "",
       nationalIdEnc: user?.bankCredentials?.nationalIdEnc || "",
       passwordEnc: user?.bankCredentials?.passwordEnc || "",

@@ -7,6 +7,11 @@ import {
   createExpenseDedupKey,
 } from "./expenseDedup.js";
 import {
+  normalizeVisibilityScope,
+  resolveConnectionVisibility,
+  resolveExpenseVisibilityForConnection,
+} from "./expenseVisibility.js";
+import {
   ensureHouseholdBankConnections,
   toStoredEncryptedFields,
 } from "./householdBankConnections.js";
@@ -148,9 +153,37 @@ function getDecryptedConnectionCredentials(
     }
   }
 
+  const resolvedVisibility = resolveConnectionVisibility({
+    scope: bankCredentials?.visibilityScope,
+    ownerUserId: bankCredentials?.ownerUserId,
+  });
+  const accountVisibilityRules = Array.isArray(
+    bankCredentials?.accountVisibilityRules,
+  )
+    ? bankCredentials.accountVisibilityRules
+        .map((rule) => {
+          const sourceAccountId = String(rule?.sourceAccountId || "").trim();
+          if (!sourceAccountId) return null;
+          const resolvedRule = resolveConnectionVisibility({
+            scope: rule?.visibilityScope,
+            ownerUserId: rule?.ownerUserId,
+            fallbackOwnerUserId: resolvedVisibility.ownerUserId,
+          });
+          return {
+            sourceAccountId,
+            visibilityScope: resolvedRule.visibilityScope,
+            ownerUserId: resolvedRule.ownerUserId,
+          };
+        })
+        .filter(Boolean)
+    : [];
+
   return {
     connectionKey: String(connectionKey || "").trim(),
     companyId,
+    visibilityScope: resolvedVisibility.visibilityScope,
+    ownerUserId: resolvedVisibility.ownerUserId,
+    accountVisibilityRules,
     lastBankFetchAt:
       bankCredentials?.lastBankFetchAt || fallbackLastBankFetchAt || null,
     ...decrypted,
@@ -250,6 +283,10 @@ function buildScrapeCredentials(activeCreds) {
       ([key, value]) =>
         key !== "companyId" &&
         key !== "connectionKey" &&
+        key !== "visibilityScope" &&
+        key !== "ownerUserId" &&
+        key !== "accountVisibilityRules" &&
+        key !== "lastBankFetchAt" &&
         typeof value === "string" &&
         value,
     ),
@@ -696,6 +733,9 @@ export async function syncLastMonthExpensesForUser(user) {
   const fallbackConnection = sanitizeCredentials({
     connectionKey: "env-default",
     companyId: envCfg.companyId,
+    visibilityScope: "shared",
+    ownerUserId: null,
+    accountVisibilityRules: [],
     username: envCfg.username,
     nationalID: envCfg.nationalID,
     password: envCfg.password,
@@ -893,6 +933,27 @@ export async function syncLastMonthExpensesForUser(user) {
           sourceConnectionKey: connectionId,
           sourceAccountId: transactionMeta.accountId || "",
           sourceAccountName: transactionMeta.accountName || "",
+          ...resolveExpenseVisibilityForConnection({
+            sourceConnectionKey: connectionId,
+            sourceAccountId: transactionMeta.accountId || "",
+            connectionVisibilityMap: new Map([
+              [
+                connectionId,
+                {
+                  visibilityScope: normalizeVisibilityScope(
+                    activeCreds.visibilityScope,
+                  ),
+                  ownerUserId: activeCreds.ownerUserId || user?._id || null,
+                  accountVisibilityRules: Array.isArray(
+                    activeCreds.accountVisibilityRules,
+                  )
+                    ? activeCreds.accountVisibilityRules
+                    : [],
+                },
+              ],
+            ]),
+            fallbackOwnerUserId: user?._id,
+          }),
           dedupKey: createExpenseDedupKey({
             ...normalizedItem,
             amount: Math.abs(normalizedAmount),
@@ -1022,7 +1083,14 @@ export async function syncLastMonthExpensesForUser(user) {
             sourceConnectionKey: doc.sourceConnectionKey,
             sourceAccountId: doc.sourceAccountId,
             sourceAccountName: doc.sourceAccountName,
+            sourceTransactionType: doc.sourceTransactionType,
+            processedDate: doc.processedDate,
+            installmentNumber: doc.installmentNumber,
+            installmentTotal: doc.installmentTotal,
+            isInstallmentCharged: doc.isInstallmentCharged,
             dedupKey: doc.dedupKey,
+            visibilityScope: doc.visibilityScope,
+            visibleToUserId: doc.visibleToUserId,
             date: doc.date,
             amount: doc.amount,
             transactionType: doc.transactionType,

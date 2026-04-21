@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Household from "../models/Household.js";
 import Expense from "../models/Expense.js";
+import { buildExpenseVisibilityFilter } from "../services/expenseVisibility.js";
 import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
 import { signToken } from "../utils/jwt.js";
 
@@ -94,6 +95,7 @@ export async function updatePreferences(req, res) {
     (
       await Expense.distinct("sourceAccountId", {
         householdId: user.householdId,
+        ...buildExpenseVisibilityFilter(user),
       })
     )
       .map((value) => String(value || "").trim())

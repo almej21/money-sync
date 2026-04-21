@@ -1,9 +1,37 @@
 import mongoose from "mongoose";
 
+const accountVisibilityRuleSchema = new mongoose.Schema(
+  {
+    sourceAccountId: { type: String, default: "" },
+    visibilityScope: {
+      type: String,
+      enum: ["shared", "private"],
+      default: "shared",
+    },
+    ownerUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    updatedAt: { type: Date, default: null },
+  },
+  { _id: false, id: false },
+);
+
 const bankConnectionSchema = new mongoose.Schema(
   {
     companyId: { type: String, default: "" },
     connectionName: { type: String, default: "" },
+    visibilityScope: {
+      type: String,
+      enum: ["shared", "private"],
+      default: "shared",
+    },
+    ownerUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     usernameEnc: { type: String, default: "" },
     nationalIdEnc: { type: String, default: "" },
     passwordEnc: { type: String, default: "" },
@@ -11,6 +39,10 @@ const bankConnectionSchema = new mongoose.Schema(
       type: Map,
       of: String,
       default: {},
+    },
+    accountVisibilityRules: {
+      type: [accountVisibilityRuleSchema],
+      default: [],
     },
     updatedAt: { type: Date, default: null },
     lastBankFetchAt: { type: Date, default: null },

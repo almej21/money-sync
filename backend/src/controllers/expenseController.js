@@ -6,6 +6,11 @@ import {
   createExpenseDedupKey,
 } from "../services/expenseDedup.js";
 import {
+  buildExpenseVisibilityFilter,
+  buildHouseholdConnectionVisibilityMap,
+  resolveExpenseVisibilityForConnection,
+} from "../services/expenseVisibility.js";
+import {
   getExpenseSyncState,
   triggerExpenseSyncForUser,
 } from "../services/expenseSyncCoordinator.js";
@@ -124,6 +129,7 @@ export async function listExpenses(req, res) {
   triggerExpenseSyncForUser(req.user, "list_expenses");
   const expenses = await Expense.find({
     householdId: req.user.householdId,
+    ...buildExpenseVisibilityFilter(req.user),
   }).sort({ date: -1, createdAt: -1 });
 
   res.json(expenses);
@@ -141,6 +147,7 @@ export async function listExpenseChanges(req, res) {
   const items = await Expense.find({
     householdId: req.user.householdId,
     updatedAt: { $gt: sinceDate },
+    ...buildExpenseVisibilityFilter(req.user),
   }).sort({ updatedAt: 1, _id: 1 });
 
   const latestUpdatedAt =
@@ -192,7 +199,12 @@ export async function summary(req, res) {
   triggerExpenseSyncForUser(req.user, "summary");
 
   const rows = await Expense.aggregate([
-    { $match: { householdId: req.user.householdId } },
+    {
+      $match: {
+        householdId: req.user.householdId,
+        ...buildExpenseVisibilityFilter(req.user),
+      },
+    },
     {
       $group: {
         _id: "$category",
@@ -226,6 +238,8 @@ export async function createExpense(req, res) {
   const expense = await Expense.create({
     householdId: req.user.householdId,
     source: req.body.source || "manual",
+    visibilityScope: "shared",
+    visibleToUserId: null,
     externalId: req.body.externalId,
     date: req.body.date,
     amount: normalizedAmount,
@@ -248,6 +262,7 @@ export async function updateExpense(req, res) {
   const expense = await Expense.findOne({
     _id: req.params.id,
     householdId: req.user.householdId,
+    ...buildExpenseVisibilityFilter(req.user),
   });
 
   if (!expense) {
@@ -297,6 +312,7 @@ export async function deleteExpense(req, res) {
   const deleted = await Expense.findOneAndDelete({
     _id: req.params.id,
     householdId: req.user.householdId,
+    ...buildExpenseVisibilityFilter(req.user),
   });
 
   if (!deleted) {
@@ -311,11 +327,24 @@ export async function importExpenses(req, res) {
     ? req.body.transactions
     : [];
 
+  const household = await Household.findById(req.user.householdId)
+    .select(
+      "bankConnections._id bankConnections.visibilityScope bankConnections.ownerUserId bankConnections.accountVisibilityRules",
+    )
+    .lean();
+  const connectionVisibilityMap = buildHouseholdConnectionVisibilityMap(household);
+
   const normalized = normalizeScrapedTransactions(rawTransactions).map((t) => {
     const normalizedAmount = Math.abs(Number(t.amount || 0));
     const transactionType =
       t.transactionType === "return" ? "return" : "expense";
     const status = normalizeExpenseStatus(t.status);
+    const visibility = resolveExpenseVisibilityForConnection({
+      sourceConnectionKey: t.sourceConnectionKey,
+      sourceAccountId: t.sourceAccountId,
+      connectionVisibilityMap,
+      fallbackOwnerUserId: req.user?._id,
+    });
     return {
       ...t,
       amount: normalizedAmount,
@@ -326,6 +355,8 @@ export async function importExpenses(req, res) {
         amount: normalizedAmount,
         transactionType,
       }),
+      visibilityScope: visibility.visibilityScope,
+      visibleToUserId: visibility.visibleToUserId,
       householdId: req.user.householdId,
       createdBy: req.user._id,
       editedBy: req.user._id,
@@ -349,7 +380,14 @@ export async function importExpenses(req, res) {
             sourceConnectionKey: doc.sourceConnectionKey,
             sourceAccountId: doc.sourceAccountId,
             sourceAccountName: doc.sourceAccountName,
+            sourceTransactionType: doc.sourceTransactionType,
+            processedDate: doc.processedDate,
+            installmentNumber: doc.installmentNumber,
+            installmentTotal: doc.installmentTotal,
+            isInstallmentCharged: doc.isInstallmentCharged,
             dedupKey: doc.dedupKey,
+            visibilityScope: doc.visibilityScope,
+            visibleToUserId: doc.visibleToUserId,
             date: doc.date,
             amount: doc.amount,
             transactionType: doc.transactionType,

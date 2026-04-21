@@ -29,6 +29,7 @@ import {
   getExpenses,
 } from "../services/expenseService";
 import {
+  clearExpenseCache,
   getCachedExpenses,
   getExpenseCacheMeta,
   replaceCachedExpenses,
@@ -135,12 +136,64 @@ function hasFreshSync(lastSyncAtIso, nowMs) {
   return nowMs - lastSyncDate.getTime() < BACKGROUND_SYNC_INTERVAL_MS;
 }
 
+function getCacheScopeFromUser(user) {
+  return {
+    cacheUserId: String(user?.id || "").trim(),
+    cacheHouseholdId: String(user?.householdId || "").trim(),
+  };
+}
+
+function matchesCacheScope(cacheMeta, cacheScope) {
+  const expectedUserId = String(cacheScope?.cacheUserId || "").trim();
+  const expectedHouseholdId = String(cacheScope?.cacheHouseholdId || "").trim();
+  if (!expectedUserId || !expectedHouseholdId) return false;
+
+  return (
+    String(cacheMeta?.cacheUserId || "").trim() === expectedUserId &&
+    String(cacheMeta?.cacheHouseholdId || "").trim() === expectedHouseholdId
+  );
+}
+
 function isReturnExpense(expense) {
   const transactionType = String(expense?.transactionType || "")
     .trim()
     .toLowerCase();
   const amount = Number(expense?.amount || 0);
   return transactionType === "return" || amount < 0;
+}
+
+function isInstallmentNotYetCharged(expense) {
+  const sourceTransactionType = String(expense?.sourceTransactionType || "")
+    .trim()
+    .toLowerCase();
+  if (sourceTransactionType !== "installments") return false;
+
+  const installmentNumber = Number(expense?.installmentNumber);
+  const installmentTotal = Number(expense?.installmentTotal);
+  const hasInstallmentsPlan =
+    Number.isFinite(installmentNumber) &&
+    installmentNumber > 0 &&
+    Number.isFinite(installmentTotal) &&
+    installmentTotal > 0;
+  const explicitChargedState = expense?.isInstallmentCharged;
+  if (explicitChargedState === true) return false;
+  if (explicitChargedState === false) return true;
+  return !hasInstallmentsPlan;
+}
+
+function getAmountRangeBounds(expenses = []) {
+  const values = (Array.isArray(expenses) ? expenses : [])
+    .map((expense) => Math.abs(Number(expense?.amount || 0)))
+    .filter((amount) => Number.isFinite(amount));
+
+  if (!values.length) {
+    return { min: 0, max: 0 };
+  }
+
+  return {
+    min: Math.max(0, Math.min(...values)),
+    max: Math.max(0, Math.max(...values)),
+  };
 }
 
 export default function DashboardPage() {
@@ -156,6 +209,7 @@ export default function DashboardPage() {
   const [providerLabels, setProviderLabels] = useState({});
   const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
   const didInitializeAccountFilterSelectionRef = useRef(false);
+  const previousDropdownFiltersSignatureRef = useRef("");
   const [timeRange, setTimeRange] = useState("this_month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -168,53 +222,79 @@ export default function DashboardPage() {
   const listContainerRef = useRef(null);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
   const { t, locale, direction } = useLanguage();
+  const cacheScope = useMemo(
+    () => getCacheScopeFromUser(user),
+    [user?.householdId, user?.id],
+  );
 
   const refreshExpenses = useCallback(
     async ({ forceFullFetch = false, ignoreFreshWindow = false } = {}) => {
-    const nowMs = Date.now();
-    const cacheMeta = await getExpenseCacheMeta().catch(() => ({
-      lastSyncAt: null,
-      syncCursor: null,
-    }));
+      const nowMs = Date.now();
+      let cacheMeta = await getExpenseCacheMeta().catch(() => ({
+        lastSyncAt: null,
+        syncCursor: null,
+        cacheUserId: "",
+        cacheHouseholdId: "",
+      }));
 
-    if (
-      !forceFullFetch &&
-      !ignoreFreshWindow &&
-      cacheMeta?.syncCursor &&
-      hasFreshSync(cacheMeta?.lastSyncAt, nowMs)
-    ) {
-      return;
-    }
-
-    if (!forceFullFetch && cacheMeta?.syncCursor) {
-      try {
-        const response = await getExpenseChanges(cacheMeta.syncCursor);
-        const changedItems = Array.isArray(response?.items) ? response.items : [];
-        if (changedItems.length > 0) {
-          setExpenses((prev) => mergeExpensesById(prev, changedItems));
-          await upsertCachedExpenses(changedItems).catch(() => {});
-        }
-        const nextCursor = response?.cursor || cacheMeta.syncCursor;
+      if (!matchesCacheScope(cacheMeta, cacheScope)) {
+        await clearExpenseCache().catch(() => {});
+        cacheMeta = {
+          lastSyncAt: null,
+          syncCursor: null,
+          cacheUserId: cacheScope.cacheUserId,
+          cacheHouseholdId: cacheScope.cacheHouseholdId,
+        };
         await setExpenseCacheMeta({
-          lastSyncAt: response?.serverTime || new Date().toISOString(),
-          syncCursor: nextCursor,
+          lastSyncAt: null,
+          syncCursor: null,
+          cacheUserId: cacheScope.cacheUserId,
+          cacheHouseholdId: cacheScope.cacheHouseholdId,
         }).catch(() => {});
-        return;
-      } catch {
-        // Fall back to full fetch when incremental path fails.
       }
-    }
 
-    const data = await getExpenses();
-    setExpenses(Array.isArray(data) ? data : []);
-    const fullCursor = getLatestExpenseCursor(data);
-    await replaceCachedExpenses(data).catch(() => {});
-    await setExpenseCacheMeta({
-      lastSyncAt: new Date().toISOString(),
-      syncCursor: fullCursor,
-    }).catch(() => {});
+      if (
+        !forceFullFetch &&
+        !ignoreFreshWindow &&
+        cacheMeta?.syncCursor &&
+        hasFreshSync(cacheMeta?.lastSyncAt, nowMs)
+      ) {
+        return;
+      }
+
+      if (!forceFullFetch && cacheMeta?.syncCursor) {
+        try {
+          const response = await getExpenseChanges(cacheMeta.syncCursor);
+          const changedItems = Array.isArray(response?.items) ? response.items : [];
+          if (changedItems.length > 0) {
+            setExpenses((prev) => mergeExpensesById(prev, changedItems));
+            await upsertCachedExpenses(changedItems).catch(() => {});
+          }
+          const nextCursor = response?.cursor || cacheMeta.syncCursor;
+          await setExpenseCacheMeta({
+            lastSyncAt: response?.serverTime || new Date().toISOString(),
+            syncCursor: nextCursor,
+            cacheUserId: cacheScope.cacheUserId,
+            cacheHouseholdId: cacheScope.cacheHouseholdId,
+          }).catch(() => {});
+          return;
+        } catch {
+          // Fall back to full fetch when incremental path fails.
+        }
+      }
+
+      const data = await getExpenses();
+      setExpenses(Array.isArray(data) ? data : []);
+      const fullCursor = getLatestExpenseCursor(data);
+      await replaceCachedExpenses(data).catch(() => {});
+      await setExpenseCacheMeta({
+        lastSyncAt: new Date().toISOString(),
+        syncCursor: fullCursor,
+        cacheUserId: cacheScope.cacheUserId,
+        cacheHouseholdId: cacheScope.cacheHouseholdId,
+      }).catch(() => {});
     },
-    [],
+    [cacheScope],
   );
 
   const bootstrapExpenses = useCallback(async () => {
@@ -223,19 +303,39 @@ export default function DashboardPage() {
 
     setIsLoading(true);
     try {
-      const cached = await getCachedExpenses().catch(() => []);
+      const cacheMeta = await getExpenseCacheMeta().catch(() => ({
+        lastSyncAt: null,
+        syncCursor: null,
+        cacheUserId: "",
+        cacheHouseholdId: "",
+      }));
+      const hasMatchingScope = matchesCacheScope(cacheMeta, cacheScope);
+      if (!hasMatchingScope) {
+        await clearExpenseCache().catch(() => {});
+        await setExpenseCacheMeta({
+          lastSyncAt: null,
+          syncCursor: null,
+          cacheUserId: cacheScope.cacheUserId,
+          cacheHouseholdId: cacheScope.cacheHouseholdId,
+        }).catch(() => {});
+      }
+
+      const cached = hasMatchingScope
+        ? await getCachedExpenses().catch(() => [])
+        : [];
       if (Array.isArray(cached) && cached.length > 0) {
         setExpenses(cached);
         setIsLoading(false);
       }
 
       await refreshExpenses({
-        forceFullFetch: !Array.isArray(cached) || cached.length === 0,
+        forceFullFetch:
+          !hasMatchingScope || !Array.isArray(cached) || cached.length === 0,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [refreshExpenses]);
+  }, [cacheScope, refreshExpenses]);
 
   const loadBankFilterOptions = useCallback(async () => {
     try {
@@ -270,6 +370,11 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    isExpenseBootstrappedRef.current = false;
+    setExpenses([]);
+  }, [cacheScope.cacheHouseholdId, cacheScope.cacheUserId]);
+
+  useEffect(() => {
     bootstrapExpenses().catch(console.error);
   }, [bootstrapExpenses]);
 
@@ -302,6 +407,9 @@ export default function DashboardPage() {
   useExpenseBackgroundRefresh(
     refreshExpensesFromBackgroundSync,
     onSyncRunningChange,
+    {
+      syncScopeKey: `${cacheScope.cacheHouseholdId}:${cacheScope.cacheUserId}`,
+    },
   );
 
   const onExpenseUpdated = useCallback((updatedExpense) => {
@@ -459,6 +567,24 @@ export default function DashboardPage() {
     selectedConnectionIds.length > 0 &&
     selectedConnectionIds.length < accountFilterOptions.length;
   const hasMultipleSelectedAccounts = selectedConnectionIds.length > 1;
+  const dropdownFiltersSignature = useMemo(() => {
+    const accountSignature = shouldApplyAccountFilter
+      ? [...selectedConnectionIds].sort().join("|")
+      : "__all__";
+    const categorySignature = [...selectedCategories].sort().join("|");
+    return [
+      `categories:${categorySignature}`,
+      `timeRange:${timeRange}`,
+      `sortBy:${sortBy}`,
+      `accounts:${accountSignature}`,
+    ].join(";");
+  }, [
+    selectedCategories,
+    selectedConnectionIds,
+    shouldApplyAccountFilter,
+    sortBy,
+    timeRange,
+  ]);
 
   const expensesMatchingBaseFilters = useMemo(
     () =>
@@ -498,34 +624,40 @@ export default function DashboardPage() {
     ],
   );
 
-  const maxExpenseAmount = useMemo(
-    () =>
-      Math.max(
-        0,
-        ...expensesMatchingBaseFilters.map((exp) => {
-          const amount = Math.abs(Number(exp.amount || 0));
-          return Number.isFinite(amount) ? amount : 0;
-        }),
-      ),
+  const amountRangeBounds = useMemo(
+    () => getAmountRangeBounds(expensesMatchingBaseFilters),
     [expensesMatchingBaseFilters],
   );
+  const minExpenseAmount = amountRangeBounds.min;
+  const maxExpenseAmount = amountRangeBounds.max;
 
   useEffect(() => {
+    if (
+      previousDropdownFiltersSignatureRef.current === dropdownFiltersSignature
+    ) {
+      return;
+    }
+    previousDropdownFiltersSignatureRef.current = dropdownFiltersSignature;
+    setSelectedAmountRange([minExpenseAmount, maxExpenseAmount]);
+  }, [dropdownFiltersSignature, maxExpenseAmount, minExpenseAmount]);
+
+  useEffect(() => {
+    const safeMin = Math.max(0, Number(minExpenseAmount || 0));
     const safeMax = Math.max(0, Number(maxExpenseAmount || 0));
     setSelectedAmountRange((prev) => {
       const prevMin = Number(prev?.[0] || 0);
       const prevMax = Number(prev?.[1] || 0);
 
       if (prevMin === 0 && prevMax === 0) {
-        return [0, safeMax];
+        return [safeMin, safeMax];
       }
 
-      const nextMin = Math.min(Math.max(0, prevMin), safeMax);
+      const nextMin = Math.min(Math.max(safeMin, prevMin), safeMax);
       const nextMax = Math.min(Math.max(nextMin, prevMax), safeMax);
       if (nextMin === prevMin && nextMax === prevMax) return prev;
       return [nextMin, nextMax];
     });
-  }, [maxExpenseAmount]);
+  }, [maxExpenseAmount, minExpenseAmount]);
 
   useEffect(() => {
     const allAccountIds = accountFilterOptions.map((option) => option.id);
@@ -618,21 +750,10 @@ export default function DashboardPage() {
     sortBy,
   ]);
 
-  const currentMaxAmountInList = useMemo(
-    () =>
-      Math.max(
-        0,
-        ...displayedExpenses.map((exp) => {
-          const amount = Math.abs(Number(exp.amount || 0));
-          return Number.isFinite(amount) ? amount : 0;
-        }),
-      ),
-    [displayedExpenses],
-  );
-
   const displayedAmountTotal = useMemo(
     () =>
       displayedExpenses.reduce((sum, expense) => {
+        if (isInstallmentNotYetCharged(expense)) return sum;
         const amount = Math.abs(Number(expense.amount || 0));
         const isReturn =
           String(expense.transactionType || "")
@@ -901,8 +1022,8 @@ export default function DashboardPage() {
             sortBy={sortBy}
             onSortByChange={setSortBy}
             selectedAmountRange={selectedAmountRange}
+            minExpenseAmount={minExpenseAmount}
             maxExpenseAmount={maxExpenseAmount}
-            currentMaxAmountInList={currentMaxAmountInList}
             onAmountRangeChange={setSelectedAmountRange}
           />
           {timeRange === "custom_range" && (

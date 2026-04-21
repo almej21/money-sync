@@ -7,9 +7,7 @@
     "dev": "node --watch src/app.js",
     "start": "node src/app.js",
     "lint": "node -e \"console.log('add eslint later')\"",
-    "migrate:household-bank-connections": "node scripts/migrate-household-bank-connections.js",
-    "migrate:expense-transaction-type": "node scripts/migrate-expense-transaction-type.js",
-    "migrate:flip-scraped-expense-transaction-type": "node scripts/flip-scraped-expense-transaction-type.js",
+    "migrate:expense-installments": "node scripts/migrate-expense-installments.js",
     "cleanup:duplicate-expenses": "node scripts/cleanup-duplicate-expenses.js",
     "test:bank-scrapers": "node scripts/test-bank-scrapers.js",
     "test:bank-scrapers:interactive": "node scripts/test-bank-scrapers-interactive.js"

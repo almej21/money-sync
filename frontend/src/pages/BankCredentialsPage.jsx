@@ -28,6 +28,7 @@ import {
   removeAllBankConnections,
   removeBankConnection,
   saveBankCredentials,
+  saveConnectionAccountVisibility,
 } from "../services/bankService";
 
 const HIDDEN_COMPANY_IDS = new Set(["isracard"]);
@@ -53,21 +54,63 @@ function formatFetchTimestamp(value) {
   return `${hours}:${minutes}, ${day}/${month}/${year}`;
 }
 
+function buildAccountVisibilityState(connections = []) {
+  const byConnection = {};
+  for (const connection of connections) {
+    const connectionId = String(connection?.id || "").trim();
+    if (!connectionId) continue;
+    const sourceAccounts = Array.isArray(connection?.sourceAccounts)
+      ? connection.sourceAccounts
+      : [];
+    byConnection[connectionId] = {};
+    for (const account of sourceAccounts) {
+      const sourceAccountId = String(account?.sourceAccountId || "").trim();
+      if (!sourceAccountId) continue;
+      byConnection[connectionId][sourceAccountId] = String(
+        account?.visibilityScope || connection?.visibilityScope || "shared",
+      ).trim();
+    }
+  }
+  return byConnection;
+}
+
+function isCardSuffix(value) {
+  return /^\d{4}$/.test(String(value || "").trim());
+}
+
+function formatSourceAccountLabel(account = {}, t) {
+  const sourceAccountId = String(account?.sourceAccountId || "").trim();
+  const sourceAccountName = String(account?.sourceAccountName || "").trim();
+  if (isCardSuffix(sourceAccountId)) {
+    return `${t("cardEndingWith")} ${sourceAccountId}`;
+  }
+  if (!sourceAccountName) return sourceAccountId;
+  if (!sourceAccountId || sourceAccountName === sourceAccountId) {
+    return sourceAccountName;
+  }
+  return `${sourceAccountName} (${sourceAccountId})`;
+}
+
 export default function BankCredentialsPage() {
   const theme = useTheme();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, direction } = useLanguage();
   const [providers, setProviders] = useState([]);
   const [connections, setConnections] = useState([]);
   const [connectedCount, setConnectedCount] = useState(0);
   const [form, setForm] = useState({
     companyId: "",
     connectionName: "",
+    visibilityScope: "shared",
     credentials: {},
   });
   const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingAccountVisibilityKey, setUpdatingAccountVisibilityKey] =
+    useState("");
+  const [accountVisibilityByConnection, setAccountVisibilityByConnection] =
+    useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pendingRemovalConnectionId, setPendingRemovalConnectionId] =
@@ -125,6 +168,9 @@ export default function BankCredentialsPage() {
 
       setProviders(nextProviders);
       setConnections(nextConnections);
+      setAccountVisibilityByConnection(
+        buildAccountVisibilityState(nextConnections),
+      );
       setConnectedCount(
         Number(
           statusData.connectedCount ??
@@ -135,6 +181,7 @@ export default function BankCredentialsPage() {
       setForm({
         companyId,
         connectionName: "",
+        visibilityScope: "shared",
         credentials: buildEmptyCredentials(provider?.fields || []),
       });
     } catch (err) {
@@ -144,17 +191,107 @@ export default function BankCredentialsPage() {
     }
   }
 
+  function setLocalAccountVisibility(
+    connectionId,
+    sourceAccountId,
+    visibilityScope,
+  ) {
+    const normalizedConnectionId = String(connectionId || "").trim();
+    const normalizedSourceAccountId = String(sourceAccountId || "").trim();
+    if (!normalizedConnectionId || !normalizedSourceAccountId) return;
+
+    setAccountVisibilityByConnection((prev) => ({
+      ...prev,
+      [normalizedConnectionId]: {
+        ...(prev[normalizedConnectionId] || {}),
+        [normalizedSourceAccountId]: visibilityScope,
+      },
+    }));
+    setConnections((prev) =>
+      prev.map((connection) => {
+        if (String(connection?.id || "").trim() !== normalizedConnectionId) {
+          return connection;
+        }
+        const sourceAccounts = Array.isArray(connection?.sourceAccounts)
+          ? connection.sourceAccounts
+          : [];
+        return {
+          ...connection,
+          sourceAccounts: sourceAccounts.map((account) =>
+            String(account?.sourceAccountId || "").trim() ===
+            normalizedSourceAccountId
+              ? { ...account, visibilityScope }
+              : account,
+          ),
+        };
+      }),
+    );
+  }
+
+  async function updateCardVisibility(
+    connectionId,
+    sourceAccountId,
+    nextScope,
+  ) {
+    const normalizedConnectionId = String(connectionId || "").trim();
+    const normalizedSourceAccountId = String(sourceAccountId || "").trim();
+    if (!normalizedConnectionId || !normalizedSourceAccountId) return;
+
+    const prevScope =
+      accountVisibilityByConnection?.[normalizedConnectionId]?.[
+        normalizedSourceAccountId
+      ] || "shared";
+    const requestKey = `${normalizedConnectionId}:${normalizedSourceAccountId}`;
+    setUpdatingAccountVisibilityKey(requestKey);
+    setError("");
+    setSuccess("");
+    setLocalAccountVisibility(
+      normalizedConnectionId,
+      normalizedSourceAccountId,
+      nextScope,
+    );
+
+    try {
+      const response = await saveConnectionAccountVisibility(
+        normalizedConnectionId,
+        {
+          sourceAccountId: normalizedSourceAccountId,
+          visibilityScope: nextScope,
+        },
+      );
+      const resolvedScope = String(
+        response?.visibilityScope || nextScope,
+      ).trim();
+      setLocalAccountVisibility(
+        normalizedConnectionId,
+        normalizedSourceAccountId,
+        resolvedScope,
+      );
+      setSuccess(t("cardVisibilitySaved"));
+    } catch (err) {
+      setLocalAccountVisibility(
+        normalizedConnectionId,
+        normalizedSourceAccountId,
+        prevScope,
+      );
+      setError(err.message || t("failedSaveCardVisibility"));
+    } finally {
+      setUpdatingAccountVisibilityKey("");
+    }
+  }
+
   useEffect(() => {
     loadBankConfig();
   }, []);
 
   function onCompanyChange(nextCompanyId) {
     const provider = providers.find((item) => item.companyId === nextCompanyId);
-    setForm({
+    setForm((prev) => ({
+      ...prev,
       companyId: nextCompanyId,
       connectionName: "",
       credentials: buildEmptyCredentials(provider?.fields || []),
-    });
+    }));
   }
 
   function onFieldChange(fieldName, value) {
@@ -177,6 +314,7 @@ export default function BankCredentialsPage() {
       await saveBankCredentials({
         companyId: form.companyId.trim(),
         connectionName: form.connectionName.trim(),
+        visibilityScope: form.visibilityScope,
         credentials: Object.fromEntries(
           Object.entries(form.credentials).map(([key, value]) => [
             key,
@@ -189,6 +327,7 @@ export default function BankCredentialsPage() {
       setForm((prev) => ({
         ...prev,
         connectionName: "",
+        visibilityScope: "shared",
         credentials: Object.fromEntries(
           Object.entries(prev.credentials).map(([key]) => [key, ""]),
         ),
@@ -306,17 +445,20 @@ export default function BankCredentialsPage() {
                   sx={{
                     backgroundColor: theme.palette.secondary.main,
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "stretch",
+                    position: "relative",
                     py: 2,
+                    pr: 7,
+                    pb: 6,
                     "&:last-child": {
-                      pb: 2,
+                      pb: 6,
                     },
                   }}
                 >
                   <Stack
                     direction={{ xs: "row" }}
                     justifyContent="space-between"
-                    alignItems="center"
+                    alignItems="flex-start"
                     width="100%"
                     pb={0}
                   >
@@ -330,6 +472,14 @@ export default function BankCredentialsPage() {
                         {providerLabelById[connection.companyId] ||
                           connection.companyId}
                       </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: theme.palette.text.contrastText }}
+                      >
+                        {connection.visibilityScope === "private"
+                          ? t("privateConnection")
+                          : t("sharedConnection")}
+                      </Typography>
                       {connection.lastBankFetchAt && (
                         <Typography
                           variant="body2"
@@ -339,34 +489,129 @@ export default function BankCredentialsPage() {
                           {formatFetchTimestamp(connection.lastBankFetchAt)}
                         </Typography>
                       )}
+                      <Stack spacing={1} sx={{ mt: 1 }}>
+                        {(connection.sourceAccounts || []).length > 0 ? (
+                          (connection.sourceAccounts || []).map((account) => {
+                            const sourceAccountId = String(
+                              account?.sourceAccountId || "",
+                            ).trim();
+                            const requestKey = `${connection.id}:${sourceAccountId}`;
+                            const accountVisibility =
+                              accountVisibilityByConnection?.[connection.id]?.[
+                                sourceAccountId
+                              ] ||
+                              account?.visibilityScope ||
+                              connection?.visibilityScope ||
+                              "shared";
+                            return (
+                              <Box key={`${connection.id}:${sourceAccountId}`}>
+                                <Divider
+                                  sx={{
+                                    borderColor: theme.palette.text.contrastText,
+                                    opacity: 1,
+                                    mb: 1,
+                                  }}
+                                />
+                                <Stack
+                                  direction={{ xs: "column", sm: "row" }}
+                                  spacing={1}
+                                  alignItems={{ xs: "stretch", sm: "center" }}
+                                >
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      color: theme.palette.text.contrastText,
+                                      px: ".3rem",
+                                      pb: "1rem",
+                                    }}
+                                  >
+                                    {formatSourceAccountLabel(account, t)}
+                                  </Typography>
+                                  <Dropdown
+                                    labelId={`account-visibility-${connection.id}-${sourceAccountId}`}
+                                    label={t("cardVisibility")}
+                                    value={accountVisibility}
+                                    onChange={(e) =>
+                                      updateCardVisibility(
+                                        connection.id,
+                                        sourceAccountId,
+                                        e.target.value,
+                                      )
+                                    }
+                                    required
+                                    disabled={
+                                      saving ||
+                                      loading ||
+                                      !canManageBankConnections ||
+                                      Boolean(updatingAccountVisibilityKey) ||
+                                      !sourceAccountId
+                                    }
+                                    sx={{
+                                      minWidth: { xs: "100%", sm: 220 },
+                                      "& .MuiInputBase-root": {
+                                        color: theme.palette.text.contrastText,
+                                      },
+                                    }}
+                                  >
+                                    <MenuItem value="shared">
+                                      {t("sharedConnection")}
+                                    </MenuItem>
+                                    <MenuItem value="private">
+                                      {t("privateConnection")}
+                                    </MenuItem>
+                                  </Dropdown>
+                                  {updatingAccountVisibilityKey ===
+                                    requestKey && (
+                                    <CircularProgress
+                                      size={16}
+                                      sx={{
+                                        color: theme.palette.text.contrastText,
+                                      }}
+                                    />
+                                  )}
+                                </Stack>
+                              </Box>
+                            );
+                          })
+                        ) : (
+                          <Typography
+                            variant="body2"
+                            sx={{ color: theme.palette.text.contrastText }}
+                          >
+                            {t("noConnectionCardsDetected")}
+                          </Typography>
+                        )}
+                      </Stack>
                     </Stack>
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => openRemoveConfirmation(connection.id)}
-                      disabled={saving || loading || !canManageBankConnections}
-                      sx={{
-                        minWidth: 0,
-                        width: 32,
-                        height: 32,
-                        p: 0,
-                        mr: 0.5,
-                        borderRadius: 1,
-                        borderColor: "error.main",
-                        border: "2px solid",
-                        color: "error.main",
-                        "&:hover": {
-                          bgcolor: "error.main",
-                          borderColor: "error.main",
-                          color: "common.white",
-                        },
-                      }}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </Button>
                   </Stack>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={() => openRemoveConfirmation(connection.id)}
+                    disabled={saving || loading || !canManageBankConnections}
+                    sx={{
+                      position: "absolute",
+                      bottom: 12,
+                      ...(direction === "rtl" ? { left: 12 } : { right: 12 }),
+                      minWidth: 0,
+                      width: 32,
+                      height: 32,
+                      p: 0,
+                      borderRadius: .7,
+                      borderColor: "error.main",
+                      border: "2px solid",
+                      color: "error.main",
+                      "&:hover": {
+                        bgcolor: "error.main",
+                        borderColor: "error.main",
+                        color: "common.white",
+                      },
+                    }}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -429,6 +674,23 @@ export default function BankCredentialsPage() {
                     helperText={t("optional")}
                     fullWidth
                   />
+                  <Dropdown
+                    labelId="bank-connection-visibility-label"
+                    label={t("connectionVisibility")}
+                    value={form.visibilityScope}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        visibilityScope: e.target.value,
+                      }))
+                    }
+                    required
+                  >
+                    <MenuItem value="shared">{t("sharedConnection")}</MenuItem>
+                    <MenuItem value="private">
+                      {t("privateConnection")}
+                    </MenuItem>
+                  </Dropdown>
 
                   {(selectedProvider?.fields || []).map((field) => (
                     <TextField

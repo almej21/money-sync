@@ -12,6 +12,7 @@ function parseArgs(argv = []) {
     write: args.has("--write"),
     includeManual: args.has("--include-manual"),
     byVisibleFields: args.has("--by-visible-fields"),
+    byExternalId: args.has("--by-external-id"),
   };
 }
 
@@ -40,9 +41,64 @@ function printHelp() {
       "  --write           Persist deletions (without this flag: dry run)",
       "  --include-manual  Include non-scraped sources as well",
       "  --by-visible-fields Group by UI-visible identity (date-day/amount/description/account) instead of strict source identity",
+      "  --by-external-id  Group by externalId identity (best for dedup/backfill transitions)",
       "  --help, -h        Show this help",
     ].join("\n"),
   );
+}
+
+function sortDocsByKeepPriority(docs = []) {
+  return [...docs].sort((a, b) => {
+    const aIsUserAltered = Boolean(a?.isUserAltered) ? 1 : 0;
+    const bIsUserAltered = Boolean(b?.isUserAltered) ? 1 : 0;
+    if (aIsUserAltered !== bIsUserAltered) return bIsUserAltered - aIsUserAltered;
+
+    const aIsInstallments =
+      String(a?.sourceTransactionType || "")
+        .trim()
+        .toLowerCase() === "installments"
+        ? 1
+        : 0;
+    const bIsInstallments =
+      String(b?.sourceTransactionType || "")
+        .trim()
+        .toLowerCase() === "installments"
+        ? 1
+        : 0;
+    if (aIsInstallments !== bIsInstallments) return bIsInstallments - aIsInstallments;
+
+    const aHasInstallmentPlan =
+      Number.isFinite(Number(a?.installmentNumber)) &&
+      Number(a?.installmentNumber) > 0 &&
+      Number.isFinite(Number(a?.installmentTotal)) &&
+      Number(a?.installmentTotal) > 0
+        ? 1
+        : 0;
+    const bHasInstallmentPlan =
+      Number.isFinite(Number(b?.installmentNumber)) &&
+      Number(b?.installmentNumber) > 0 &&
+      Number.isFinite(Number(b?.installmentTotal)) &&
+      Number(b?.installmentTotal) > 0
+        ? 1
+        : 0;
+    if (aHasInstallmentPlan !== bHasInstallmentPlan) {
+      return bHasInstallmentPlan - aHasInstallmentPlan;
+    }
+
+    const aIsCharged = a?.isInstallmentCharged === true ? 1 : 0;
+    const bIsCharged = b?.isInstallmentCharged === true ? 1 : 0;
+    if (aIsCharged !== bIsCharged) return bIsCharged - aIsCharged;
+
+    const aUpdatedAt = new Date(a?.updatedAt || 0).getTime();
+    const bUpdatedAt = new Date(b?.updatedAt || 0).getTime();
+    if (aUpdatedAt !== bUpdatedAt) return bUpdatedAt - aUpdatedAt;
+
+    const aCreatedAt = new Date(a?.createdAt || 0).getTime();
+    const bCreatedAt = new Date(b?.createdAt || 0).getTime();
+    if (aCreatedAt !== bCreatedAt) return bCreatedAt - aCreatedAt;
+
+    return String(a?._id || "").localeCompare(String(b?._id || ""));
+  });
 }
 
 async function runCleanup() {
@@ -92,12 +148,33 @@ async function runCleanup() {
     description: "$description",
     merchant: "$merchant",
   };
+  const externalIdGroupId = {
+    householdId: "$householdId",
+    source: "$source",
+    sourceConnectionKey: "$sourceConnectionKey",
+    sourceCompanyId: "$sourceCompanyId",
+    sourceAccountId: "$sourceAccountId",
+    externalId: "$externalId",
+    transactionType: "$transactionType",
+  };
+
+  let groupId = strictGroupId;
+  if (options.byExternalId) {
+    groupId = externalIdGroupId;
+  } else if (options.byVisibleFields) {
+    groupId = visibleFieldsGroupId;
+  }
+
+  const groupMatchStage = options.byExternalId
+    ? { externalId: { $nin: ["", null] } }
+    : {};
 
   const duplicateGroups = await Expense.aggregate([
     { $match: matchStage },
+    { $match: groupMatchStage },
     {
       $group: {
-        _id: options.byVisibleFields ? visibleFieldsGroupId : strictGroupId,
+        _id: groupId,
         ids: { $push: "$_id" },
         count: { $sum: 1 },
       },
@@ -113,6 +190,7 @@ async function runCleanup() {
     dryRun: !options.write,
     includeManual: options.includeManual,
     byVisibleFields: options.byVisibleFields,
+    byExternalId: options.byExternalId,
     sample: [],
   };
 
@@ -123,20 +201,19 @@ async function runCleanup() {
         description: 1,
         category: 1,
         isUserAltered: 1,
+        sourceTransactionType: 1,
+        installmentNumber: 1,
+        installmentTotal: 1,
+        isInstallmentCharged: 1,
         updatedAt: 1,
         createdAt: 1,
-      })
-      .sort({
-        isUserAltered: -1,
-        updatedAt: -1,
-        createdAt: -1,
-        _id: 1,
       });
 
     if (docs.length <= 1) continue;
 
-    const keepDoc = docs[0];
-    const deleteDocs = docs.slice(1);
+    const sortedDocs = sortDocsByKeepPriority(docs);
+    const keepDoc = sortedDocs[0];
+    const deleteDocs = sortedDocs.slice(1);
 
     stats.duplicateDocuments += docs.length;
     stats.docsKept += 1;

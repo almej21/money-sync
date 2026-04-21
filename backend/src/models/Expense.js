@@ -13,7 +13,22 @@ const expenseSchema = new mongoose.Schema(
     sourceConnectionKey: { type: String, default: "" },
     sourceAccountId: { type: String, default: "" },
     sourceAccountName: { type: String, default: "" },
+    sourceTransactionType: { type: String, default: "normal" },
+    processedDate: { type: Date, default: null },
+    installmentNumber: { type: Number, default: null },
+    installmentTotal: { type: Number, default: null },
+    isInstallmentCharged: { type: Boolean, default: null },
     dedupKey: { type: String, default: "" },
+    visibilityScope: {
+      type: String,
+      enum: ["shared", "private"],
+      default: "shared",
+    },
+    visibleToUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     date: { type: Date, required: true },
     amount: { type: Number, required: true },
     transactionType: {
@@ -41,6 +56,7 @@ const expenseSchema = new mongoose.Schema(
 );
 
 expenseSchema.index({ householdId: 1, date: -1 });
+expenseSchema.index({ householdId: 1, visibilityScope: 1, visibleToUserId: 1 });
 expenseSchema.index({ householdId: 1, updatedAt: 1, _id: 1 });
 expenseSchema.index({ householdId: 1, externalId: 1 }, { unique: false });
 expenseSchema.index(

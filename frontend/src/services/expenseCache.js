@@ -4,6 +4,8 @@ const EXPENSE_STORE = "expenses";
 const META_STORE = "meta";
 const META_LAST_SYNC_AT_KEY = "lastSyncAt";
 const META_SYNC_CURSOR_KEY = "syncCursor";
+const META_CACHE_USER_ID_KEY = "cacheUserId";
+const META_CACHE_HOUSEHOLD_ID_KEY = "cacheHouseholdId";
 
 function promisifyRequest(request) {
   return new Promise((resolve, reject) => {
@@ -91,14 +93,23 @@ export async function upsertCachedExpenses(expenses) {
 
 export async function getExpenseCacheMeta() {
   return withStore("readonly", META_STORE, async (store) => {
-    const [lastSyncAtEntry, syncCursorEntry] = await Promise.all([
+    const [
+      lastSyncAtEntry,
+      syncCursorEntry,
+      cacheUserIdEntry,
+      cacheHouseholdIdEntry,
+    ] = await Promise.all([
       promisifyRequest(store.get(META_LAST_SYNC_AT_KEY)),
       promisifyRequest(store.get(META_SYNC_CURSOR_KEY)),
+      promisifyRequest(store.get(META_CACHE_USER_ID_KEY)),
+      promisifyRequest(store.get(META_CACHE_HOUSEHOLD_ID_KEY)),
     ]);
 
     return {
       lastSyncAt: toIso(lastSyncAtEntry?.value),
       syncCursor: toIso(syncCursorEntry?.value),
+      cacheUserId: String(cacheUserIdEntry?.value || "").trim(),
+      cacheHouseholdId: String(cacheHouseholdIdEntry?.value || "").trim(),
     };
   });
 }
@@ -118,5 +129,26 @@ export async function setExpenseCacheMeta(meta = {}) {
         value: toIso(syncCursor),
       });
     }
+    if (Object.hasOwn(meta, "cacheUserId")) {
+      store.put({
+        key: META_CACHE_USER_ID_KEY,
+        value: String(meta.cacheUserId || "").trim(),
+      });
+    }
+    if (Object.hasOwn(meta, "cacheHouseholdId")) {
+      store.put({
+        key: META_CACHE_HOUSEHOLD_ID_KEY,
+        value: String(meta.cacheHouseholdId || "").trim(),
+      });
+    }
+  });
+}
+
+export async function clearExpenseCache() {
+  await withStore("readwrite", EXPENSE_STORE, async (store) => {
+    await promisifyRequest(store.clear());
+  });
+  await withStore("readwrite", META_STORE, async (store) => {
+    await promisifyRequest(store.clear());
   });
 }

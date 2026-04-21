@@ -56,12 +56,16 @@ export function createExpenseDedupKey(expense = {}) {
     normalizeDate(expense.date),
     normalizeAmount(expense.amount),
     normalizeText(expense.transactionType || "expense"),
+    normalizeText(expense.sourceTransactionType || "normal"),
     normalizeText(expense.currency),
     normalizeText(expense.description),
     normalizeText(expense.merchant),
     normalizeText(expense.sourceCompanyId),
     normalizeText(expense.sourceAccountId),
     normalizeText(expense.sourceAccountName),
+    normalizeText(expense.installmentNumber),
+    normalizeText(expense.installmentTotal),
+    normalizeText(expense.isInstallmentCharged),
   ].join("|");
 
   return crypto.createHash("sha256").update(raw).digest("hex");
@@ -76,15 +80,25 @@ export function buildExpenseUpsertFilter(expense = {}) {
   const identityClauses = [];
   const normalizedDedupKey = String(expense.dedupKey || "").trim();
   const normalizedExternalId = String(expense.externalId || "").trim();
+  const normalizedTransactionType = String(
+    expense.transactionType || "expense",
+  )
+    .trim()
+    .toLowerCase();
+  const normalizedExpenseTransactionType =
+    normalizedTransactionType === "return" ? "return" : "expense";
 
   if (normalizedDedupKey) {
     identityClauses.push({ dedupKey: normalizedDedupKey });
   }
-  // Only fall back to externalId when dedupKey is unavailable.
-  // Some providers may reuse the same externalId for opposite entries
-  // (expense + return), which would otherwise collapse into one row.
-  if (!normalizedDedupKey && normalizedExternalId) {
-    identityClauses.push({ externalId: normalizedExternalId });
+  // Always include externalId as an alternative identity clause.
+  // We also scope by transactionType to avoid collapsing provider rows
+  // that may reuse the same externalId for opposite directions.
+  if (normalizedExternalId) {
+    identityClauses.push({
+      externalId: normalizedExternalId,
+      transactionType: normalizedExpenseTransactionType,
+    });
   }
 
   const normalizedDate = normalizeDate(expense.date);
@@ -98,14 +112,9 @@ export function buildExpenseUpsertFilter(expense = {}) {
     dayRange &&
     Number.isFinite(normalizedAmount)
   ) {
-    const normalizedTransactionType = String(
-      expense.transactionType || "expense",
-    )
-      .trim()
-      .toLowerCase();
     identityClauses.push({
       amount: normalizedAmount,
-      transactionType: normalizedTransactionType === "return" ? "return" : "expense",
+      transactionType: normalizedExpenseTransactionType,
       sourceCompanyId: String(expense.sourceCompanyId || "").trim(),
       sourceAccountId: String(expense.sourceAccountId || "").trim(),
       merchant: normalizedMerchant,

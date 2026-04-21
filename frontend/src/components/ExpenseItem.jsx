@@ -151,6 +151,31 @@ function ExpenseItem({
     String(exp.status || "")
       .trim()
       .toLowerCase() === "pending";
+  const sourceTransactionType = String(exp.sourceTransactionType || "")
+    .trim()
+    .toLowerCase();
+  const isInstallmentType = sourceTransactionType === "installments";
+  const installmentNumber = Number(exp.installmentNumber);
+  const installmentTotal = Number(exp.installmentTotal);
+  const hasInstallmentPlan =
+    Number.isFinite(installmentNumber) &&
+    installmentNumber > 0 &&
+    Number.isFinite(installmentTotal) &&
+    installmentTotal > 0;
+  const isInstallmentCharged =
+    exp.isInstallmentCharged === true ||
+    (exp.isInstallmentCharged !== false && hasInstallmentPlan);
+  const installmentsStateText = !isInstallmentType
+    ? ""
+    : !isInstallmentCharged
+      ? `${t("installmentsStatePrefix")} • ${t("installmentsStateNotCharged")}`
+      : hasInstallmentPlan
+        ? `${t("installmentProgressLabel")} ${installmentNumber}/${installmentTotal} • ${
+            isPending ? t("pendingStatus") : t("postedStatus")
+          }`
+        : `${t("installmentsStatePrefix")} • ${t("installmentsStateCharged")} • ${
+            isPending ? t("pendingStatus") : t("postedStatus")
+          }`;
   const categoryText = String(exp.category || "").trim() || "-";
   const sourceAccountIdText = String(exp.sourceAccountId || "").trim();
   const shouldShowSourceAccountId =
@@ -343,6 +368,28 @@ function ExpenseItem({
                       </Box>
                     </Tooltip>
                   )}
+                  {isInstallmentType && (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        borderRadius: 0.9,
+                        px: 0.6,
+                        py: 0.4,
+                        bgcolor: theme.palette.info.main,
+                        color: theme.palette.info.contrastText,
+                        fontFamily: theme.typography.fontFamily,
+                        fontWeight: 700,
+                        fontSize: ".6rem",
+                        lineHeight: 1,
+                        textTransform: "none",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {installmentsStateText}
+                    </Box>
+                  )}
                 </Box>
                 <PingPongTypography
                   dir={direction}
@@ -478,6 +525,12 @@ function ExpenseItem({
             <br />
             {detailLine(t("notes"), exp.notes)}
             <br />
+            {isInstallmentType && (
+              <>
+                {detailLine(t("installmentsStateLabel"), installmentsStateText)}
+                <br />
+              </>
+            )}
             {detailLine(t("created"), formatDateTime(exp.createdAt, locale))}
             <br />
             {detailLine(t("updated"), formatDateTime(exp.updatedAt, locale))}

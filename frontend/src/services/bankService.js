@@ -15,6 +15,16 @@ export async function saveBankCredentials(payload) {
   });
 }
 
+export async function saveConnectionAccountVisibility(
+  connectionId,
+  payload,
+) {
+  return api(`/bank/credentials/${connectionId}/account-visibility`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function removeBankConnection(connectionId) {
   return api(`/bank/credentials/${connectionId}`, { method: "DELETE" });
 }
