@@ -297,6 +297,18 @@ function formatLogValue(value) {
   return String(value);
 }
 
+function sanitizeLogText(value) {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function toIsoForLog(value) {
+  const parsed = value ? new Date(value) : null;
+  if (!parsed || Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toISOString();
+}
+
 function serializeForLog(value, maxLength = 12_000) {
   try {
     const serialized = JSON.stringify(value);
@@ -311,6 +323,58 @@ function normalizeExpenseStatus(statusValue) {
   return String(statusValue || "").trim().toLowerCase() === "pending"
     ? "pending"
     : "posted";
+}
+
+function logFetchedExpenseItems({
+  companyId,
+  connectionId,
+  items = [],
+}) {
+  console.log(
+    `[BANK SYNC ITEMS] companyId=${formatLogValue(
+      companyId,
+    )} connectionId=${formatLogValue(
+      connectionId,
+    )} status=success items=${items.length}`,
+  );
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index] || {};
+    console.log(
+      `[BANK SYNC ITEM PARAMS] companyId=${formatLogValue(
+        companyId,
+      )} connectionId=${formatLogValue(
+        connectionId,
+      )} item=${index + 1}/${items.length} sourceAccountId=${formatLogValue(
+        item.sourceAccountId,
+      )} date=${toIsoForLog(item.date)} amount=${formatLogValue(
+        item.amount,
+      )} description="${sanitizeLogText(
+        item.description,
+      )}" category="${sanitizeLogText(item.category)}"`,
+    );
+  }
+}
+
+function logConnectionSummaries({
+  userId,
+  householdId,
+  status,
+  connectionSummaries = [],
+}) {
+  const groupedCounts = connectionSummaries.reduce((acc, summary) => {
+    const key = String(summary?.status || "unknown");
+    acc[key] = Number(acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  console.log(
+    `[BANK SYNC RUN] connection_summaries userId=${formatLogValue(
+      userId,
+    )} householdId=${formatLogValue(
+      householdId,
+    )} status=${formatLogValue(status)} counts=${serializeForLog(
+      groupedCounts,
+    )} details=${serializeForLog(connectionSummaries, 16_000)}`,
+  );
 }
 
 function logConnectionResult({
@@ -757,6 +821,13 @@ export async function syncLastMonthExpensesForUser(user) {
     try {
       attemptedConnectionKeys.add(connectionId);
       const scrapeCredentials = buildScrapeCredentials(activeCreds);
+      console.log(
+        `[BANK SYNC RUN] scrape_credentials_ready userId=${userId} householdId=${householdId} companyId=${formatLogValue(
+          activeCreds.companyId,
+        )} connectionId=${formatLogValue(
+          connectionId,
+        )} credentialFields=${Object.keys(scrapeCredentials).join("|") || "-"}`,
+      );
       const {
         scrapeResult,
         usedFallback,
@@ -787,6 +858,7 @@ export async function syncLastMonthExpensesForUser(user) {
       const normalized = normalizeScrapedTransactions(
         rawTransactions.map((entry) => entry.txn),
       );
+      const fetchedItemsForConnection = [];
 
       for (let index = 0; index < normalized.length; index += 1) {
         const normalizedItem = normalized[index];
@@ -838,6 +910,13 @@ export async function syncLastMonthExpensesForUser(user) {
           editedBy: user._id,
         };
         docs.push(preparedDoc);
+        fetchedItemsForConnection.push({
+          sourceAccountId: preparedDoc.sourceAccountId || "",
+          date: preparedDoc.date,
+          amount: preparedDoc.amount,
+          description: preparedDoc.description,
+          category: preparedDoc.category,
+        });
         console.log(
           `[BANK SYNC ITEM] fetched companyId=${formatLogValue(
             activeCreds.companyId,
@@ -852,6 +931,11 @@ export async function syncLastMonthExpensesForUser(user) {
           )} raw=${serializeForLog(rawItem)}`,
         );
       }
+      logFetchedExpenseItems({
+        companyId: activeCreds.companyId,
+        connectionId,
+        items: fetchedItemsForConnection,
+      });
 
       connectionSummaries.push({
         connectionKey: connectionId,
@@ -924,6 +1008,12 @@ export async function syncLastMonthExpensesForUser(user) {
     console.warn(
       `[BANK SYNC RUN] completed_no_docs userId=${userId} householdId=${householdId} reason=${resultReason} attemptedConnections=${attemptedConnectionKeys.size} successfulConnections=${successfulConnectionKeys.size} durationMs=${Date.now() - syncRunStartedAtMs}`,
     );
+    logConnectionSummaries({
+      userId,
+      householdId,
+      status: resultReason,
+      connectionSummaries,
+    });
 
     return {
       imported: 0,
@@ -992,6 +1082,12 @@ export async function syncLastMonthExpensesForUser(user) {
       result.upsertedCount || 0,
     )} updated=${Number(result.modifiedCount || 0)} total=${docs.length} attemptedConnections=${attemptedConnectionKeys.size} successfulConnections=${successfulConnectionKeys.size} durationMs=${Date.now() - syncRunStartedAtMs}`,
   );
+  logConnectionSummaries({
+    userId,
+    householdId,
+    status: "completed",
+    connectionSummaries,
+  });
   return {
     imported: result.upsertedCount || 0,
     updated: result.modifiedCount || 0,

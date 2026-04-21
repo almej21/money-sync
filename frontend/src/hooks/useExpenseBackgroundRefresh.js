@@ -13,8 +13,13 @@ export function useExpenseBackgroundRefresh(
     let timer = null;
 
     async function run() {
+      const pollStartedAtMs = Date.now();
       const initial = await getExpenseSyncStatus().catch(() => null);
-      if (!active || !initial?.sync) return;
+      if (!active) return;
+      if (!initial?.sync) {
+        timer = setTimeout(run, POLL_INTERVAL_MS);
+        return;
+      }
       onRunningChange(Boolean(initial.sync.running));
       const initialReason = String(initial.sync.lastResult?.reason || "");
       if (
@@ -26,22 +31,25 @@ export function useExpenseBackgroundRefresh(
         return;
       }
 
+      // Keep loading indicator visible while we are polling sync status.
+      onRunningChange(true);
       const startedAt = initial.sync.lastStartedAt;
-      const pollStartedAtMs = Date.now();
 
       const poll = async () => {
         if (!active) return;
-
         if (Date.now() - pollStartedAtMs >= MAX_POLL_DURATION_MS) {
           onRunningChange(false);
           return;
         }
 
         const status = await getExpenseSyncStatus().catch(() => null);
-        if (!active || !status?.sync) return;
+        if (!active) return;
+        if (!status?.sync) {
+          timer = setTimeout(poll, POLL_INTERVAL_MS);
+          return;
+        }
 
         const sync = status.sync;
-        onRunningChange(Boolean(sync.running));
         const hasCompletedAfterStart =
           Boolean(sync.lastCompletedAt) &&
           (!startedAt ||
