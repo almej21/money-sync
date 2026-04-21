@@ -189,6 +189,19 @@ function ExpenseItem({
     .startsWith("he")
     ? "נערך"
     : "edited";
+  const statusBadgeSx = {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: 0.9,
+    px: 0.6,
+    py: 0.4,
+    fontFamily: theme.typography.fontFamily,
+    fontWeight: 700,
+    fontSize: ".6rem",
+    lineHeight: 1,
+    textTransform: "none",
+    flexShrink: 0,
+  };
 
   async function handleSave() {
     const nextDescription = String(draftDescription || "").trim();
@@ -223,18 +236,75 @@ function ExpenseItem({
 
   return (
     <div>
-      <ListItem disableGutters sx={{ py: 0.75 }}>
-        <Box
-          sx={{
-            width: "100%",
-            p: 0.5,
-            borderRadius: 1.2,
-            bgcolor: theme.palette.background.default,
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-          }}
-        >
+      <ListItem disableGutters sx={{ py: 0.75, overflow: "visible" }}>
+        <Box sx={{ width: "100%", position: "relative" }}>
+          {(isPending || isInstallmentType) && (
+            <Box
+              dir={direction}
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: direction === "rtl" ? "auto" : 12,
+                right: direction === "rtl" ? 12 : "auto",
+                transform: "translateY(-30%)",
+                zIndex: 2,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.5,
+                justifyContent: direction === "rtl" ? "flex-end" : "flex-start",
+              }}
+            >
+              {isPending && (
+                <Tooltip
+                  title={t("pendingStatusTooltip")}
+                  arrow
+                  slotProps={{
+                    tooltip: {
+                      sx: {
+                        fontFamily: theme.typography.fontFamily,
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      ...statusBadgeSx,
+                      bgcolor: theme.palette.warning.main,
+                      color: theme.palette.warning.contrastText,
+                      cursor: "help",
+                    }}
+                  >
+                    {t("pendingStatus")}
+                  </Box>
+                </Tooltip>
+              )}
+              {isInstallmentType && (
+                <Box
+                  component="span"
+                  sx={{
+                    ...statusBadgeSx,
+                    bgcolor: theme.palette.info.main,
+                    color: theme.palette.info.contrastText,
+                  }}
+                >
+                  {installmentsStateText}
+                </Box>
+              )}
+            </Box>
+          )}
+          <Box
+            sx={{
+              width: "100%",
+              mt: (isPending || isInstallmentType) ? 0.5 : 0,
+              p: 0.5,
+              borderRadius: 1.2,
+              bgcolor: theme.palette.background.default,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+            }}
+          >
           <IconButton
             size="small"
             aria-label={t("edit")}
@@ -332,63 +402,6 @@ function ExpenseItem({
                     >
                       {editedLabel}
                     </Typography>
-                  )}
-                  {isPending && (
-                    <Tooltip
-                      title={t("pendingStatusTooltip")}
-                      arrow
-                      slotProps={{
-                        tooltip: {
-                          sx: {
-                            fontFamily: theme.typography.fontFamily,
-                          },
-                        },
-                      }}
-                    >
-                      <Box
-                        component="span"
-                        sx={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          borderRadius: 0.9,
-                          px: 0.6,
-                          py: 0.4,
-                          bgcolor: theme.palette.warning.main,
-                          color: theme.palette.warning.contrastText,
-                          fontFamily: theme.typography.fontFamily,
-                          fontWeight: 700,
-                          fontSize: ".6rem",
-                          lineHeight: 1,
-                          textTransform: "none",
-                          cursor: "help",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {t("pendingStatus")}
-                      </Box>
-                    </Tooltip>
-                  )}
-                  {isInstallmentType && (
-                    <Box
-                      component="span"
-                      sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        borderRadius: 0.9,
-                        px: 0.6,
-                        py: 0.4,
-                        bgcolor: theme.palette.info.main,
-                        color: theme.palette.info.contrastText,
-                        fontFamily: theme.typography.fontFamily,
-                        fontWeight: 700,
-                        fontSize: ".6rem",
-                        lineHeight: 1,
-                        textTransform: "none",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {installmentsStateText}
-                    </Box>
                   )}
                 </Box>
                 <PingPongTypography
@@ -499,10 +512,11 @@ function ExpenseItem({
               </Stack>
             )}
           </Stack>
+          </Box>
         </Box>
       </ListItem>
       <Box sx={{ pb: 1, px: 1 }}>
-        <Collapse in={Boolean(isExpanded)}>
+        <Collapse in={Boolean(isExpanded)} >
           <Typography
             color="text.secondary"
             dir={direction}
