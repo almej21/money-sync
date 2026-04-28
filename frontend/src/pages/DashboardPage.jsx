@@ -130,6 +130,15 @@ function mergeExpensesById(current, incoming) {
   return Array.from(nextMap.values());
 }
 
+function hasPendingExpenses(items) {
+  return (Array.isArray(items) ? items : []).some(
+    (item) =>
+      String(item?.status || "")
+        .trim()
+        .toLowerCase() === "pending",
+  );
+}
+
 function hasFreshSync(lastSyncAtIso, nowMs) {
   const lastSyncDate = toValidDate(lastSyncAtIso);
   if (!lastSyncDate) return false;
@@ -269,6 +278,22 @@ export default function DashboardPage() {
           if (changedItems.length > 0) {
             setExpenses((prev) => mergeExpensesById(prev, changedItems));
             await upsertCachedExpenses(changedItems).catch(() => {});
+          } else {
+            const cachedItems = await getCachedExpenses().catch(() => []);
+            if (hasPendingExpenses(cachedItems)) {
+              const fullData = await getExpenses();
+              const normalizedFullData = Array.isArray(fullData) ? fullData : [];
+              setExpenses(normalizedFullData);
+              await replaceCachedExpenses(normalizedFullData).catch(() => {});
+              const fullCursor = getLatestExpenseCursor(normalizedFullData);
+              await setExpenseCacheMeta({
+                lastSyncAt: response?.serverTime || new Date().toISOString(),
+                syncCursor: fullCursor,
+                cacheUserId: cacheScope.cacheUserId,
+                cacheHouseholdId: cacheScope.cacheHouseholdId,
+              }).catch(() => {});
+              return;
+            }
           }
           const nextCursor = response?.cursor || cacheMeta.syncCursor;
           await setExpenseCacheMeta({
@@ -529,10 +554,24 @@ export default function DashboardPage() {
       const label = accountName
         ? `${accountName} (${providerLabel})`
         : `${providerLabel} (${accountId})`;
+      const matchedAccount = Array.isArray(connection?.sourceAccounts)
+        ? connection.sourceAccounts.find(
+            (account) => String(account?.sourceAccountId || "").trim() === accountId,
+          )
+        : null;
+      const visibilityScope = String(
+        matchedAccount?.visibilityScope ||
+          connection?.visibilityScope ||
+          expense?.visibilityScope ||
+          "shared",
+      )
+        .trim()
+        .toLowerCase();
 
       optionsByAccountId.set(accountId, {
         id: accountId,
         label,
+        visibilityScope: visibilityScope === "private" ? "private" : "shared",
       });
     });
 

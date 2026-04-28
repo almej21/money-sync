@@ -9,6 +9,7 @@
     "lint": "node -e \"console.log('add eslint later')\"",
     "migrate:expense-installments": "node scripts/migrate-expense-installments.js",
     "cleanup:duplicate-expenses": "node scripts/cleanup-duplicate-expenses.js",
+    "cleanup:legacy-pending-expenses": "node scripts/cleanup-legacy-pending-expenses.js",
     "test:bank-scrapers": "node scripts/test-bank-scrapers.js",
     "test:bank-scrapers:interactive": "node scripts/test-bank-scrapers-interactive.js"
   },

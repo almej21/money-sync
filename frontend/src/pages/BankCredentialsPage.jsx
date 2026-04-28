@@ -55,23 +55,34 @@ function formatFetchTimestamp(value) {
 }
 
 function buildAccountVisibilityState(connections = []) {
-  const byConnection = {};
+  const visibilityByConnection = {};
+  const billingDayByConnection = {};
   for (const connection of connections) {
     const connectionId = String(connection?.id || "").trim();
     if (!connectionId) continue;
     const sourceAccounts = Array.isArray(connection?.sourceAccounts)
       ? connection.sourceAccounts
       : [];
-    byConnection[connectionId] = {};
+    visibilityByConnection[connectionId] = {};
+    billingDayByConnection[connectionId] = {};
     for (const account of sourceAccounts) {
       const sourceAccountId = String(account?.sourceAccountId || "").trim();
       if (!sourceAccountId) continue;
-      byConnection[connectionId][sourceAccountId] = String(
+      visibilityByConnection[connectionId][sourceAccountId] = String(
         account?.visibilityScope || connection?.visibilityScope || "shared",
       ).trim();
+      const billingDay = Number(account?.billingDay);
+      billingDayByConnection[connectionId][sourceAccountId] =
+        Number.isInteger(billingDay) && billingDay >= 1 && billingDay <= 31
+          ? billingDay
+          : "";
     }
   }
-  return byConnection;
+  return { visibilityByConnection, billingDayByConnection };
+}
+
+function getBillingDayOptions() {
+  return Array.from({ length: 31 }, (_, index) => index + 1);
 }
 
 function isCardSuffix(value) {
@@ -111,6 +122,7 @@ export default function BankCredentialsPage() {
     useState("");
   const [accountVisibilityByConnection, setAccountVisibilityByConnection] =
     useState({});
+  const [billingDayByConnection, setBillingDayByConnection] = useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pendingRemovalConnectionId, setPendingRemovalConnectionId] =
@@ -168,9 +180,9 @@ export default function BankCredentialsPage() {
 
       setProviders(nextProviders);
       setConnections(nextConnections);
-      setAccountVisibilityByConnection(
-        buildAccountVisibilityState(nextConnections),
-      );
+      const accountState = buildAccountVisibilityState(nextConnections);
+      setAccountVisibilityByConnection(accountState.visibilityByConnection);
+      setBillingDayByConnection(accountState.billingDayByConnection);
       setConnectedCount(
         Number(
           statusData.connectedCount ??
@@ -191,10 +203,11 @@ export default function BankCredentialsPage() {
     }
   }
 
-  function setLocalAccountVisibility(
+  function setLocalAccountSettings(
     connectionId,
     sourceAccountId,
     visibilityScope,
+    billingDay,
   ) {
     const normalizedConnectionId = String(connectionId || "").trim();
     const normalizedSourceAccountId = String(sourceAccountId || "").trim();
@@ -205,6 +218,14 @@ export default function BankCredentialsPage() {
       [normalizedConnectionId]: {
         ...(prev[normalizedConnectionId] || {}),
         [normalizedSourceAccountId]: visibilityScope,
+      },
+    }));
+    setBillingDayByConnection((prev) => ({
+      ...prev,
+      [normalizedConnectionId]: {
+        ...(prev[normalizedConnectionId] || {}),
+        [normalizedSourceAccountId]:
+          billingDay === "" || billingDay == null ? "" : Number(billingDay),
       },
     }));
     setConnections((prev) =>
@@ -220,7 +241,14 @@ export default function BankCredentialsPage() {
           sourceAccounts: sourceAccounts.map((account) =>
             String(account?.sourceAccountId || "").trim() ===
             normalizedSourceAccountId
-              ? { ...account, visibilityScope }
+              ? {
+                  ...account,
+                  visibilityScope,
+                  billingDay:
+                    billingDay === "" || billingDay == null
+                      ? null
+                      : Number(billingDay),
+                }
               : account,
           ),
         };
@@ -228,10 +256,11 @@ export default function BankCredentialsPage() {
     );
   }
 
-  async function updateCardVisibility(
+  async function updateCardSettings(
     connectionId,
     sourceAccountId,
     nextScope,
+    nextBillingDay,
   ) {
     const normalizedConnectionId = String(connectionId || "").trim();
     const normalizedSourceAccountId = String(sourceAccountId || "").trim();
@@ -241,14 +270,19 @@ export default function BankCredentialsPage() {
       accountVisibilityByConnection?.[normalizedConnectionId]?.[
         normalizedSourceAccountId
       ] || "shared";
+    const prevBillingDay =
+      billingDayByConnection?.[normalizedConnectionId]?.[
+        normalizedSourceAccountId
+      ] || "";
     const requestKey = `${normalizedConnectionId}:${normalizedSourceAccountId}`;
     setUpdatingAccountVisibilityKey(requestKey);
     setError("");
     setSuccess("");
-    setLocalAccountVisibility(
+    setLocalAccountSettings(
       normalizedConnectionId,
       normalizedSourceAccountId,
       nextScope,
+      nextBillingDay,
     );
 
     try {
@@ -257,24 +291,37 @@ export default function BankCredentialsPage() {
         {
           sourceAccountId: normalizedSourceAccountId,
           visibilityScope: nextScope,
+          billingDay:
+            nextBillingDay === "" || nextBillingDay == null
+              ? null
+              : Number(nextBillingDay),
         },
       );
       const resolvedScope = String(
         response?.visibilityScope || nextScope,
       ).trim();
-      setLocalAccountVisibility(
+      const resolvedBillingDay = Number(response?.billingDay);
+      const normalizedResolvedBillingDay =
+        Number.isInteger(resolvedBillingDay) &&
+        resolvedBillingDay >= 1 &&
+        resolvedBillingDay <= 31
+          ? resolvedBillingDay
+          : "";
+      setLocalAccountSettings(
         normalizedConnectionId,
         normalizedSourceAccountId,
         resolvedScope,
+        normalizedResolvedBillingDay,
       );
-      setSuccess(t("cardVisibilitySaved"));
+      setSuccess(t("cardSettingsSaved"));
     } catch (err) {
-      setLocalAccountVisibility(
+      setLocalAccountSettings(
         normalizedConnectionId,
         normalizedSourceAccountId,
         prevScope,
+        prevBillingDay,
       );
-      setError(err.message || t("failedSaveCardVisibility"));
+      setError(err.message || t("failedSaveCardSettings"));
     } finally {
       setUpdatingAccountVisibilityKey("");
     }
@@ -283,6 +330,7 @@ export default function BankCredentialsPage() {
   useEffect(() => {
     loadBankConfig();
   }, []);
+  const billingDayOptions = useMemo(() => getBillingDayOptions(), []);
 
   function onCompanyChange(nextCompanyId) {
     const provider = providers.find((item) => item.companyId === nextCompanyId);
@@ -507,7 +555,8 @@ export default function BankCredentialsPage() {
                               <Box key={`${connection.id}:${sourceAccountId}`}>
                                 <Divider
                                   sx={{
-                                    borderColor: theme.palette.text.contrastText,
+                                    borderColor:
+                                      theme.palette.text.contrastText,
                                     opacity: 1,
                                     mb: 1,
                                   }}
@@ -515,7 +564,10 @@ export default function BankCredentialsPage() {
                                 <Stack
                                   direction={{ xs: "column", sm: "row" }}
                                   spacing={1}
-                                  alignItems={{ xs: "stretch", sm: "center" }}
+                                  alignItems={{
+                                    xs: "stretch",
+                                    sm: "flex-start",
+                                  }}
                                 >
                                   <Typography
                                     variant="body2"
@@ -527,39 +579,94 @@ export default function BankCredentialsPage() {
                                   >
                                     {formatSourceAccountLabel(account, t)}
                                   </Typography>
-                                  <Dropdown
-                                    labelId={`account-visibility-${connection.id}-${sourceAccountId}`}
-                                    label={t("cardVisibility")}
-                                    value={accountVisibility}
-                                    onChange={(e) =>
-                                      updateCardVisibility(
-                                        connection.id,
-                                        sourceAccountId,
-                                        e.target.value,
-                                      )
-                                    }
-                                    required
-                                    disabled={
-                                      saving ||
-                                      loading ||
-                                      !canManageBankConnections ||
-                                      Boolean(updatingAccountVisibilityKey) ||
-                                      !sourceAccountId
-                                    }
-                                    sx={{
-                                      minWidth: { xs: "100%", sm: 220 },
-                                      "& .MuiInputBase-root": {
-                                        color: theme.palette.text.contrastText,
-                                      },
-                                    }}
-                                  >
-                                    <MenuItem value="shared">
-                                      {t("sharedConnection")}
-                                    </MenuItem>
-                                    <MenuItem value="private">
-                                      {t("privateConnection")}
-                                    </MenuItem>
-                                  </Dropdown>
+                                  <Stack spacing={0} sx={{ width: 320 }}>
+                                    <Box sx={{ mt: 3 }}>
+                                      <Dropdown
+                                        labelId={`account-visibility-${connection.id}-${sourceAccountId}`}
+                                        label={t("cardVisibility")}
+                                        value={accountVisibility}
+                                        onChange={(e) =>
+                                          updateCardSettings(
+                                            connection.id,
+                                            sourceAccountId,
+                                            e.target.value,
+                                            billingDayByConnection?.[
+                                              connection.id
+                                            ]?.[sourceAccountId] || "",
+                                          )
+                                        }
+                                        required
+                                        disabled={
+                                          saving ||
+                                          loading ||
+                                          !canManageBankConnections ||
+                                          Boolean(
+                                            updatingAccountVisibilityKey,
+                                          ) ||
+                                          !sourceAccountId
+                                        }
+                                        sx={{
+                                          width: 320,
+                                          "& .MuiInputBase-root": {
+                                            color:
+                                              theme.palette.text.contrastText,
+                                          },
+                                        }}
+                                      >
+                                        <MenuItem value="shared">
+                                          {t("sharedConnection")}
+                                        </MenuItem>
+                                        <MenuItem value="private">
+                                          {t("privateConnection")}
+                                        </MenuItem>
+                                      </Dropdown>
+                                    </Box>
+                                    <Box sx={{ mt: 3 }}>
+                                      <Dropdown
+                                        labelId={`account-billing-day-${connection.id}-${sourceAccountId}`}
+                                        label={t("billingDate")}
+                                        labelShrink
+                                        value={
+                                          billingDayByConnection?.[
+                                            connection.id
+                                          ]?.[sourceAccountId] || ""
+                                        }
+                                        onChange={(e) =>
+                                          updateCardSettings(
+                                            connection.id,
+                                            sourceAccountId,
+                                            accountVisibility,
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={
+                                          saving ||
+                                          loading ||
+                                          !canManageBankConnections ||
+                                          Boolean(
+                                            updatingAccountVisibilityKey,
+                                          ) ||
+                                          !sourceAccountId
+                                        }
+                                        sx={{
+                                          width: 320,
+                                          "& .MuiInputBase-root": {
+                                            color:
+                                              theme.palette.text.contrastText,
+                                          },
+                                        }}
+                                      >
+                                        <MenuItem value="">
+                                          {t("optional")}
+                                        </MenuItem>
+                                        {billingDayOptions.map((day) => (
+                                          <MenuItem key={day} value={day}>
+                                            {day}
+                                          </MenuItem>
+                                        ))}
+                                      </Dropdown>
+                                    </Box>
+                                  </Stack>
                                   {updatingAccountVisibilityKey ===
                                     requestKey && (
                                     <CircularProgress
@@ -599,7 +706,7 @@ export default function BankCredentialsPage() {
                       width: 32,
                       height: 32,
                       p: 0,
-                      borderRadius: .7,
+                      borderRadius: 0.7,
                       borderColor: "error.main",
                       border: "2px solid",
                       color: "error.main",

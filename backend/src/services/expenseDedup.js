@@ -24,11 +24,21 @@ function normalizeDate(value) {
 function toDayRange(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
+  // Use UTC day boundaries so fallback matching is stable across server
+  // timezone settings and provider timestamps that may land near midnight.
   const dayStart = new Date(parsed);
-  dayStart.setHours(0, 0, 0, 0);
+  dayStart.setUTCHours(0, 0, 0, 0);
   const dayEnd = new Date(parsed);
-  dayEnd.setHours(23, 59, 59, 999);
+  dayEnd.setUTCHours(23, 59, 59, 999);
   return { dayStart, dayEnd };
+}
+
+function addUtcDays(value, days) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const next = new Date(parsed);
+  next.setUTCDate(next.getUTCDate() + Number(days || 0));
+  return next;
 }
 
 function connectionScope(connectionKey) {
@@ -56,7 +66,6 @@ export function createExpenseDedupKey(expense = {}) {
     normalizeDate(expense.date),
     normalizeAmount(expense.amount),
     normalizeText(expense.transactionType || "expense"),
-    normalizeText(expense.sourceTransactionType || "normal"),
     normalizeText(expense.currency),
     normalizeText(expense.description),
     normalizeText(expense.merchant),
@@ -103,8 +112,15 @@ export function buildExpenseUpsertFilter(expense = {}) {
 
   const normalizedDate = normalizeDate(expense.date);
   const dayRange = toDayRange(expense.date);
+  const fallbackStartDate = dayRange
+    ? addUtcDays(dayRange.dayStart, -1)
+    : null;
+  const fallbackEndDate = dayRange ? addUtcDays(dayRange.dayEnd, 1) : null;
+  const dayStartIso = fallbackStartDate ? fallbackStartDate.toISOString() : "";
+  const dayEndIso = fallbackEndDate ? fallbackEndDate.toISOString() : "";
   const normalizedAmount = Number(expense.amount);
   const normalizedMerchant = String(expense.merchant || "").trim();
+  const normalizedDescription = String(expense.description || "").trim();
 
   // Legacy fallback to converge old rows that were created before dedupKey existed.
   if (
@@ -117,11 +133,26 @@ export function buildExpenseUpsertFilter(expense = {}) {
       transactionType: normalizedExpenseTransactionType,
       sourceCompanyId: String(expense.sourceCompanyId || "").trim(),
       sourceAccountId: String(expense.sourceAccountId || "").trim(),
-      merchant: normalizedMerchant,
-      date: {
-        $gte: dayRange.dayStart,
-        $lte: dayRange.dayEnd,
-      },
+      $or: [
+        { merchant: normalizedMerchant },
+        { description: normalizedDescription },
+      ],
+      // Support both BSON Date and ISO string legacy `date` values without
+      // using $expr (Mongo does not allow $expr in upsert predicates).
+      $or: [
+        {
+          date: {
+            $gte: fallbackStartDate,
+            $lte: fallbackEndDate,
+          },
+        },
+        {
+          date: {
+            $gte: dayStartIso,
+            $lte: dayEndIso,
+          },
+        },
+      ],
     });
   }
 

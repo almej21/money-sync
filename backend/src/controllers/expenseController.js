@@ -418,6 +418,8 @@ export async function importExpenses(req, res) {
                 doc.editedBy,
               ],
             },
+            createdAt: { $ifNull: ["$createdAt", "$$NOW"] },
+            updatedAt: "$$NOW",
           },
         },
       ],

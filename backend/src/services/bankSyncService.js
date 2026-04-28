@@ -27,6 +27,8 @@ const TIMEOUT_PATTERN = /(timed out|timeout)/i;
 const FETCH_COOLDOWN_MS = 60 * 60 * 1000;
 const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 30_000;
 const DEFAULT_RETRY_DELAY_MS = 1_500;
+const PENDING_REVISIT_BUFFER_DAYS = 2;
+const MAX_PENDING_REVISIT_DAYS = 90;
 const BANK_COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
   leumi: "Bank Leumi",
@@ -235,6 +237,83 @@ function getWindowStartDate(lastBankFetchAt, fallbackStartDate) {
   return new Date(fallbackStartDate);
 }
 
+function subtractUtcDays(value, days) {
+  const parsed = parseDate(value);
+  if (!parsed) return null;
+  const next = new Date(parsed);
+  next.setUTCDate(next.getUTCDate() - Math.max(0, Number(days || 0)));
+  return next;
+}
+
+async function findOldestPendingDateForConnection({
+  householdId,
+  connectionId,
+  companyId,
+}) {
+  const normalizedConnectionId = String(connectionId || "").trim();
+  const normalizedCompanyId = String(companyId || "").trim();
+  const clauses = [];
+  if (normalizedConnectionId) {
+    clauses.push({ sourceConnectionKey: normalizedConnectionId });
+  }
+  if (normalizedCompanyId) {
+    clauses.push({
+      sourceCompanyId: normalizedCompanyId,
+      $or: [
+        { sourceConnectionKey: { $exists: false } },
+        { sourceConnectionKey: null },
+        { sourceConnectionKey: "" },
+      ],
+    });
+  }
+  if (!clauses.length) return null;
+
+  const oldestPending = await Expense.findOne({
+    householdId,
+    source: "israeli-bank-scrapers",
+    status: "pending",
+    $or: clauses,
+  })
+    .select({ date: 1 })
+    .sort({ date: 1 })
+    .lean();
+
+  return parseDate(oldestPending?.date);
+}
+
+async function resolveWindowStartDateForConnection({
+  householdId,
+  connectionId,
+  companyId,
+  lastBankFetchAt,
+  fallbackStartDate,
+}) {
+  const baseWindowStart = getWindowStartDate(lastBankFetchAt, fallbackStartDate);
+  const oldestPendingDate = await findOldestPendingDateForConnection({
+    householdId,
+    connectionId,
+    companyId,
+  });
+  if (!oldestPendingDate) return baseWindowStart;
+
+  const pendingBackfillStart = subtractUtcDays(
+    oldestPendingDate,
+    PENDING_REVISIT_BUFFER_DAYS,
+  );
+  if (!pendingBackfillStart) return baseWindowStart;
+
+  const maxLookbackStart = subtractUtcDays(new Date(), MAX_PENDING_REVISIT_DAYS);
+  const boundedPendingStart =
+    maxLookbackStart &&
+    pendingBackfillStart.getTime() < maxLookbackStart.getTime()
+      ? maxLookbackStart
+      : pendingBackfillStart;
+
+  return boundedPendingStart.getTime() < baseWindowStart.getTime()
+    ? boundedPendingStart
+    : baseWindowStart;
+}
+
 function flattenTransactions(scrapeResult) {
   const accounts = Array.isArray(scrapeResult?.accounts)
     ? scrapeResult.accounts
@@ -338,6 +417,149 @@ function sanitizeLogText(value) {
   return String(value ?? "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeTextForMatch(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function toMatchAmount(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "0.00";
+  return Math.abs(parsed).toFixed(2);
+}
+
+function toDateOrNull(value) {
+  const parsed = parseDate(value);
+  return parsed || null;
+}
+
+function buildPendingPostedSignature(expense = {}) {
+  const merchant = normalizeTextForMatch(expense.merchant);
+  const description = normalizeTextForMatch(expense.description);
+  const textKey = merchant || description;
+  return [
+    String(expense.householdId || "").trim(),
+    String(expense.sourceCompanyId || "").trim(),
+    String(expense.sourceAccountId || "").trim(),
+    String(expense.transactionType || "expense").trim().toLowerCase(),
+    toMatchAmount(expense.amount),
+    textKey,
+  ].join("|");
+}
+
+async function reconcilePendingWithPosted({
+  householdId,
+  connectionKeys = [],
+  sinceDate,
+}) {
+  if (!householdId || !connectionKeys.length) {
+    return { merged: 0, deleted: 0, matchedPairs: 0 };
+  }
+
+  const since = toDateOrNull(sinceDate) || subtractUtcDays(new Date(), 90);
+  const rows = await Expense.find({
+    householdId,
+    source: "israeli-bank-scrapers",
+    sourceConnectionKey: { $in: connectionKeys },
+    date: { $gte: since },
+  })
+    .select({
+      _id: 1,
+      status: 1,
+      householdId: 1,
+      sourceCompanyId: 1,
+      sourceAccountId: 1,
+      transactionType: 1,
+      amount: 1,
+      merchant: 1,
+      description: 1,
+      category: 1,
+      notes: 1,
+      tags: 1,
+      isUserAltered: 1,
+      editedBy: 1,
+      createdBy: 1,
+      date: 1,
+      updatedAt: 1,
+      createdAt: 1,
+    })
+    .lean();
+
+  const postedBySignature = new Map();
+  const pendingRows = [];
+  for (const row of rows) {
+    const signature = buildPendingPostedSignature(row);
+    if (!signature || signature.endsWith("|")) continue;
+    if (String(row.status || "").trim().toLowerCase() === "pending") {
+      pendingRows.push({ ...row, __signature: signature });
+      continue;
+    }
+    if (!postedBySignature.has(signature)) postedBySignature.set(signature, []);
+    postedBySignature.get(signature).push(row);
+  }
+
+  let merged = 0;
+  let deleted = 0;
+  let matchedPairs = 0;
+  for (const pending of pendingRows) {
+    const candidates = postedBySignature.get(pending.__signature) || [];
+    if (!candidates.length) continue;
+
+    const pendingDate = toDateOrNull(pending.date);
+    const match = [...candidates]
+      .map((candidate) => {
+        const candidateDate = toDateOrNull(candidate.date);
+        const diffMs =
+          pendingDate && candidateDate
+            ? Math.abs(candidateDate.getTime() - pendingDate.getTime())
+            : Number.MAX_SAFE_INTEGER;
+        return { candidate, diffMs };
+      })
+      .sort((a, b) => a.diffMs - b.diffMs)[0];
+
+    if (!match || match.diffMs > 48 * 60 * 60 * 1000) continue;
+    matchedPairs += 1;
+
+    if (pending.isUserAltered && !match.candidate.isUserAltered) {
+      const nextTags = Array.isArray(pending.tags)
+        ? pending.tags.filter((tag) => String(tag || "").trim())
+        : [];
+      const mergeSet = {
+        isUserAltered: true,
+        editedBy:
+          pending.editedBy || match.candidate.editedBy || match.candidate.createdBy,
+        updatedAt: new Date(),
+      };
+      if (String(pending.description || "").trim()) {
+        mergeSet.description = String(pending.description || "").trim();
+      }
+      if (String(pending.category || "").trim()) {
+        mergeSet.category = String(pending.category || "").trim();
+      }
+      if (String(pending.notes || "").trim()) {
+        mergeSet.notes = String(pending.notes || "").trim();
+      }
+      if (nextTags.length > 0) {
+        mergeSet.tags = nextTags;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const mergeResult = await Expense.updateOne(
+        { _id: match.candidate._id },
+        { $set: mergeSet },
+      );
+      merged += Number(mergeResult.modifiedCount || 0);
+    }
+
+    // eslint-disable-next-line no-await-in-loop
+    const deleteResult = await Expense.deleteOne({ _id: pending._id });
+    deleted += Number(deleteResult.deletedCount || 0);
+  }
+
+  return { merged, deleted, matchedPairs };
 }
 
 function toIsoForLog(value) {
@@ -769,10 +991,13 @@ export async function syncLastMonthExpensesForUser(user) {
     const fetchStartedAt = Date.now();
     const connectionId =
       String(activeCreds.connectionKey || "").trim() || activeCreds.companyId;
-    const windowStartDate = getWindowStartDate(
-      activeCreds.lastBankFetchAt,
-      defaultWindowStartDate,
-    );
+    const windowStartDate = await resolveWindowStartDateForConnection({
+      householdId,
+      connectionId,
+      companyId: activeCreds.companyId,
+      lastBankFetchAt: activeCreds.lastBankFetchAt,
+      fallbackStartDate: defaultWindowStartDate,
+    });
     console.log(
       `[BANK SYNC RUN] connection_started userId=${userId} householdId=${householdId} companyId=${formatLogValue(
         activeCreds.companyId,
@@ -1121,6 +1346,8 @@ export async function syncLastMonthExpensesForUser(user) {
                 doc.editedBy,
               ],
             },
+            createdAt: { $ifNull: ["$createdAt", "$$NOW"] },
+            updatedAt: "$$NOW",
           },
         },
       ],
@@ -1128,10 +1355,23 @@ export async function syncLastMonthExpensesForUser(user) {
     },
   }));
   const result = await Expense.bulkWrite(bulkOps, { ordered: false });
+  const minWindowStartDate = docs.reduce((minDate, doc) => {
+    const parsed = toDateOrNull(doc?.date);
+    if (!parsed) return minDate;
+    if (!minDate || parsed.getTime() < minDate.getTime()) return parsed;
+    return minDate;
+  }, null);
+  const reconcileResult = await reconcilePendingWithPosted({
+    householdId,
+    connectionKeys: Array.from(successfulConnectionKeys),
+    sinceDate: subtractUtcDays(minWindowStartDate || new Date(), 2),
+  });
   console.log(
     `[BANK SYNC RUN] completed userId=${userId} householdId=${householdId} imported=${Number(
       result.upsertedCount || 0,
-    )} updated=${Number(result.modifiedCount || 0)} total=${docs.length} attemptedConnections=${attemptedConnectionKeys.size} successfulConnections=${successfulConnectionKeys.size} durationMs=${Date.now() - syncRunStartedAtMs}`,
+    )} updated=${Number(result.modifiedCount || 0)} total=${docs.length} attemptedConnections=${attemptedConnectionKeys.size} successfulConnections=${successfulConnectionKeys.size} reconciledPairs=${Number(
+      reconcileResult.matchedPairs || 0,
+    )} reconciledDeletes=${Number(reconcileResult.deleted || 0)} durationMs=${Date.now() - syncRunStartedAtMs}`,
   );
   logConnectionSummaries({
     userId,

@@ -1,6 +1,8 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import EditSquareIcon from "@mui/icons-material/EditSquare";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
@@ -10,6 +12,7 @@ import {
   Card,
   CardContent,
   Checkbox,
+  CircularProgress,
   Collapse,
   Dialog,
   DialogActions,
@@ -70,6 +73,7 @@ export default function ShoppingListsPage() {
   const [expandedNoteEditorKey, setExpandedNoteEditorKey] = useState("");
   const [noteDrafts, setNoteDrafts] = useState({});
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [expandedLists, setExpandedLists] = useState({});
   const listsRef = useRef([]);
 
   async function load() {
@@ -262,6 +266,22 @@ export default function ShoppingListsPage() {
     setPendingDeleteList(list || null);
   }
 
+  function isListExpanded(listId) {
+    const key = String(listId || "").trim();
+    if (!key) return true;
+    if (!Object.hasOwn(expandedLists, key)) return true;
+    return Boolean(expandedLists[key]);
+  }
+
+  function toggleListExpanded(listId) {
+    const key = String(listId || "").trim();
+    if (!key) return;
+    setExpandedLists((prev) => ({
+      ...prev,
+      [key]: !isListExpanded(key),
+    }));
+  }
+
   function closeDeleteConfirmation() {
     if (isDeletingList) return;
     setPendingDeleteList(null);
@@ -385,7 +405,7 @@ export default function ShoppingListsPage() {
       {isLoadingLists
         ? Array.from({ length: 3 }).map((_, index) => (
             <Card key={`shopping-list-skeleton-${index}`}>
-              <CardContent>
+              <CardContent sx={{ "&:last-child": { pb: 0 } }}>
                 <Stack
                   direction="row"
                   justifyContent="space-between"
@@ -450,14 +470,32 @@ export default function ShoppingListsPage() {
           ))
         : lists.map((list) => (
         <Card key={list._id}>
-          <CardContent>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 1 }}
+          {(() => {
+            const expanded = isListExpanded(list._id);
+            return (
+          <CardContent
+            sx={{
+              px: 2,
+              py: expanded ? 1.5 : 1.25,
+              "&:last-child": { pb: expanded ? 1.5 : 1.25 },
+            }}
+          >
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 116px",
+                alignItems: "center",
+                columnGap: 1,
+                mb: expanded ? 1 : 0,
+              }}
             >
-              <Stack direction="row" alignItems="baseline" spacing={0.75}>
+              <Stack
+                direction="row"
+                alignItems="baseline"
+                spacing={0.75}
+                onClick={() => toggleListExpanded(list._id)}
+                sx={{ cursor: "pointer" }}
+              >
                 <Typography
                   variant="h6"
                   sx={{
@@ -478,11 +516,34 @@ export default function ShoppingListsPage() {
                   display: "flex",
                   flexDirection: "row",
                   direction: "ltr",
-                  alignItems: "flex-start",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
                   columnGap: 1,
-                  flexShrink: 0,
+                  width: 116,
                 }}
               >
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => toggleListExpanded(list._id)}
+                  aria-label={
+                    isListExpanded(list._id) ? t("hideDetails") : t("showDetails")
+                  }
+                  sx={{
+                    minWidth: 0,
+                    width: 32,
+                    height: 32,
+                    p: 0,
+                    borderRadius: 1,
+                    border: "2px solid",
+                  }}
+                >
+                  {isListExpanded(list._id) ? (
+                    <ExpandLessIcon fontSize="small" />
+                  ) : (
+                    <ExpandMoreIcon fontSize="small" />
+                  )}
+                </Button>
                 <Button
                   variant="outlined"
                   color="error"
@@ -493,7 +554,6 @@ export default function ShoppingListsPage() {
                     width: 32,
                     height: 32,
                     p: 0,
-                    mr: 0.5,
                     borderRadius: 1,
                     borderColor: "error.main",
                     border: "2px solid",
@@ -523,137 +583,141 @@ export default function ShoppingListsPage() {
                   <EditOutlinedIcon fontSize="small" />
                 </Button>
               </Box>
-            </Stack>
-            <Divider sx={{ mb: 1.5 }} />
-            <List disablePadding>
-              {list.items.map((item, index) => (
-                <Box key={item._id}>
-                  <ListItem disableGutters sx={{ py: 0 }}>
-                    <Stack
-                      direction="row"
-                      justifyContent="flex-start"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ width: "100%" }}
-                    >
+            </Box>
+            <Collapse in={isListExpanded(list._id)}>
+              <Divider sx={{ mb: 1.5 }} />
+              <List disablePadding>
+                {list.items.map((item, index) => (
+                  <Box key={item._id}>
+                    <ListItem disableGutters sx={{ py: 0 }}>
                       <Stack
                         direction="row"
+                        justifyContent="flex-start"
                         alignItems="center"
-                        sx={{ minWidth: 0, width: "100%" }}
+                        spacing={1}
+                        sx={{ width: "100%" }}
                       >
-                        <Checkbox
-                          checked={Boolean(item.completed)}
-                          onChange={() => toggleItem(list._id, item._id)}
-                        />
-                        <ListItemText
-                          primary={`${item.description || item.text || "-"} x${item.quantity}`}
-                          primaryTypographyProps={{
-                            dir: direction,
-                            sx: {
-                              textAlign: direction === "rtl" ? "right" : "left",
-                              wordBreak: "break-word",
-                              textDecoration: item.completed
-                                ? "line-through"
-                                : "none",
-                              opacity: item.completed ? 0.7 : 1,
-                            },
-                          }}
-                          sx={{ my: 0 }}
-                        />
-                        {Boolean(String(item?.note || "").trim()) && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              maxWidth: 180,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              fontSize: "0.8rem",
-                              fontWeight: "600",
-                              fontFamily:
-                                '"Guttman Yad", "Segoe Print", "Miriam Libre", "Noto Sans Hebrew", cursive',
-                              color: "text.secondary",
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          sx={{ minWidth: 0, width: "100%" }}
+                        >
+                          <Checkbox
+                            checked={Boolean(item.completed)}
+                            onChange={() => toggleItem(list._id, item._id)}
+                          />
+                          <ListItemText
+                            primary={`${item.description || item.text || "-"} x${item.quantity}`}
+                            primaryTypographyProps={{
+                              dir: direction,
+                              sx: {
+                                textAlign: direction === "rtl" ? "right" : "left",
+                                wordBreak: "break-word",
+                                textDecoration: item.completed
+                                  ? "line-through"
+                                  : "none",
+                                opacity: item.completed ? 0.7 : 1,
+                              },
                             }}
+                            sx={{ my: 0 }}
+                          />
+                          {Boolean(String(item?.note || "").trim()) && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                maxWidth: 180,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                fontSize: "0.8rem",
+                                fontWeight: "600",
+                                fontFamily:
+                                  '"Guttman Yad", "Segoe Print", "Miriam Libre", "Noto Sans Hebrew", cursive',
+                                color: "text.secondary",
+                              }}
+                            >
+                              {String(item.note || "").trim()}
+                            </Typography>
+                          )}
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setExpandedNoteEditorKey((prev) =>
+                                prev === getItemNoteEditorKey(list._id, item._id)
+                                  ? ""
+                                  : getItemNoteEditorKey(list._id, item._id),
+                              )
+                            }
+                            aria-label={t("addNote")}
+                            sx={{ alignSelf: "center" }}
                           >
-                            {String(item.note || "").trim()}
-                          </Typography>
-                        )}
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            setExpandedNoteEditorKey((prev) =>
-                              prev === getItemNoteEditorKey(list._id, item._id)
-                                ? ""
-                                : getItemNoteEditorKey(list._id, item._id),
-                            )
-                          }
-                          aria-label={t("addNote")}
-                          sx={{ alignSelf: "center" }}
-                        >
-                          <EditSquareIcon fontSize="small" />
-                        </IconButton>
+                            <EditSquareIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
                       </Stack>
-                    </Stack>
-                  </ListItem>
-                  <Collapse
-                    in={
-                      expandedNoteEditorKey ===
-                      getItemNoteEditorKey(list._id, item._id)
-                    }
-                  >
-                    <Box sx={{ py: 1 }}>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          label={t("note")}
-                          value={getDraftNoteValue(list._id, item)}
-                          onChange={(event) =>
-                            onNoteDraftChange(
-                              list._id,
-                              item._id,
-                              event.target.value,
-                            )
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key !== "Enter") return;
-                            event.preventDefault();
-                            saveItemNote(list, item);
-                            setExpandedNoteEditorKey("");
-                          }}
-                          disabled={isSavingNote}
-                        />
-                        <IconButton
-                          color="primary"
-                          onClick={() => {
-                            saveItemNote(list, item);
-                            setExpandedNoteEditorKey("");
-                          }}
-                          aria-label={t("save")}
-                          disabled={isSavingNote}
-                        >
-                          <SaveOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Box>
-                  </Collapse>
-                  {index < list.items.length - 1 && <Divider />}
-                </Box>
-              ))}
-            </List>
-            <Box
-              sx={{
-                mt: 1.25,
-                display: "flex",
-                direction: "ltr",
-                justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                {t("createdAtLabel")} {formatCreatedAt(list.createdAt)}
-              </Typography>
-            </Box>
+                    </ListItem>
+                    <Collapse
+                      in={
+                        expandedNoteEditorKey ===
+                        getItemNoteEditorKey(list._id, item._id)
+                      }
+                    >
+                      <Box sx={{ py: 1 }}>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label={t("note")}
+                            value={getDraftNoteValue(list._id, item)}
+                            onChange={(event) =>
+                              onNoteDraftChange(
+                                list._id,
+                                item._id,
+                                event.target.value,
+                              )
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter") return;
+                              event.preventDefault();
+                              saveItemNote(list, item);
+                              setExpandedNoteEditorKey("");
+                            }}
+                            disabled={isSavingNote}
+                          />
+                          <IconButton
+                            color="primary"
+                            onClick={() => {
+                              saveItemNote(list, item);
+                              setExpandedNoteEditorKey("");
+                            }}
+                            aria-label={t("save")}
+                            disabled={isSavingNote}
+                          >
+                            <SaveOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Box>
+                    </Collapse>
+                    {index < list.items.length - 1 && <Divider />}
+                  </Box>
+                ))}
+              </List>
+              <Box
+                sx={{
+                  mt: 1.25,
+                  display: "flex",
+                  direction: "ltr",
+                  justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  {t("createdAtLabel")} {formatCreatedAt(list.createdAt)}
+                </Typography>
+              </Box>
+            </Collapse>
           </CardContent>
+            );
+          })()}
         </Card>
       ))}
 
@@ -935,7 +999,14 @@ export default function ShoppingListsPage() {
               </Button>
             </Box>
             <Button type="submit" variant="contained" disabled={isSavingEdit}>
-              {t("save")}
+              {isSavingEdit ? (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CircularProgress size={16} color="inherit" />
+                  <span>{t("loading")}</span>
+                </Stack>
+              ) : (
+                t("save")
+              )}
             </Button>
           </Stack>
         </Box>

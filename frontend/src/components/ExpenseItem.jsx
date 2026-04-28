@@ -475,14 +475,22 @@ function ExpenseItem({
             >
               <Typography
                 component="span"
-                sx={{ fontWeight: 400, fontSize: ".9rem" }}
+                sx={{
+                  fontWeight: 400,
+                  fontSize: ".9rem",
+                  opacity: isInstallmentType ? 0.5 : 1,
+                }}
               >
                 {isReturn ? "+" : ""}
                 {exp.currency}
               </Typography>
               <Typography
                 component="span"
-                sx={{ fontWeight: 800, fontSize: "1rem" }}
+                sx={{
+                  fontWeight: 800,
+                  fontSize: "1rem",
+                  opacity: isInstallmentType ? 0.5 : 1,
+                }}
               >
                 {normalizedAmount}
               </Typography>

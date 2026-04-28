@@ -3,6 +3,8 @@ import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import SortOutlinedIcon from "@mui/icons-material/SortOutlined";
 import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
+import GroupIcon from "@mui/icons-material/Group";
+import PersonIcon from "@mui/icons-material/Person";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import {
   Box,
@@ -233,7 +235,24 @@ export default function DashboardFilters({
                         <Checkbox
                           checked={selectedConnectionIds.includes(option.id)}
                         />
-                        <ListItemText primary={option.label} />
+                        <ListItemText
+                          primary={
+                            <Box
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.75,
+                              }}
+                            >
+                              {option.visibilityScope === "private" ? (
+                                <PersonIcon sx={{ fontSize: 16 }} />
+                              ) : (
+                                <GroupIcon sx={{ fontSize: 16 }} />
+                              )}
+                              <Box component="span">{option.label}</Box>
+                            </Box>
+                          }
+                        />
                       </MenuItem>
                     ))
                   )}

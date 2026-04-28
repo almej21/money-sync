@@ -130,6 +130,19 @@ function parseRequestedVisibilityScope(body = {}) {
   return { hasValue: true, value: raw, valid: true };
 }
 
+function parseRequestedBillingDay(body = {}) {
+  if (!Object.hasOwn(body, "billingDay")) {
+    return { hasValue: false, value: null, valid: true };
+  }
+  const raw = String(body.billingDay ?? "").trim();
+  if (!raw) return { hasValue: true, value: null, valid: true };
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 31) {
+    return { hasValue: true, value: null, valid: false };
+  }
+  return { hasValue: true, value: parsed, valid: true };
+}
+
 function serializeConnectionRules(connectionVisibility = {}) {
   const rules = Array.isArray(connectionVisibility?.accountVisibilityRules)
     ? connectionVisibility.accountVisibilityRules
@@ -137,6 +150,12 @@ function serializeConnectionRules(connectionVisibility = {}) {
   return rules.map((rule) => ({
     sourceAccountId: normalizeSourceAccountId(rule?.sourceAccountId),
     visibilityScope: normalizeVisibilityScope(rule?.visibilityScope),
+    billingDay:
+      Number.isInteger(Number(rule?.billingDay)) &&
+      Number(rule?.billingDay) >= 1 &&
+      Number(rule?.billingDay) <= 31
+        ? Number(rule?.billingDay)
+        : null,
   }));
 }
 
@@ -298,15 +317,31 @@ function getSerializedConnections(household, sourceAccountsByConnection = new Ma
       const sourceAccounts = (
         sourceAccountsByConnection.get(connectionId) || []
       ).map((account) => {
+        const normalizedSourceAccountId = normalizeSourceAccountId(
+          account.sourceAccountId,
+        );
+        const matchedRule = Array.isArray(connectionVisibility?.accountVisibilityRules)
+          ? connectionVisibility.accountVisibilityRules.find(
+              (rule) =>
+                normalizeSourceAccountId(rule?.sourceAccountId) ===
+                normalizedSourceAccountId,
+            )
+          : null;
         const resolvedAccountVisibility = resolveExpenseVisibilityForConnection({
           sourceConnectionKey: connectionId,
-          sourceAccountId: account.sourceAccountId,
+          sourceAccountId: normalizedSourceAccountId,
           connectionVisibilityMap,
         });
         return {
-          sourceAccountId: account.sourceAccountId,
+          sourceAccountId: normalizedSourceAccountId,
           sourceAccountName: account.sourceAccountName,
           visibilityScope: resolvedAccountVisibility.visibilityScope,
+          billingDay:
+            Number.isInteger(Number(matchedRule?.billingDay)) &&
+            Number(matchedRule?.billingDay) >= 1 &&
+            Number(matchedRule?.billingDay) <= 31
+              ? Number(matchedRule?.billingDay)
+              : null,
           lastSeenAt: account.lastSeenAt || null,
         };
       });
@@ -689,6 +724,12 @@ export async function setBankConnectionAccountVisibility(req, res) {
       message: "visibilityScope must be one of: shared, private",
     });
   }
+  const requestedBillingDay = parseRequestedBillingDay(req.body || {});
+  if (!requestedBillingDay.valid) {
+    return res.status(400).json({
+      message: "billingDay must be an integer between 1 and 31",
+    });
+  }
 
   const household = await getHouseholdWithConnections(req, res);
   if (!household) return;
@@ -720,6 +761,9 @@ export async function setBankConnectionAccountVisibility(req, res) {
   const currentRules = Array.isArray(connectionObject.accountVisibilityRules)
     ? connectionObject.accountVisibilityRules
     : [];
+  const existingRule = currentRules.find(
+    (rule) => normalizeSourceAccountId(rule?.sourceAccountId) === sourceAccountId,
+  );
   const remainingRules = currentRules.filter(
     (rule) => normalizeSourceAccountId(rule?.sourceAccountId) !== sourceAccountId,
   );
@@ -729,7 +773,12 @@ export async function setBankConnectionAccountVisibility(req, res) {
       resolvedConnectionVisibility.visibilityScope &&
     (resolvedRuleVisibility.visibilityScope !== "private" ||
       String(resolvedRuleVisibility.ownerUserId || "") ===
-        String(resolvedConnectionVisibility.ownerUserId || ""));
+        String(resolvedConnectionVisibility.ownerUserId || "")) &&
+    (!requestedBillingDay.hasValue ||
+      (requestedBillingDay.value == null &&
+        (!existingRule ||
+          existingRule.billingDay == null ||
+          String(existingRule.billingDay).trim() === "")));
 
   if (!sameAsConnectionDefault) {
     remainingRules.push({
@@ -740,6 +789,9 @@ export async function setBankConnectionAccountVisibility(req, res) {
           ? resolvedRuleVisibility.ownerUserId || req.user?._id || null
           : null,
       updatedAt: new Date(),
+      billingDay: requestedBillingDay.hasValue
+        ? requestedBillingDay.value
+        : existingRule?.billingDay ?? null,
     });
   }
 
@@ -775,6 +827,16 @@ export async function setBankConnectionAccountVisibility(req, res) {
     connectionId,
     sourceAccountId,
     visibilityScope: finalVisibility.visibilityScope,
+    billingDay: requestedBillingDay.hasValue
+      ? requestedBillingDay.value
+      : (() => {
+          const persistedRule = serializeConnectionRules(
+            connectionVisibilityMap.get(connectionId),
+          ).find(
+            (rule) => normalizeSourceAccountId(rule?.sourceAccountId) === sourceAccountId,
+          );
+          return persistedRule?.billingDay ?? null;
+        })(),
     accountVisibilityRules: serializeConnectionRules(
       connectionVisibilityMap.get(connectionId),
     ),

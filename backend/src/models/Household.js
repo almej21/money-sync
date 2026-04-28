@@ -14,6 +14,12 @@ const accountVisibilityRuleSchema = new mongoose.Schema(
       default: null,
     },
     updatedAt: { type: Date, default: null },
+    billingDay: {
+      type: Number,
+      min: 1,
+      max: 31,
+      default: null,
+    },
   },
   { _id: false, id: false },
 );
