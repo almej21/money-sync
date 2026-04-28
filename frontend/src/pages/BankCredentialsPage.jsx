@@ -1,4 +1,6 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Box,
   Button,
@@ -130,6 +132,7 @@ export default function BankCredentialsPage() {
   const [pendingRemoveAllConfirmation, setPendingRemoveAllConfirmation] =
     useState(false);
   const [isAddAccountExpanded, setIsAddAccountExpanded] = useState(false);
+  const [expandedConnectionIds, setExpandedConnectionIds] = useState({});
   const canManageBankConnections = (user?.role || "manager") === "manager";
 
   const selectedProvider = useMemo(
@@ -352,6 +355,15 @@ export default function BankCredentialsPage() {
     }));
   }
 
+  function toggleConnectionExpanded(connectionId) {
+    const normalizedConnectionId = String(connectionId || "").trim();
+    if (!normalizedConnectionId) return;
+    setExpandedConnectionIds((prev) => ({
+      ...prev,
+      [normalizedConnectionId]: !prev[normalizedConnectionId],
+    }));
+  }
+
   async function saveCredentials(e) {
     e.preventDefault();
     setSaving(true);
@@ -483,7 +495,10 @@ export default function BankCredentialsPage() {
                 {t("noBankConnections")}
               </Typography>
             )}
-            {connections.map((connection) => (
+            {connections.map((connection) => {
+              const connectionId = String(connection?.id || "").trim();
+              const isExpanded = Boolean(expandedConnectionIds[connectionId]);
+              return (
               <Card
                 key={connection.id}
                 variant="outlined"
@@ -497,10 +512,7 @@ export default function BankCredentialsPage() {
                     position: "relative",
                     py: 2,
                     pr: 7,
-                    pb: 6,
-                    "&:last-child": {
-                      pb: 6,
-                    },
+                    pb: 2,
                   }}
                 >
                   <Stack
@@ -537,6 +549,22 @@ export default function BankCredentialsPage() {
                           {formatFetchTimestamp(connection.lastBankFetchAt)}
                         </Typography>
                       )}
+                      <Button
+                        type="button"
+                        variant="text"
+                        onClick={() => toggleConnectionExpanded(connectionId)}
+                        sx={{
+                          mt: 0.5,
+                          px: 0,
+                          justifyContent: "flex-start",
+                          color: theme.palette.text.contrastText,
+                          minWidth: 0,
+                          textTransform: "none",
+                        }}
+                      >
+                        {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      </Button>
+                      <Collapse in={isExpanded}>
                       <Stack spacing={1} sx={{ mt: 1 }}>
                         {(connection.sourceAccounts || []).length > 0 ? (
                           (connection.sourceAccounts || []).map((account) => {
@@ -580,18 +608,18 @@ export default function BankCredentialsPage() {
                                     {formatSourceAccountLabel(account, t)}
                                   </Typography>
                                   <Stack spacing={0} sx={{ width: 320 }}>
-                                    <Box sx={{ mt: 3 }}>
+                                    <Box sx={{ mt: { xs: 0, sm: 3 } }}>
                                       <Dropdown
                                         labelId={`account-visibility-${connection.id}-${sourceAccountId}`}
                                         label={t("cardVisibility")}
                                         value={accountVisibility}
                                         onChange={(e) =>
                                           updateCardSettings(
-                                            connection.id,
+                                            connectionId,
                                             sourceAccountId,
                                             e.target.value,
                                             billingDayByConnection?.[
-                                              connection.id
+                                              connectionId
                                             ]?.[sourceAccountId] || "",
                                           )
                                         }
@@ -606,7 +634,7 @@ export default function BankCredentialsPage() {
                                           !sourceAccountId
                                         }
                                         sx={{
-                                          width: 320,
+                                          width: "90%",
                                           "& .MuiInputBase-root": {
                                             color:
                                               theme.palette.text.contrastText,
@@ -628,12 +656,12 @@ export default function BankCredentialsPage() {
                                         labelShrink
                                         value={
                                           billingDayByConnection?.[
-                                            connection.id
+                                            connectionId
                                           ]?.[sourceAccountId] || ""
                                         }
                                         onChange={(e) =>
                                           updateCardSettings(
-                                            connection.id,
+                                            connectionId,
                                             sourceAccountId,
                                             accountVisibility,
                                             e.target.value,
@@ -649,7 +677,7 @@ export default function BankCredentialsPage() {
                                           !sourceAccountId
                                         }
                                         sx={{
-                                          width: 320,
+                                          width: "90%",
                                           "& .MuiInputBase-root": {
                                             color:
                                               theme.palette.text.contrastText,
@@ -689,6 +717,7 @@ export default function BankCredentialsPage() {
                           </Typography>
                         )}
                       </Stack>
+                      </Collapse>
                     </Stack>
                   </Stack>
                   <Button
@@ -696,11 +725,11 @@ export default function BankCredentialsPage() {
                     variant="outlined"
                     color="error"
                     size="small"
-                    onClick={() => openRemoveConfirmation(connection.id)}
+                    onClick={() => openRemoveConfirmation(connectionId)}
                     disabled={saving || loading || !canManageBankConnections}
                     sx={{
                       position: "absolute",
-                      bottom: 12,
+                      top: 12,
                       ...(direction === "rtl" ? { left: 12 } : { right: 12 }),
                       minWidth: 0,
                       width: 32,
@@ -721,7 +750,7 @@ export default function BankCredentialsPage() {
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </Stack>
 
           <Divider sx={{ mb: 2 }} />

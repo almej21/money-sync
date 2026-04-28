@@ -278,23 +278,24 @@ export default function DashboardPage() {
           if (changedItems.length > 0) {
             setExpenses((prev) => mergeExpensesById(prev, changedItems));
             await upsertCachedExpenses(changedItems).catch(() => {});
-          } else {
-            const cachedItems = await getCachedExpenses().catch(() => []);
-            if (hasPendingExpenses(cachedItems)) {
-              const fullData = await getExpenses();
-              const normalizedFullData = Array.isArray(fullData) ? fullData : [];
-              setExpenses(normalizedFullData);
-              await replaceCachedExpenses(normalizedFullData).catch(() => {});
-              const fullCursor = getLatestExpenseCursor(normalizedFullData);
-              await setExpenseCacheMeta({
-                lastSyncAt: response?.serverTime || new Date().toISOString(),
-                syncCursor: fullCursor,
-                cacheUserId: cacheScope.cacheUserId,
-                cacheHouseholdId: cacheScope.cacheHouseholdId,
-              }).catch(() => {});
-              return;
-            }
           }
+
+          const cachedItems = await getCachedExpenses().catch(() => []);
+          if (hasPendingExpenses(cachedItems)) {
+            const fullData = await getExpenses();
+            const normalizedFullData = Array.isArray(fullData) ? fullData : [];
+            setExpenses(normalizedFullData);
+            await replaceCachedExpenses(normalizedFullData).catch(() => {});
+            const fullCursor = getLatestExpenseCursor(normalizedFullData);
+            await setExpenseCacheMeta({
+              lastSyncAt: response?.serverTime || new Date().toISOString(),
+              syncCursor: fullCursor,
+              cacheUserId: cacheScope.cacheUserId,
+              cacheHouseholdId: cacheScope.cacheHouseholdId,
+            }).catch(() => {});
+            return;
+          }
+
           const nextCursor = response?.cursor || cacheMeta.syncCursor;
           await setExpenseCacheMeta({
             lastSyncAt: response?.serverTime || new Date().toISOString(),
