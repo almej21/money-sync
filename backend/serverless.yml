@@ -24,6 +24,8 @@ provider:
     BANK_SYNC_TIMEOUT_MS: ${env:BANK_SYNC_TIMEOUT_MS, '25000'}
     BANK_SYNC_MIN_INTERVAL_MS: ${env:BANK_SYNC_MIN_INTERVAL_MS, '120000'}
     BANK_SYNC_LOCK_MS: ${env:BANK_SYNC_LOCK_MS, ''}
+    BANK_DAILY_SYNC_ACTIVE_WINDOW_HOURS: ${env:BANK_DAILY_SYNC_ACTIVE_WINDOW_HOURS, '120'}
+    BANK_DAILY_SYNC_CRON: ${env:BANK_DAILY_SYNC_CRON, 'cron(0 3 * * ? *)'}
     BANK_COMPANY_ID: ${env:BANK_COMPANY_ID, ''}
     BANK_USERNAME: ${env:BANK_USERNAME, ''}
     BANK_NATIONAL_ID: ${env:BANK_NATIONAL_ID, ''}
@@ -36,5 +38,11 @@ functions:
       - httpApi:
           path: /{proxy+}
           method: ANY
+  dailyBankSync:
+    handler: src/dailyBankSync.handler
+    timeout: ${env:BANK_DAILY_SYNC_FUNCTION_TIMEOUT_SECONDS, 900}
+    events:
+      - schedule:
+          rate: ${env:BANK_DAILY_SYNC_CRON, 'cron(0 3 * * ? *)'}
 
 plugins: []

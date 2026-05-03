@@ -12,10 +12,7 @@ import {
 } from "../services/expenseVisibility.js";
 import {
   getExpenseSyncState,
-  triggerExpenseSyncForUser,
 } from "../services/expenseSyncCoordinator.js";
-
-const DEFAULT_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000;
 
 function normalizeExpenseStatus(statusValue) {
   return String(statusValue || "").trim().toLowerCase() === "pending"
@@ -42,36 +39,6 @@ function latestIso(...values) {
     current.getTime() > max.getTime() ? current : max,
   );
   return latest.toISOString();
-}
-
-function toPositiveNumber(value, fallback) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return parsed;
-}
-
-function toValidDate(value) {
-  const parsed = value ? new Date(value) : null;
-  if (!parsed || Number.isNaN(parsed.getTime())) return null;
-  return parsed;
-}
-
-function shouldTriggerSyncFromStatus(syncState) {
-  if (syncState?.running) return false;
-
-  const minIntervalMs = toPositiveNumber(
-    process.env.BANK_SYNC_MIN_INTERVAL_MS,
-    DEFAULT_SYNC_MIN_INTERVAL_MS,
-  );
-  const latestActivityAt = [
-    toValidDate(syncState?.lastCompletedAt),
-    toValidDate(syncState?.lastStartedAt),
-  ]
-    .filter(Boolean)
-    .sort((a, b) => b.getTime() - a.getTime())[0];
-
-  if (!latestActivityAt) return true;
-  return Date.now() - latestActivityAt.getTime() >= minIntervalMs;
 }
 
 async function getGlobalSyncStateForHousehold(householdId) {
@@ -126,7 +93,6 @@ async function getMergedSyncState(user) {
 }
 
 export async function listExpenses(req, res) {
-  triggerExpenseSyncForUser(req.user, "list_expenses");
   const expenses = await Expense.find({
     householdId: req.user.householdId,
     ...buildExpenseVisibilityFilter(req.user),
@@ -136,7 +102,6 @@ export async function listExpenses(req, res) {
 }
 
 export async function listExpenseChanges(req, res) {
-  triggerExpenseSyncForUser(req.user, "list_expense_changes");
   const sinceRaw = String(req.query?.since || "").trim();
   const sinceDate = sinceRaw ? new Date(sinceRaw) : null;
 
@@ -167,37 +132,12 @@ export async function syncStatus(req, res) {
   res.set("Pragma", "no-cache");
   res.set("Expires", "0");
 
-  const stateBefore = await getMergedSyncState(req.user);
-  if (shouldTriggerSyncFromStatus(stateBefore)) {
-    console.log(
-      `[BANK SYNC STATUS] triggering userId=${String(
-        req.user?._id || "-",
-      )} householdId=${String(req.user?.householdId || "-")} reason=sync_status`,
-    );
-    await triggerExpenseSyncForUser(req.user, "sync_status", {
-      awaitCompletion: true,
-      timeoutMs: 12000,
-    });
-  } else {
-    console.log(
-      `[BANK SYNC STATUS] skipped userId=${String(
-        req.user?._id || "-",
-      )} householdId=${String(req.user?.householdId || "-")} reason=sync_status running=${Boolean(
-        stateBefore?.running,
-      )} lastStartedAt=${String(stateBefore?.lastStartedAt || "-")} lastCompletedAt=${String(
-        stateBefore?.lastCompletedAt || "-",
-      )}`,
-    );
-  }
-
   res.json({
     sync: await getMergedSyncState(req.user),
   });
 }
 
 export async function summary(req, res) {
-  triggerExpenseSyncForUser(req.user, "summary");
-
   const rows = await Expense.aggregate([
     {
       $match: {

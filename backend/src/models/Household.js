@@ -72,6 +72,7 @@ const householdSchema = new mongoose.Schema(
       lastReason: { type: String, default: "" },
       updatedAt: { type: Date, default: null },
     },
+    lastActiveAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

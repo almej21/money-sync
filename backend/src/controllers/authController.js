@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import Household from "../models/Household.js";
 import Expense from "../models/Expense.js";
 import { buildExpenseVisibilityFilter } from "../services/expenseVisibility.js";
-import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
+import { markHouseholdActive } from "../services/householdActivity.js";
 import { signToken } from "../utils/jwt.js";
 
 function normalizeConnectionIds(values = []) {
@@ -55,6 +55,7 @@ export async function register(req, res) {
   await household.save();
 
   const token = signToken(user);
+  await markHouseholdActive(user.householdId);
   res.status(201).json({
     token,
     user: serializeUser(user),
@@ -70,7 +71,7 @@ export async function login(req, res) {
   if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
   const token = signToken(user);
-  triggerExpenseSyncForUser(user, "login");
+  await markHouseholdActive(user.householdId);
   res.json({
     token,
     user: serializeUser(user),
@@ -78,7 +79,7 @@ export async function login(req, res) {
 }
 
 export async function me(req, res) {
-  triggerExpenseSyncForUser(req.user, "auth_me");
+  await markHouseholdActive(req.user.householdId);
   res.json({
     user: serializeUser(req.user),
   });
