@@ -1,6 +1,7 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SyncIcon from "@mui/icons-material/Sync";
 import {
   Box,
   Button,
@@ -31,6 +32,7 @@ import {
   removeBankConnection,
   saveBankCredentials,
   saveConnectionAccountVisibility,
+  triggerBankConnectionSync,
 } from "../services/bankService";
 
 const HIDDEN_COMPANY_IDS = new Set(["isracard"]);
@@ -54,6 +56,13 @@ function formatFetchTimestamp(value) {
   const month = pad2(date.getMonth() + 1);
   const year = pad2(date.getFullYear() % 100);
   return `${hours}:${minutes}, ${day}/${month}/${year}`;
+}
+
+function canTriggerConnectionSync(lastBankFetchAt) {
+  if (!lastBankFetchAt) return true;
+  const lastFetchDate = new Date(lastBankFetchAt);
+  if (Number.isNaN(lastFetchDate.getTime())) return true;
+  return Date.now() - lastFetchDate.getTime() >= 60 * 60 * 1000;
 }
 
 function buildAccountVisibilityState(connections = []) {
@@ -120,6 +129,7 @@ export default function BankCredentialsPage() {
   const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncingConnectionId, setSyncingConnectionId] = useState("");
   const [updatingAccountVisibilityKey, setUpdatingAccountVisibilityKey] =
     useState("");
   const [accountVisibilityByConnection, setAccountVisibilityByConnection] =
@@ -415,6 +425,24 @@ export default function BankCredentialsPage() {
     }
   }
 
+  async function syncConnection(connectionId) {
+    const normalizedConnectionId = String(connectionId || "").trim();
+    if (!normalizedConnectionId) return;
+    setError("");
+    setSuccess("");
+    setSyncingConnectionId(normalizedConnectionId);
+
+    try {
+      await triggerBankConnectionSync(normalizedConnectionId);
+      setSuccess(t("connectionSyncCompleted"));
+      await loadBankConfig();
+    } catch (err) {
+      setError(err.message || t("failedTriggerConnectionSync"));
+    } finally {
+      setSyncingConnectionId("");
+    }
+  }
+
   function openRemoveConfirmation(connectionId) {
     setPendingRemovalConnectionId(String(connectionId || "").trim());
   }
@@ -498,6 +526,11 @@ export default function BankCredentialsPage() {
             {connections.map((connection) => {
               const connectionId = String(connection?.id || "").trim();
               const isExpanded = Boolean(expandedConnectionIds[connectionId]);
+              const showSyncButton = canTriggerConnectionSync(
+                connection?.lastBankFetchAt,
+              );
+              const isSyncingThisConnection =
+                syncingConnectionId === connectionId;
               return (
                 <Card
                   key={connection.id}
@@ -770,34 +803,77 @@ export default function BankCredentialsPage() {
                         </Collapse>
                       </Stack>
                     </Stack>
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => openRemoveConfirmation(connectionId)}
-                      disabled={saving || loading || !canManageBankConnections}
+                    <Stack
+                      direction="row"
+                      spacing={1}
                       sx={{
                         position: "absolute",
                         top: 12,
                         ...(direction === "rtl" ? { left: 12 } : { right: 12 }),
-                        minWidth: 0,
-                        width: 32,
-                        height: 32,
-                        p: 0,
-                        borderRadius: 0.7,
-                        borderColor: "error.main",
-                        border: "2px solid",
-                        color: "error.main",
-                        "&:hover": {
-                          bgcolor: "error.main",
-                          borderColor: "error.main",
-                          color: "common.white",
-                        },
                       }}
                     >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </Button>
+                      {showSyncButton && (
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          size="small"
+                          onClick={() => syncConnection(connectionId)}
+                          disabled={
+                            saving ||
+                            loading ||
+                            !canManageBankConnections ||
+                            Boolean(syncingConnectionId)
+                          }
+                          aria-label={t("syncConnection")}
+                          sx={{
+                            minWidth: 0,
+                            width: 32,
+                            height: 32,
+                            p: 0,
+                            borderRadius: 0.7,
+                            borderColor: theme.palette.primary.main,
+                            border: "2px solid",
+                            color: theme.palette.primary.main,
+                            "&:hover": {
+                              bgcolor: theme.palette.primary.main,
+                              borderColor: theme.palette.primary.main,
+                              color: "common.white",
+                            },
+                          }}
+                        >
+                          {isSyncingThisConnection ? (
+                            <CircularProgress size={14} color="inherit" />
+                          ) : (
+                            <SyncIcon fontSize="small" />
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => openRemoveConfirmation(connectionId)}
+                        disabled={saving || loading || !canManageBankConnections}
+                        sx={{
+                          minWidth: 0,
+                          width: 32,
+                          height: 32,
+                          p: 0,
+                          borderRadius: 0.7,
+                          borderColor: "error.main",
+                          border: "2px solid",
+                          color: "error.main",
+                          "&:hover": {
+                            bgcolor: "error.main",
+                            borderColor: "error.main",
+                            color: "common.white",
+                          },
+                        }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </Button>
+                    </Stack>
                   </CardContent>
                 </Card>
               );

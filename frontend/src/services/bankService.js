@@ -29,6 +29,12 @@ export async function removeBankConnection(connectionId) {
   return api(`/bank/credentials/${connectionId}`, { method: "DELETE" });
 }
 
+export async function triggerBankConnectionSync(connectionId) {
+  return api(`/bank/credentials/${connectionId}/sync`, {
+    method: "POST",
+  });
+}
+
 export async function removeAllBankConnections() {
   return api("/bank/credentials", { method: "DELETE" });
 }

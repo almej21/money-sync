@@ -64,12 +64,6 @@ jobs:
           case "$STACK_STATUS" in
             DELETE_FAILED|ROLLBACK_COMPLETE|ROLLBACK_FAILED|UPDATE_ROLLBACK_FAILED|UPDATE_ROLLBACK_COMPLETE)
               echo "Stack is not updatable. Deleting stack before deploy..."
-              aws cloudformation update-termination-protection \
-                --stack-name "$STACK_NAME" \
-                --no-enable-termination-protection || true
-              aws cloudformation delete-stack \
-                --stack-name "$STACK_NAME" \
-                --deletion-mode FORCE_DELETE_STACK || \
               aws cloudformation delete-stack --stack-name "$STACK_NAME"
 
               if aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME"; then
@@ -81,11 +75,20 @@ jobs:
                     --query "Stacks[0].StackStatus" \
                     --output text 2>/dev/null || true
                 )"
-                if [ -n "$REMAINING_STATUS" ]; then
+
+                if [ "$REMAINING_STATUS" = "DELETE_FAILED" ]; then
+                  echo "Delete failed. Retrying with FORCE_DELETE_STACK..."
+                  aws cloudformation delete-stack \
+                    --stack-name "$STACK_NAME" \
+                    --deletion-mode FORCE_DELETE_STACK
+                  aws cloudformation wait stack-delete-complete --stack-name "$STACK_NAME"
+                  echo "Stack force-deleted successfully."
+                elif [ -n "$REMAINING_STATUS" ]; then
                   echo "Stack still exists after delete attempt: $REMAINING_STATUS"
                   exit 1
+                else
+                  echo "Stack not found after delete wait; continuing."
                 fi
-                echo "Stack not found after delete wait; continuing."
               fi
               ;;
             "")
