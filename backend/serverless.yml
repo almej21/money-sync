@@ -4,7 +4,7 @@ frameworkVersion: "3"
 
 provider:
   name: aws
-  runtime: nodejs22.x
+  runtime: nodejs20.x
   region: us-east-1
   timeout: ${env:LAMBDA_TIMEOUT_SECONDS, 180}
   memorySize: ${env:LAMBDA_MEMORY_SIZE, 2048}
@@ -34,6 +34,7 @@ provider:
 functions:
   api:
     handler: src/lambda.handler
+    timeout: 30
     events:
       - httpApi:
           path: /{proxy+}
