@@ -12,6 +12,7 @@ import {
   ensureHouseholdBankConnections,
   toStoredEncryptedFields,
 } from "../services/householdBankConnections.js";
+import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
 
 const COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
@@ -52,6 +53,7 @@ const ONE_ZERO_API_REQUIRED_FIELDS = new Set([
   "password",
   "otpLongTermToken",
 ]);
+const CONNECTION_SYNC_COOLDOWN_MS = 60 * 60 * 1000;
 
 function getCompany(companyId = "") {
   const normalizedCompanyId = String(companyId).trim();
@@ -107,6 +109,21 @@ function normalizeSourceAccountId(value) {
 
 function normalizeCompanyId(value) {
   return String(value || "").trim();
+}
+
+function getConnectionSyncCooldownInfo(lastBankFetchAt, nowMs = Date.now()) {
+  const lastFetchDate = lastBankFetchAt ? new Date(lastBankFetchAt) : null;
+  if (!lastFetchDate || Number.isNaN(lastFetchDate.getTime())) return null;
+  const elapsedMs = nowMs - lastFetchDate.getTime();
+  if (elapsedMs >= CONNECTION_SYNC_COOLDOWN_MS) return null;
+  const remainingMs = Math.max(0, CONNECTION_SYNC_COOLDOWN_MS - elapsedMs);
+  return {
+    lastFetchAt: lastFetchDate.toISOString(),
+    nextAllowedAt: new Date(
+      lastFetchDate.getTime() + CONNECTION_SYNC_COOLDOWN_MS,
+    ).toISOString(),
+    remainingMs,
+  };
 }
 
 function isHouseholdManager(user) {
@@ -840,6 +857,75 @@ export async function setBankConnectionAccountVisibility(req, res) {
     accountVisibilityRules: serializeConnectionRules(
       connectionVisibilityMap.get(connectionId),
     ),
+  });
+}
+
+export async function triggerBankConnectionSync(req, res) {
+  if (!isHouseholdManager(req.user)) {
+    return res.status(403).json({
+      message: "Only household managers can trigger bank sync",
+    });
+  }
+
+  const connectionId = String(req.params?.connectionId || "").trim();
+  if (!connectionId) {
+    return res.status(400).json({ message: "connectionId is required" });
+  }
+
+  const household = await getHouseholdWithConnections(req, res);
+  if (!household) return;
+
+  const connection = (Array.isArray(household.bankConnections)
+    ? household.bankConnections
+    : []
+  ).find((item) => String(item?._id || "") === connectionId);
+  if (!connection) {
+    return res.status(404).json({ message: "Bank connection not found" });
+  }
+  if (!hasConnectionCredentials(connection)) {
+    return res.status(400).json({
+      message: "Missing bank credentials for this connection",
+    });
+  }
+
+  const cooldownInfo = getConnectionSyncCooldownInfo(connection?.lastBankFetchAt);
+  if (cooldownInfo) {
+    return res.status(429).json({
+      message: "Connection was synced in the last hour",
+      ...cooldownInfo,
+    });
+  }
+
+  const syncState = await triggerExpenseSyncForUser(
+    {
+      _id: req.user?._id,
+      householdId: req.user?.householdId,
+    },
+    `manual_connection_sync:${connectionId}`,
+    {
+      awaitCompletion: true,
+      connectionId,
+    },
+  );
+  if (String(syncState?.lastError || "").trim()) {
+    return res.status(500).json({
+      message: String(syncState.lastError).trim(),
+    });
+  }
+
+  const refreshedHousehold = await Household.findById(req.user.householdId).select(
+    "bankConnections._id bankConnections.lastBankFetchAt",
+  );
+  const refreshedConnection = (
+    Array.isArray(refreshedHousehold?.bankConnections)
+      ? refreshedHousehold.bankConnections
+      : []
+  ).find((item) => String(item?._id || "") === connectionId);
+
+  res.json({
+    success: true,
+    connectionId,
+    lastBankFetchAt: refreshedConnection?.lastBankFetchAt || null,
   });
 }
 

@@ -287,7 +287,9 @@ export async function triggerExpenseSyncForUser(
       console.log(
         `[BANK SYNC COORD] started userId=${userId} householdId=${householdId || "-"} reason=${reason} syncBudgetMs=${syncBudgetMs} lockMs=${lockMs} lockOwner=${lockOwner}`,
       );
-      const result = await syncLastMonthExpensesForUser(user);
+      const result = await syncLastMonthExpensesForUser(user, {
+        connectionId: options?.connectionId,
+      });
       state.lastResult = result || null;
       console.log(
         `[BANK SYNC COORD] completed userId=${userId} reason=${reason} imported=${Number(

@@ -920,11 +920,12 @@ async function scrapeWithAutomationFallback({
   throw terminalError;
 }
 
-export async function syncLastMonthExpensesForUser(user) {
+export async function syncLastMonthExpensesForUser(user, options = {}) {
   const envCfg = getConfig();
   if (!envCfg.enabled) {
     return { imported: 0, reason: "disabled" };
   }
+  const requestedConnectionId = String(options?.connectionId || "").trim();
   const syncRunStartedAtMs = Date.now();
   const userId = String(user?._id || "").trim() || "-";
   const isLambdaRuntime = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
@@ -962,11 +963,32 @@ export async function syncLastMonthExpensesForUser(user) {
     nationalID: envCfg.nationalID,
     password: envCfg.password,
   });
-  const activeConnections =
+  const activeConnectionsBase =
     householdConnections.length > 0 ? householdConnections : [fallbackConnection];
+  const activeConnections = requestedConnectionId
+    ? activeConnectionsBase.filter(
+        (connection) =>
+          String(connection?.connectionKey || "").trim() === requestedConnectionId,
+      )
+    : activeConnectionsBase;
   console.log(
-    `[BANK SYNC RUN] connections_loaded userId=${userId} householdId=${householdId} activeConnections=${activeConnections.length} decryptErrors=${connectionErrors.length} usingFallbackConnection=${householdConnections.length === 0}`,
+    `[BANK SYNC RUN] connections_loaded userId=${userId} householdId=${householdId} activeConnections=${activeConnections.length} decryptErrors=${connectionErrors.length} usingFallbackConnection=${householdConnections.length === 0} requestedConnectionId=${formatLogValue(
+      requestedConnectionId || null,
+    )}`,
   );
+
+  if (requestedConnectionId && !activeConnections.length) {
+    return {
+      imported: 0,
+      updated: 0,
+      total: 0,
+      connections: [],
+      attemptedConnectionKeys: [],
+      successfulConnectionKeys: [],
+      reason: "connection_not_found",
+      requestedConnectionId,
+    };
+  }
 
   if (!activeConnections.some((connection) => connection.companyId)) {
     throw new Error("Missing bank credentials for this user");

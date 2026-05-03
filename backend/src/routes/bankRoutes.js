@@ -6,6 +6,7 @@ import {
   getBankProviders,
   setBankConnectionAccountVisibility,
   setBankCredentials,
+  triggerBankConnectionSync,
 } from "../controllers/bankController.js";
 
 const router = Router();
@@ -18,6 +19,7 @@ router.patch(
   "/credentials/:connectionId/account-visibility",
   setBankConnectionAccountVisibility,
 );
+router.post("/credentials/:connectionId/sync", triggerBankConnectionSync);
 router.delete("/credentials/:connectionId", deleteBankCredentials);
 router.delete("/credentials", deleteBankCredentials);
 
