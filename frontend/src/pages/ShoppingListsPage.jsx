@@ -268,8 +268,8 @@ export default function ShoppingListsPage() {
 
   function isListExpanded(listId) {
     const key = String(listId || "").trim();
-    if (!key) return true;
-    if (!Object.hasOwn(expandedLists, key)) return true;
+    if (!key) return false;
+    if (!Object.hasOwn(expandedLists, key)) return false;
     return Boolean(expandedLists[key]);
   }
 
@@ -497,7 +497,7 @@ export default function ShoppingListsPage() {
                 sx={{ cursor: "pointer" }}
               >
                 <Typography
-                  variant="h6"
+                  variant="h8"
                   sx={{
                     textDecoration: "underline",
                     textDecorationThickness: "2px",
@@ -536,6 +536,7 @@ export default function ShoppingListsPage() {
                     p: 0,
                     borderRadius: 1,
                     border: "2px solid",
+                    order: direction === "rtl" ? 3 : 1,
                   }}
                 >
                   {isListExpanded(list._id) ? (
@@ -543,6 +544,22 @@ export default function ShoppingListsPage() {
                   ) : (
                     <ExpandMoreIcon fontSize="small" />
                   )}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => openEditModal(list)}
+                  sx={{
+                    minWidth: 0,
+                    width: 32,
+                    height: 32,
+                    p: 0,
+                    borderRadius: 1,
+                    border: "2px solid",
+                    order: 2,
+                  }}
+                >
+                  <EditOutlinedIcon fontSize="small" />
                 </Button>
                 <Button
                   variant="outlined"
@@ -558,6 +575,7 @@ export default function ShoppingListsPage() {
                     borderColor: "error.main",
                     border: "2px solid",
                     color: "error.main",
+                    order: direction === "rtl" ? 1 : 3,
                     "&:hover": {
                       bgcolor: "error.main",
                       borderColor: "error.main",
@@ -566,21 +584,6 @@ export default function ShoppingListsPage() {
                   }}
                 >
                   <DeleteOutlineIcon fontSize="small" />
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => openEditModal(list)}
-                  sx={{
-                    minWidth: 0,
-                    width: 32,
-                    height: 32,
-                    p: 0,
-                    borderRadius: 1,
-                    border: "2px solid",
-                  }}
-                >
-                  <EditOutlinedIcon fontSize="small" />
                 </Button>
               </Box>
             </Box>
@@ -595,16 +598,18 @@ export default function ShoppingListsPage() {
                         justifyContent="flex-start"
                         alignItems="center"
                         spacing={1}
-                        sx={{ width: "100%" }}
+                        sx={{ width: "100%", minHeight: 24 }}
                       >
                         <Stack
                           direction="row"
                           alignItems="center"
-                          sx={{ minWidth: 0, width: "100%" }}
+                          sx={{ minWidth: 0, width: "100%", minHeight: 24 }}
                         >
                           <Checkbox
                             checked={Boolean(item.completed)}
                             onChange={() => toggleItem(list._id, item._id)}
+                            size="small"
+                            sx={{ p: .7, mr: 0.5 }}
                           />
                           <ListItemText
                             primary={`${item.description || item.text || "-"} x${item.quantity}`}
@@ -612,6 +617,7 @@ export default function ShoppingListsPage() {
                               dir: direction,
                               sx: {
                                 textAlign: direction === "rtl" ? "right" : "left",
+                                fontSize: "0.8rem",
                                 wordBreak: "break-word",
                                 textDecoration: item.completed
                                   ? "line-through"
@@ -619,7 +625,7 @@ export default function ShoppingListsPage() {
                                 opacity: item.completed ? 0.7 : 1,
                               },
                             }}
-                            sx={{ my: 0 }}
+                            sx={{ my: 0, "& .MuiTypography-root": { lineHeight: 1.1 } }}
                           />
                           {Boolean(String(item?.note || "").trim()) && (
                             <Typography
@@ -629,7 +635,7 @@ export default function ShoppingListsPage() {
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
-                                fontSize: "0.8rem",
+                                fontSize: "0.64rem",
                                 fontWeight: "600",
                                 fontFamily:
                                   '"Guttman Yad", "Segoe Print", "Miriam Libre", "Noto Sans Hebrew", cursive',
@@ -649,7 +655,7 @@ export default function ShoppingListsPage() {
                               )
                             }
                             aria-label={t("addNote")}
-                            sx={{ alignSelf: "center" }}
+                            sx={{ alignSelf: "center", p: 0.25 }}
                           >
                             <EditSquareIcon fontSize="small" />
                           </IconButton>
