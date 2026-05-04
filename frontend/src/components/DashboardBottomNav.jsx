@@ -182,6 +182,7 @@ export default function DashboardBottomNav() {
           left: "50%",
           bottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
           transform: "translateX(-50%)",
+          direction: "ltr",
           width: "min(calc(100vw - 16px), 320px)",
           height: 54,
           zIndex: (activeTheme) => activeTheme.zIndex.appBar + 3,
