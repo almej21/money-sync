@@ -296,7 +296,7 @@ function ExpenseItem({
           <Box
             sx={{
               width: "100%",
-              mt: (isPending || isInstallmentType) ? 0.5 : 0,
+              mt: isPending || isInstallmentType ? 0.5 : 0,
               p: 0.5,
               borderRadius: 1.2,
               bgcolor: theme.palette.background.default,
@@ -305,226 +305,226 @@ function ExpenseItem({
               gap: 1.5,
             }}
           >
-          <IconButton
-            size="small"
-            aria-label={t("edit")}
-            onClick={() => {
-              setSaveError("");
-              setIsEditing(true);
-            }}
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: 0.9,
-              bgcolor: theme.palette.secondary.main,
-              display: "grid",
-              placeItems: "center",
-              flexShrink: 0,
-              alignSelf: isEditing ? "flex-start" : "center",
-              p: 0,
-            }}
-          >
-            <CategoryIcon sx={{ fontSize: 28 }} />
-          </IconButton>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            {isEditing ? (
-              <Stack sx={{ gap: 1.3, py: 1 }}>
-                <TextField
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  dir={direction}
-                  value={draftDescription}
-                  onChange={(event) => setDraftDescription(event.target.value)}
-                  label={t("description")}
-                  InputLabelProps={{ shrink: true }}
-                  InputProps={{ notched: true }}
-                  sx={{
-                    "& .MuiOutlinedInput-input": {
-                      paddingTop: 1,
-                      paddingBottom: 1,
-                    },
-                  }}
-                />
-                <TextField
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  dir={direction}
-                  value={draftCategory}
-                  onChange={(event) => setDraftCategory(event.target.value)}
-                  label={t("category")}
-                  InputLabelProps={{ shrink: true }}
-                  InputProps={{ notched: true }}
-                  sx={{
-                    "& .MuiOutlinedInput-input": {
-                      paddingTop: 1,
-                      paddingBottom: 1,
-                    },
-                  }}
-                />
-              </Stack>
-            ) : (
-              <>
-                <Box
-                  dir={direction}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    minWidth: 0,
-                    width: "fit-content",
-                    maxWidth: "100%",
-                  }}
-                >
-                  <PingPongTypography
-                    sx={{
-                      fontWeight: 700,
-                      textAlign: direction === "rtl" ? "right" : "left",
-                      lineHeight: 1.2,
-                      fontSize: ".95rem",
-                      flexShrink: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    {exp.description || "-"}
-                  </PingPongTypography>
-                  {exp.isUserAltered && (
-                    <Typography
-                      component="span"
-                      sx={{
-                        color: theme.palette.text.primary,
-                        fontSize: ".7rem",
-                        fontWeight: 700,
-                        fontStyle: "italic",
-                        textTransform: "none",
-                      }}
-                    >
-                      {editedLabel}
-                    </Typography>
-                  )}
-                </Box>
-                <PingPongTypography
-                  dir={direction}
-                  sx={{
-                    color: "text.primary",
-                    fontWeight: 600,
-                    fontSize: ".75rem",
-                    textAlign: direction === "rtl" ? "right" : "left",
-                  }}
-                >
-                  {formatDate(exp.date)} {"\u2022"}{" "}
-                  <Box
-                    component="span"
-                    sx={{
-                      direction: metaDisplayDirection,
-                      unicodeBidi: "isolate",
-                    }}
-                  >
-                    <Box component="span" sx={{ unicodeBidi: "isolate" }}>
-                      {categoryText}
-                    </Box>
-                    {shouldShowSourceAccountId && (
-                      <>
-                        {" "}
-                        <Box component="span" sx={{ unicodeBidi: "isolate" }}>
-                          {"\u2022"}
-                        </Box>{" "}
-                        <Box
-                          component="span"
-                          sx={{ direction: "ltr", unicodeBidi: "isolate" }}
-                        >
-                          ({sourceAccountIdText})
-                        </Box>
-                      </>
-                    )}
-                  </Box>
-                </PingPongTypography>
-              </>
-            )}
-            {saveError && (
-              <Typography
-                variant="caption"
-                color="error"
-                dir={direction}
-                sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
-              >
-                {saveError}
-              </Typography>
-            )}
-          </Box>
-          <Stack
-            sx={{
-              alignItems: isEditing ? "flex-end" : "center",
-              width: "fit-content",
-              gap: 1.2,
-              flexDirection: "column",
-              alignSelf: isEditing ? "stretch" : "center",
-              justifyContent: isEditing ? "space-between" : "center",
-            }}
-          >
-            <Box
-              component="span"
+            <IconButton
+              size="small"
+              aria-label={t("edit")}
+              onClick={() => {
+                setSaveError("");
+                setIsEditing(true);
+              }}
               sx={{
-                color: isReturn ? "#00c452" : theme.palette.text.primary,
-                display: "inline-flex",
-                alignItems: "baseline",
-                direction: "ltr",
-                unicodeBidi: "isolate",
+                width: 38,
+                height: 38,
+                borderRadius: 0.9,
+                bgcolor: theme.palette.secondary.main,
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+                alignSelf: isEditing ? "flex-start" : "center",
+                p: 0,
               }}
             >
-              <Typography
-                component="span"
-                sx={{
-                  fontWeight: 400,
-                  fontSize: ".9rem",
-                  opacity: isInstallmentType ? 0.5 : 1,
-                }}
-              >
-                {isReturn ? "+" : ""}
-                {exp.currency}
-              </Typography>
-              <Typography
-                component="span"
-                sx={{
-                  fontWeight: 800,
-                  fontSize: "1rem",
-                  opacity: isInstallmentType ? 0.5 : 1,
-                }}
-              >
-                {normalizedAmount}
-              </Typography>
+              <CategoryIcon sx={{ fontSize: 28 }} />
+            </IconButton>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              {isEditing ? (
+                <Stack sx={{ gap: 1.3, py: 1 }}>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    dir={direction}
+                    value={draftDescription}
+                    onChange={(event) =>
+                      setDraftDescription(event.target.value)
+                    }
+                    label={t("description")}
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{ notched: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-input": {
+                        paddingTop: 1,
+                        paddingBottom: 1,
+                      },
+                    }}
+                  />
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    dir={direction}
+                    value={draftCategory}
+                    onChange={(event) => setDraftCategory(event.target.value)}
+                    label={t("category")}
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{ notched: true }}
+                    sx={{
+                      "& .MuiOutlinedInput-input": {
+                        paddingTop: 1,
+                        paddingBottom: 1,
+                      },
+                    }}
+                  />
+                </Stack>
+              ) : (
+                <>
+                  <Box
+                    dir={direction}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      minWidth: 0,
+                      width: "fit-content",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    <PingPongTypography
+                      sx={{
+                        fontWeight: 700,
+                        textAlign: direction === "rtl" ? "right" : "left",
+                        lineHeight: 1.2,
+                        fontSize: ".95rem",
+                        flexShrink: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      {exp.description || "-"}
+                    </PingPongTypography>
+                    {exp.isUserAltered && (
+                      <Typography
+                        component="span"
+                        sx={{
+                          color: theme.palette.text.primary,
+                          fontSize: ".7rem",
+                          fontWeight: 700,
+                          fontStyle: "italic",
+                          textTransform: "none",
+                        }}
+                      >
+                        {editedLabel}
+                      </Typography>
+                    )}
+                  </Box>
+                  <PingPongTypography
+                    dir={direction}
+                    sx={{
+                      color: "text.primary",
+                      fontWeight: 600,
+                      fontSize: ".75rem",
+                      textAlign: direction === "rtl" ? "right" : "left",
+                    }}
+                  >
+                    {formatDate(exp.date)} {"\u2022"}{" "}
+                    <Box
+                      component="span"
+                      sx={{
+                        direction: metaDisplayDirection,
+                        unicodeBidi: "isolate",
+                      }}
+                    >
+                      <Box component="span" sx={{ unicodeBidi: "isolate" }}>
+                        {categoryText}
+                      </Box>
+                      {shouldShowSourceAccountId && (
+                        <>
+                          {" "}
+                          <Box component="span" sx={{ unicodeBidi: "isolate" }}>
+                            {"\u2022"}
+                          </Box>{" "}
+                          <Box
+                            component="span"
+                            sx={{ direction: "ltr", unicodeBidi: "isolate" }}
+                          >
+                            ({sourceAccountIdText})
+                          </Box>
+                        </>
+                      )}
+                    </Box>
+                  </PingPongTypography>
+                </>
+              )}
+              {saveError && (
+                <Typography
+                  variant="caption"
+                  color="error"
+                  dir={direction}
+                  sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
+                >
+                  {saveError}
+                </Typography>
+              )}
             </Box>
-            {isEditing && (
-              <Stack direction="row" sx={{ alignItems: "center" }}>
-                <IconButton
-                  size="small"
-                  aria-label={t("saveChanges")}
-                  onClick={handleSave}
-                  disabled={isSaving}
+            <Stack
+              sx={{
+                alignItems: isEditing ? "flex-end" : "center",
+                width: "fit-content",
+                gap: 1.2,
+                flexDirection: "column",
+                alignSelf: isEditing ? "stretch" : "center",
+                justifyContent: isEditing ? "space-between" : "center",
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  color: isReturn ? "#00b909" : theme.palette.text.primary,
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  direction: "ltr",
+                  unicodeBidi: "isolate",
+                }}
+              >
+                <Typography
+                  component="span"
+                  sx={{
+                    fontWeight: 400,
+                    fontSize: ".9rem",
+                  }}
                 >
-                  {isSaving ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <SaveIcon fontSize="small" />
-                  )}
-                </IconButton>
-                <IconButton
-                  size="small"
-                  aria-label={t("cancel")}
-                  onClick={handleCancel}
-                  disabled={isSaving}
+                  {isReturn ? "+" : ""}
+                  {exp.currency}
+                </Typography>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: "1rem",
+                  }}
                 >
-                  <CancelIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            )}
-          </Stack>
+                  {normalizedAmount}
+                </Typography>
+              </Box>
+              {isEditing && (
+                <Stack direction="row" sx={{ alignItems: "center" }}>
+                  <IconButton
+                    size="small"
+                    aria-label={t("saveChanges")}
+                    onClick={handleSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <SaveIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    aria-label={t("cancel")}
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                  >
+                    <CancelIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+              )}
+            </Stack>
           </Box>
         </Box>
       </ListItem>
       <Box sx={{ pb: 1, px: 1 }}>
-        <Collapse in={Boolean(isExpanded)} >
+        <Collapse in={Boolean(isExpanded)}>
           <Typography
             color="text.secondary"
             dir={direction}

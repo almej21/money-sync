@@ -55,14 +55,14 @@ export function useExpenseBackgroundRefresh(
 
       setLastTriggerAtMs(syncScopeKey, nowMs);
       const pollStartedAtMs = Date.now();
-      // Show the loading snackbar immediately when a polling cycle starts.
-      onRunningChange(true);
       const initial = await getExpenseSyncStatus().catch(() => null);
       if (!active) return;
       if (!initial?.sync) {
+        onRunningChange(false);
         timer = setTimeout(run, POLL_INTERVAL_MS);
         return;
       }
+      onRunningChange(Boolean(initial.sync.running));
       const initialReason = String(initial.sync.lastResult?.reason || "");
       if (
         !initial.sync.running &&
@@ -73,8 +73,6 @@ export function useExpenseBackgroundRefresh(
         return;
       }
 
-      // Keep loading indicator visible while we are polling sync status.
-      onRunningChange(true);
       const startedAt = initial.sync.lastStartedAt;
 
       const poll = async () => {
@@ -87,11 +85,13 @@ export function useExpenseBackgroundRefresh(
         const status = await getExpenseSyncStatus().catch(() => null);
         if (!active) return;
         if (!status?.sync) {
+          onRunningChange(false);
           timer = setTimeout(poll, POLL_INTERVAL_MS);
           return;
         }
 
         const sync = status.sync;
+        onRunningChange(Boolean(sync.running));
         const hasCompletedAfterStart =
           Boolean(sync.lastCompletedAt) &&
           (!startedAt ||

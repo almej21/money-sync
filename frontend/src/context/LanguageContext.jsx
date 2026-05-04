@@ -8,6 +8,8 @@ const MESSAGES = {
   en: {
     appTitle: "Money Sync",
     dashboard: "Dashboard",
+    dashboardCharts: "Charts",
+    dashboardTargets: "Targets",
     shoppingLists: "Shopping Lists",
     bank: "Bank",
     account: "Account",
@@ -191,6 +193,8 @@ const MESSAGES = {
   he: {
     appTitle: "Money Sync",
     dashboard: "לוח בקרה",
+    dashboardCharts: "גרפים",
+    dashboardTargets: "יעדים",
     shoppingLists: "רשימות קניות",
     bank: "בנק",
     account: "חשבון",

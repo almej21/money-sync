@@ -135,10 +135,14 @@ export default function NavBar() {
           : isXsOnly
             ? "xs"
             : "unknown";
-  const isRouteActive = (path) =>
-    path === "/"
-      ? location.pathname === "/"
-      : location.pathname.startsWith(path);
+  const isRouteActive = (path) => {
+    if (path === "/") {
+      return (
+        location.pathname === "/" || location.pathname.startsWith("/dashboard/")
+      );
+    }
+    return location.pathname.startsWith(path);
+  };
   const activePageBorderColor = alpha(theme.palette.primary.contrastText, 0.22);
 
   const getNavButtonSx = (path, isMobileNav = false) => {

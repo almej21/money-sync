@@ -14,7 +14,9 @@ import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import { AppThemeProvider, useAppTheme } from "./context/ThemeContext";
 import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
+import DashboardChartsPage from "./pages/DashboardChartsPage";
 import DashboardPage from "./pages/DashboardPage";
+import DashboardTargetsPage from "./pages/DashboardTargetsPage";
 import LoginPage from "./pages/LoginPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
 
@@ -54,6 +56,8 @@ function ProtectedRoutes() {
       >
         <Routes>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard/charts" element={<DashboardChartsPage />} />
+          <Route path="/dashboard/targets" element={<DashboardTargetsPage />} />
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
           <Route path="/bank" element={<BankCredentialsPage />} />
           <Route path="/account" element={<AccountPage />} />

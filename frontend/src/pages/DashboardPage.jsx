@@ -15,6 +15,7 @@ import {
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
+import DashboardBottomNav from "../components/DashboardBottomNav";
 import DashboardFilters from "../components/DashboardFilters";
 import ExpenseItem from "../components/ExpenseItem";
 import { useAuth } from "../context/AuthContext";
@@ -25,10 +26,6 @@ import {
   getBankProviders,
 } from "../services/bankService";
 import {
-  getExpenseChanges,
-  getExpenses,
-} from "../services/expenseService";
-import {
   clearExpenseCache,
   getCachedExpenses,
   getExpenseCacheMeta,
@@ -36,6 +33,7 @@ import {
   setExpenseCacheMeta,
   upsertCachedExpenses,
 } from "../services/expenseCache";
+import { getExpenseChanges, getExpenses } from "../services/expenseService";
 
 const CATEGORY_ALL_VALUE = "__all_categories__";
 const CATEGORY_RETURNS_VALUE = "__returns_only__";
@@ -105,7 +103,9 @@ function getLatestExpenseCursor(items) {
   let latest = null;
 
   for (const item of expenses) {
-    const candidate = toValidDate(item?.updatedAt || item?.createdAt || item?.date);
+    const candidate = toValidDate(
+      item?.updatedAt || item?.createdAt || item?.date,
+    );
     if (!candidate) continue;
     if (!latest || candidate.getTime() > latest.getTime()) {
       latest = candidate;
@@ -124,7 +124,10 @@ function mergeExpensesById(current, incoming) {
   for (const nextItem of incomingItems) {
     if (!nextItem?._id) continue;
     const prevItem = nextMap.get(nextItem._id);
-    nextMap.set(nextItem._id, prevItem ? { ...prevItem, ...nextItem } : nextItem);
+    nextMap.set(
+      nextItem._id,
+      prevItem ? { ...prevItem, ...nextItem } : nextItem,
+    );
   }
 
   return Array.from(nextMap.values());
@@ -274,7 +277,9 @@ export default function DashboardPage() {
       if (!forceFullFetch && cacheMeta?.syncCursor) {
         try {
           const response = await getExpenseChanges(cacheMeta.syncCursor);
-          const changedItems = Array.isArray(response?.items) ? response.items : [];
+          const changedItems = Array.isArray(response?.items)
+            ? response.items
+            : [];
           if (changedItems.length > 0) {
             setExpenses((prev) => mergeExpensesById(prev, changedItems));
             await upsertCachedExpenses(changedItems).catch(() => {});
@@ -506,7 +511,9 @@ export default function DashboardPage() {
   const selectedReturnsOnly = selectedCategories.includes(
     CATEGORY_RETURNS_VALUE,
   );
-  const returnsLabel = String(locale || "").toLowerCase().startsWith("he")
+  const returnsLabel = String(locale || "")
+    .toLowerCase()
+    .startsWith("he")
     ? "החזרים"
     : "returns";
   const selectedRegularCategories = selectedCategories.filter(
@@ -557,7 +564,8 @@ export default function DashboardPage() {
         : `${providerLabel} (${accountId})`;
       const matchedAccount = Array.isArray(connection?.sourceAccounts)
         ? connection.sourceAccounts.find(
-            (account) => String(account?.sourceAccountId || "").trim() === accountId,
+            (account) =>
+              String(account?.sourceAccountId || "").trim() === accountId,
           )
         : null;
       const visibilityScope = String(
@@ -740,8 +748,9 @@ export default function DashboardPage() {
       return;
     }
 
-    const filteredValues = values.filter((value) =>
-      value === CATEGORY_RETURNS_VALUE || categoryOptions.includes(value),
+    const filteredValues = values.filter(
+      (value) =>
+        value === CATEGORY_RETURNS_VALUE || categoryOptions.includes(value),
     );
     const hasReturnsOnly = filteredValues.includes(CATEGORY_RETURNS_VALUE);
     const regularValues = filteredValues.filter(
@@ -784,11 +793,7 @@ export default function DashboardPage() {
       }
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [
-    expensesMatchingBaseFilters,
-    selectedAmountRange,
-    sortBy,
-  ]);
+  }, [expensesMatchingBaseFilters, selectedAmountRange, sortBy]);
 
   const displayedAmountTotal = useMemo(
     () =>
@@ -909,7 +914,10 @@ export default function DashboardPage() {
       const viewportHeight = window.innerHeight || 0;
       const topOffset = Math.max(0, -rect.top);
       const bottomOffset = Math.max(0, rect.bottom - viewportHeight);
-      const visibleHeight = Math.max(0, viewportHeight - topOffset - bottomOffset);
+      const visibleHeight = Math.max(
+        0,
+        viewportHeight - topOffset - bottomOffset,
+      );
 
       const start = Math.max(
         0,
@@ -1140,24 +1148,26 @@ export default function DashboardPage() {
               </Box>
             )}
           <List disablePadding ref={listContainerRef}>
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <Box key={`expense-skeleton-${index}`} sx={{ py: 1 }}>
-                    <Skeleton variant="text" width="55%" height={30} />
-                    <Skeleton variant="text" width="72%" height={24} />
-                    <Skeleton
-                      variant="rounded"
-                      width={120}
-                      height={30}
-                      sx={{ mt: 0.5 }}
-                    />
-                    {index < 5 && <Divider sx={{ mt: 1 }} />}
-                  </Box>
-                ))
-              : (
-                <>
-                  {topSpacerHeight > 0 && <Box sx={{ height: topSpacerHeight }} />}
-                  {visibleExpenses.map((exp) => (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <Box key={`expense-skeleton-${index}`} sx={{ py: 1 }}>
+                  <Skeleton variant="text" width="55%" height={30} />
+                  <Skeleton variant="text" width="72%" height={24} />
+                  <Skeleton
+                    variant="rounded"
+                    width={120}
+                    height={30}
+                    sx={{ mt: 0.5 }}
+                  />
+                  {index < 5 && <Divider sx={{ mt: 1 }} />}
+                </Box>
+              ))
+            ) : (
+              <>
+                {topSpacerHeight > 0 && (
+                  <Box sx={{ height: topSpacerHeight }} />
+                )}
+                {visibleExpenses.map((exp) => (
                   <ExpenseItem
                     key={exp._id}
                     exp={exp}
@@ -1171,15 +1181,16 @@ export default function DashboardPage() {
                     locale={locale}
                     t={t}
                   />
-                  ))}
-                  {bottomSpacerHeight > 0 && (
-                    <Box sx={{ height: bottomSpacerHeight }} />
-                  )}
-                </>
-              )}
+                ))}
+                {bottomSpacerHeight > 0 && (
+                  <Box sx={{ height: bottomSpacerHeight }} />
+                )}
+              </>
+            )}
           </List>
         </CardContent>
       </Card>
+      <DashboardBottomNav />
       <AppSnackbar
         open={isSyncingExpenses}
         message={

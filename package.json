@@ -8,6 +8,8 @@
   "scripts": {
     "install:all": "npm install --workspaces",
     "dev": "npm run dev -w backend & npm run dev -w frontend",
-    "build": "npm run build -w frontend"
+    "build": "npm run build -w frontend",
+    "sync:frontend:api-url": "node scripts/sync-frontend-api-url.mjs prod",
+    "sync:frontend:api-url:dev": "node scripts/sync-frontend-api-url.mjs dev"
   }
 }
