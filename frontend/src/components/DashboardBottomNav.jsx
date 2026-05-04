@@ -191,6 +191,46 @@ export default function DashboardBottomNav() {
               "linear-gradient(to bottom, transparent 20%, rgba(0,0,0,1) 55%)",
           }}
         />
+        <Box
+          aria-hidden="true"
+          sx={{
+            pointerEvents: "none",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "100%",
+            zIndex: 0,
+            backdropFilter:
+              'url("#dashboard-liquid-glass-filter-mobile") blur(0.8px)',
+            WebkitBackdropFilter:
+              'url("#dashboard-liquid-glass-filter-mobile") blur(0.8px)',
+            maskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.35) 26%, transparent 48%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.35) 26%, transparent 48%)",
+          }}
+        />
+        <Box
+          aria-hidden="true"
+          sx={{
+            pointerEvents: "none",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "100%",
+            zIndex: 0,
+            backdropFilter:
+              'url("#dashboard-liquid-glass-filter-mobile") blur(0.8px)',
+            WebkitBackdropFilter:
+              'url("#dashboard-liquid-glass-filter-mobile") blur(0.8px)',
+            maskImage:
+              "linear-gradient(to bottom, transparent 52%, rgba(0,0,0,0.35) 74%, rgba(0,0,0,0.95) 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 52%, rgba(0,0,0,0.35) 74%, rgba(0,0,0,0.95) 100%)",
+          }}
+        />
         {[33.333, 66.666].map((leftPercent, index) => (
           <Box
             key={`liquid-seam-${index}`}
