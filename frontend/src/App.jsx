@@ -7,7 +7,14 @@ import {
   ThemeProvider,
 } from "@mui/material";
 import { useMemo } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
+import DashboardBottomNav from "./components/DashboardBottomNav";
 import NavBar from "./components/NavBar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
@@ -19,6 +26,15 @@ import DashboardPage from "./pages/DashboardPage";
 import DashboardTargetsPage from "./pages/DashboardTargetsPage";
 import LoginPage from "./pages/LoginPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
+
+function DashboardSectionLayout() {
+  return (
+    <>
+      <Outlet />
+      <DashboardBottomNav />
+    </>
+  );
+}
 
 function ProtectedRoutes() {
   const { user, authLoading } = useAuth();
@@ -55,9 +71,14 @@ function ProtectedRoutes() {
         dir={direction}
       >
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/dashboard/charts" element={<DashboardChartsPage />} />
-          <Route path="/dashboard/targets" element={<DashboardTargetsPage />} />
+          <Route element={<DashboardSectionLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="/dashboard/charts" element={<DashboardChartsPage />} />
+            <Route
+              path="/dashboard/targets"
+              element={<DashboardTargetsPage />}
+            />
+          </Route>
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
           <Route path="/bank" element={<BankCredentialsPage />} />
           <Route path="/account" element={<AccountPage />} />

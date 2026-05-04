@@ -1,35 +1,105 @@
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import TrackChangesRoundedIcon from "@mui/icons-material/TrackChangesRounded";
+import { keyframes } from "@emotion/react";
 import { alpha, Box, Button, useTheme } from "@mui/material";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+
+const toggleStretchEdgeA = keyframes`
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(1.1); }
+  100% { transform: scaleX(1); }
+`;
+const toggleStretchEdgeB = keyframes`
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(1.1); }
+  100% { transform: scaleX(1); }
+`;
+const toggleStretchMiddleA = keyframes`
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(1.2); }
+  100% { transform: scaleX(1); }
+`;
+const toggleStretchMiddleB = keyframes`
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(1.2); }
+  100% { transform: scaleX(1); }
+`;
+const iconPressPop = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+`;
 
 export default function DashboardBottomNav() {
   const theme = useTheme();
   const location = useLocation();
   const { t } = useLanguage();
 
-  const dashboardBottomTabs = [
-    {
-      key: "dashboard-charts",
-      path: "/dashboard/charts",
-      label: t("dashboardCharts"),
-      icon: BarChartRoundedIcon,
-    },
-    {
-      key: "dashboard-expenses",
-      path: "/",
-      label: t("dashboard"),
-      icon: FormatListBulletedIcon,
-    },
-    {
-      key: "dashboard-targets",
-      path: "/dashboard/targets",
-      label: t("dashboardTargets"),
-      icon: TrackChangesRoundedIcon,
-    },
-  ];
+  const dashboardBottomTabs = useMemo(
+    () => [
+      {
+        key: "dashboard-charts",
+        path: "/dashboard/charts",
+        label: t("dashboardCharts"),
+        icon: BarChartRoundedIcon,
+      },
+      {
+        key: "dashboard-expenses",
+        path: "/",
+        label: t("dashboard"),
+        icon: FormatListBulletedIcon,
+      },
+      {
+        key: "dashboard-targets",
+        path: "/dashboard/targets",
+        label: t("dashboardTargets"),
+        icon: TrackChangesRoundedIcon,
+      },
+    ],
+    [t],
+  );
+
+  const activeIndex = useMemo(() => {
+    const foundIndex = dashboardBottomTabs.findIndex((tab) =>
+      tab.path === "/"
+        ? location.pathname === "/"
+        : location.pathname.startsWith(tab.path),
+    );
+    return foundIndex >= 0 ? foundIndex : 1;
+  }, [dashboardBottomTabs, location.pathname]);
+
+  const [previousIndex, setPreviousIndex] = useState(activeIndex);
+  const [toggleAnimationCycle, setToggleAnimationCycle] = useState(0);
+  const previousIndexRef = useRef(activeIndex);
+
+  useLayoutEffect(() => {
+    const prev = previousIndexRef.current;
+    if (prev === activeIndex) return;
+    setPreviousIndex(prev);
+    previousIndexRef.current = activeIndex;
+    setToggleAnimationCycle((current) => current + 1);
+  }, [activeIndex]);
+
+  const toggleAnimationName =
+    activeIndex === previousIndex
+      ? "none"
+      : activeIndex === 1
+        ? toggleAnimationCycle % 2 === 0
+          ? toggleStretchMiddleA
+          : toggleStretchMiddleB
+        : toggleAnimationCycle % 2 === 0
+          ? toggleStretchEdgeA
+          : toggleStretchEdgeB;
+  const toggleTransformOrigin =
+    activeIndex === previousIndex
+      ? "center center"
+      : activeIndex > previousIndex
+        ? "left center"
+        : "right center";
+  const tabWidthPercent = 100 / dashboardBottomTabs.length;
 
   return (
     <>
@@ -250,6 +320,33 @@ export default function DashboardBottomNav() {
             }}
           />
         ))}
+        <Box
+          aria-hidden="true"
+          sx={{
+            pointerEvents: "none",
+            position: "absolute",
+            top: 4,
+            left: `calc(4px + (${activeIndex} * ${tabWidthPercent}%))`,
+            width: `calc(${tabWidthPercent}% - 8px)`,
+            height: "calc(100% - 10px)",
+            zIndex: 1,
+            borderRadius: "22px",
+            backgroundColor: alpha(theme.palette.primary.main, 0.4),
+            boxShadow: `
+              inset 0 0 0 1px ${alpha(theme.palette.common.white, 0.2)},
+              inset 1px 1px 0 ${alpha(theme.palette.common.white, 0.24)},
+              inset -1px -1px 0 ${alpha(theme.palette.common.black, 0.12)},
+              0 3px 6px ${alpha(theme.palette.common.black, 0.1)}
+            `,
+            transformOrigin: toggleTransformOrigin,
+            transition:
+              "left 400ms cubic-bezier(1, 0, 0.4, 1), background-color 400ms cubic-bezier(1, 0, 0.4, 1), box-shadow 400ms cubic-bezier(1, 0, 0.4, 1)",
+            animation:
+              toggleAnimationName === "none"
+                ? "none"
+                : `${toggleAnimationName} 440ms ease`,
+          }}
+        />
         {dashboardBottomTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive =
@@ -261,6 +358,9 @@ export default function DashboardBottomNav() {
               key={tab.key}
               component={Link}
               to={tab.path}
+              disableRipple
+              disableTouchRipple
+              focusRipple={false}
               aria-label={tab.label}
               sx={{
                 position: "relative",
@@ -271,22 +371,38 @@ export default function DashboardBottomNav() {
                 px: 0,
                 mx: "4px",
                 borderRadius: "22px",
-                backgroundColor: isActive
-                  ? alpha(theme.palette.primary.main, 0.4)
-                  : "transparent",
+                backgroundColor: "transparent",
                 color: isActive
                   ? theme.palette.common.white
                   : alpha(theme.palette.text.primary, 0.88),
+                WebkitTapHighlightColor: "transparent",
                 transition:
                   "background-color 180ms ease, color 180ms ease, transform 180ms ease",
                 "&:hover": {
-                  backgroundColor: isActive
-                    ? alpha(theme.palette.primary.main, 0.32)
-                    : alpha(theme.palette.common.white, 0.12),
+                  backgroundColor: "transparent",
+                },
+                "&:active": {
+                  backgroundColor: "transparent",
+                },
+                "&.Mui-focusVisible": {
+                  backgroundColor: "transparent",
+                },
+                "&:hover .dashboard-bottom-nav-icon": {
+                  transform: "scale(1.2)",
                 },
               }}
             >
-              <Icon sx={{ fontSize: 24 }} />
+              <Icon
+                className="dashboard-bottom-nav-icon"
+                sx={{
+                  fontSize: 24,
+                  transform: "scale(1)",
+                  transition: "transform 200ms cubic-bezier(0.5, 0, 0, 1)",
+                  animation: isActive
+                    ? `${iconPressPop} 260ms cubic-bezier(0.5, 0, 0, 1)`
+                    : "none",
+                }}
+              />
             </Button>
           );
         })}

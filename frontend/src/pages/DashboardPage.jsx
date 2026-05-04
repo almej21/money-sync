@@ -15,7 +15,6 @@ import {
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
-import DashboardBottomNav from "../components/DashboardBottomNav";
 import DashboardFilters from "../components/DashboardFilters";
 import ExpenseItem from "../components/ExpenseItem";
 import { useAuth } from "../context/AuthContext";
@@ -1190,7 +1189,6 @@ export default function DashboardPage() {
           </List>
         </CardContent>
       </Card>
-      <DashboardBottomNav />
       <AppSnackbar
         open={isSyncingExpenses}
         message={
