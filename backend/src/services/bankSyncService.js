@@ -15,6 +15,7 @@ import {
   ensureHouseholdBankConnections,
   toStoredEncryptedFields,
 } from "./householdBankConnections.js";
+import { assertSupportedNodeVersion } from "../utils/nodeVersion.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
   "email",
@@ -57,11 +58,6 @@ function toNonNegativeNumber(value, fallback = 0) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return fallback;
   return parsed;
-}
-
-function isNodeVersionSupported() {
-  const major = Number(process.versions.node.split(".")[0] || 0);
-  return major >= 22;
 }
 
 function getConfig() {
@@ -994,11 +990,7 @@ export async function syncLastMonthExpensesForUser(user, options = {}) {
     throw new Error("Missing bank credentials for this user");
   }
 
-  if (!isNodeVersionSupported()) {
-    throw new Error(
-      `Node ${process.versions.node} is not supported by israeli-bank-scrapers. Use Node >= 22.12.0`,
-    );
-  }
+  assertSupportedNodeVersion();
 
   const { createScraper, SCRAPERS } = await import("israeli-bank-scrapers");
   const browserLaunchOverrides = await resolveBrowserLaunchOverrides();

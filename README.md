@@ -13,7 +13,10 @@ Shared household finance + shopping list app.
   - DB -> MongoDB Atlas
 
 ## Setup
+Node.js `22.12.0+` is required (`.nvmrc` is set to `22.17.1`).
+
 ```bash
+nvm use
 npm install
 npm install --workspaces
 ```

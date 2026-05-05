@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { assertSupportedNodeVersion } from "../src/utils/nodeVersion.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
   "email",
@@ -257,12 +258,7 @@ function toMarkdownReport(results, startedAtIso, finishedAtIso) {
 }
 
 async function main() {
-  const nodeMajor = Number(process.versions.node.split(".")[0] || 0);
-  if (nodeMajor < 22) {
-    throw new Error(
-      `Node ${process.versions.node} is not supported by israeli-bank-scrapers. Use Node >= 22.12.0`,
-    );
-  }
+  assertSupportedNodeVersion();
 
   const startedAt = new Date();
   const startedAtIso = startedAt.toISOString();

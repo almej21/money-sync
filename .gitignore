@@ -7,3 +7,4 @@ coverage
 .vercel
 .serverless
 .DS_Store
+backend/reports

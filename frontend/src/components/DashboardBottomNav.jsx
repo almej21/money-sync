@@ -1,7 +1,7 @@
+import { keyframes } from "@emotion/react";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import TrackChangesRoundedIcon from "@mui/icons-material/TrackChangesRounded";
-import { keyframes } from "@emotion/react";
 import { alpha, Box, Button, useTheme } from "@mui/material";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -168,11 +168,7 @@ export default function DashboardBottomNav() {
               mode="normal"
               result="withSaturation"
             />
-            <feBlend
-              in="specular_faded"
-              in2="withSaturation"
-              mode="normal"
-            />
+            <feBlend in="specular_faded" in2="withSaturation" mode="normal" />
           </filter>
         </defs>
       </svg>
@@ -204,7 +200,8 @@ export default function DashboardBottomNav() {
             borderRadius: "inherit",
             backgroundColor: alpha(theme.palette.common.white, 0.6),
             backdropFilter: 'url("#dashboard-liquid-glass-filter-mobile")',
-            WebkitBackdropFilter: 'url("#dashboard-liquid-glass-filter-mobile")',
+            WebkitBackdropFilter:
+              'url("#dashboard-liquid-glass-filter-mobile")',
             boxShadow: "0 4px 19px rgba(0, 0, 0, 0.16)",
           }}
         />
@@ -341,11 +338,11 @@ export default function DashboardBottomNav() {
             `,
             transformOrigin: toggleTransformOrigin,
             transition:
-              "left 400ms cubic-bezier(1, 0, 0.4, 1), background-color 400ms cubic-bezier(1, 0, 0.4, 1), box-shadow 400ms cubic-bezier(1, 0, 0.4, 1)",
+              "left 240ms cubic-bezier(1, 0, 0.4, 1), background-color 240ms cubic-bezier(1, 0, 0.4, 1), box-shadow 240ms cubic-bezier(1, 0, 0.4, 1)",
             animation:
               toggleAnimationName === "none"
                 ? "none"
-                : `${toggleAnimationName} 440ms ease`,
+                : `${toggleAnimationName} 264ms ease`,
           }}
         />
         {dashboardBottomTabs.map((tab) => {
@@ -378,7 +375,7 @@ export default function DashboardBottomNav() {
                   : alpha(theme.palette.text.primary, 0.88),
                 WebkitTapHighlightColor: "transparent",
                 transition:
-                  "background-color 180ms ease, color 180ms ease, transform 180ms ease",
+                  "background-color 108ms ease, color 108ms ease, transform 108ms ease",
                 "&:hover": {
                   backgroundColor: "transparent",
                 },
@@ -398,9 +395,9 @@ export default function DashboardBottomNav() {
                 sx={{
                   fontSize: 24,
                   transform: "scale(1)",
-                  transition: "transform 200ms cubic-bezier(0.5, 0, 0, 1)",
+                  transition: "transform 120ms cubic-bezier(0.5, 0, 0, 1)",
                   animation: isActive
-                    ? `${iconPressPop} 260ms cubic-bezier(0.5, 0, 0, 1)`
+                    ? `${iconPressPop} 156ms cubic-bezier(0.5, 0, 0, 1)`
                     : "none",
                 }}
               />

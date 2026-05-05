@@ -1,7 +1,7 @@
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
 import { setTimeout as wait } from "node:timers/promises";
-import { createScraper, SCRAPERS } from "israeli-bank-scrapers";
+import { assertSupportedNodeVersion } from "../src/utils/nodeVersion.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
   "email",
@@ -30,6 +30,8 @@ const COMPANY_LABELS = {
   behatsdaa: "BeHatsdaa",
   pagi: "Pagi",
 };
+let createScraper;
+let SCRAPERS;
 
 function parseBoolean(value, defaultValue = false) {
   const normalized = String(value ?? "").trim().toLowerCase();
@@ -332,12 +334,8 @@ async function scrapeWithFallback({
 }
 
 async function main() {
-  const nodeMajor = Number(process.versions.node.split(".")[0] || 0);
-  if (nodeMajor < 22) {
-    throw new Error(
-      `Node ${process.versions.node} is not supported by israeli-bank-scrapers. Use Node >= 22.12.0`,
-    );
-  }
+  assertSupportedNodeVersion();
+  ({ createScraper, SCRAPERS } = await import("israeli-bank-scrapers"));
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error("Interactive test requires a TTY terminal.");
   }

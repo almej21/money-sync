@@ -810,8 +810,39 @@ export default function BankCredentialsPage() {
                         position: "absolute",
                         top: 12,
                         ...(direction === "rtl" ? { left: 12 } : { right: 12 }),
+                        direction: "ltr",
+                        alignItems: "center",
                       }}
                     >
+                      {direction === "rtl" && (
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          onClick={() => openRemoveConfirmation(connectionId)}
+                          disabled={
+                            saving || loading || !canManageBankConnections
+                          }
+                          sx={{
+                            minWidth: 0,
+                            width: 32,
+                            height: 32,
+                            p: 0,
+                            borderRadius: 0.7,
+                            borderColor: "error.main",
+                            border: "2px solid",
+                            color: "error.main",
+                            "&:hover": {
+                              bgcolor: "error.main",
+                              borderColor: "error.main",
+                              color: "common.white",
+                            },
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </Button>
+                      )}
                       {showSyncButton && (
                         <Button
                           type="button"
@@ -848,31 +879,35 @@ export default function BankCredentialsPage() {
                           )}
                         </Button>
                       )}
-                      <Button
-                        type="button"
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        onClick={() => openRemoveConfirmation(connectionId)}
-                        disabled={saving || loading || !canManageBankConnections}
-                        sx={{
-                          minWidth: 0,
-                          width: 32,
-                          height: 32,
-                          p: 0,
-                          borderRadius: 0.7,
-                          borderColor: "error.main",
-                          border: "2px solid",
-                          color: "error.main",
-                          "&:hover": {
-                            bgcolor: "error.main",
+                      {direction !== "rtl" && (
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          onClick={() => openRemoveConfirmation(connectionId)}
+                          disabled={
+                            saving || loading || !canManageBankConnections
+                          }
+                          sx={{
+                            minWidth: 0,
+                            width: 32,
+                            height: 32,
+                            p: 0,
+                            borderRadius: 0.7,
                             borderColor: "error.main",
-                            color: "common.white",
-                          },
-                        }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </Button>
+                            border: "2px solid",
+                            color: "error.main",
+                            "&:hover": {
+                              bgcolor: "error.main",
+                              borderColor: "error.main",
+                              color: "common.white",
+                            },
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </Button>
+                      )}
                     </Stack>
                   </CardContent>
                 </Card>

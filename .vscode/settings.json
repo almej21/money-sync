@@ -1,5 +1,7 @@
 {
   "editor.inlineSuggest.enabled": false,
+  "scm.diffDecorations": "all",
+  "git.enabled": true,
   "cSpell.words": [
     "cooldown"
   ]

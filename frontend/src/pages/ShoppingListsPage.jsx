@@ -405,12 +405,20 @@ export default function ShoppingListsPage() {
       {isLoadingLists
         ? Array.from({ length: 3 }).map((_, index) => (
             <Card key={`shopping-list-skeleton-${index}`}>
-              <CardContent sx={{ "&:last-child": { pb: 0 } }}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ mb: 1 }}
+              <CardContent
+                sx={{
+                  px: 1,
+                  py: 1.25,
+                  "&:last-child": { pb: 1.25 },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 116px",
+                    alignItems: "center",
+                    columnGap: 1,
+                  }}
                 >
                   <Stack direction="row" alignItems="baseline" spacing={0.75}>
                     <Skeleton variant="text" width={180} height={34} />
@@ -421,51 +429,16 @@ export default function ShoppingListsPage() {
                       display: "flex",
                       flexDirection: "row",
                       direction: "ltr",
-                      alignItems: "flex-start",
-                      columnGap: 1,
-                      flexShrink: 0,
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      columnGap: 0.8,
+                      width: 116,
                     }}
                   >
                     <Skeleton variant="rounded" width={32} height={32} />
                     <Skeleton variant="rounded" width={32} height={32} />
+                    <Skeleton variant="rounded" width={32} height={32} />
                   </Box>
-                </Stack>
-                <Divider sx={{ mb: 1.5 }} />
-                <List disablePadding>
-                  {Array.from({ length: 3 }).map((__, itemIndex) => (
-                    <Box
-                      key={`shopping-list-skeleton-item-${index}-${itemIndex}`}
-                    >
-                      <ListItem disableGutters sx={{ py: 0.7 }}>
-                        <Stack
-                          direction="row"
-                          justifyContent="flex-start"
-                          alignItems="center"
-                          spacing={1}
-                          sx={{ width: "100%" }}
-                        >
-                          <Skeleton variant="circular" width={22} height={22} />
-                          <Skeleton
-                            variant="text"
-                            width={itemIndex === 1 ? "55%" : "68%"}
-                            height={24}
-                          />
-                        </Stack>
-                      </ListItem>
-                      {itemIndex < 2 && <Divider />}
-                    </Box>
-                  ))}
-                </List>
-                <Box
-                  sx={{
-                    mt: 1.25,
-                    display: "flex",
-                    direction: "ltr",
-                    justifyContent:
-                      direction === "rtl" ? "flex-start" : "flex-end",
-                  }}
-                >
-                  <Skeleton variant="text" width={150} height={18} />
                 </Box>
               </CardContent>
             </Card>
