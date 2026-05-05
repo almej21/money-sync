@@ -3,6 +3,7 @@ const DB_VERSION = 1;
 const EXPENSE_STORE = "expenses";
 const META_STORE = "meta";
 const META_LAST_SYNC_AT_KEY = "lastSyncAt";
+const META_LAST_FETCH_CLIENT_AT_MS_KEY = "lastFetchClientAtMs";
 const META_SYNC_CURSOR_KEY = "syncCursor";
 const META_CACHE_USER_ID_KEY = "cacheUserId";
 const META_CACHE_HOUSEHOLD_ID_KEY = "cacheHouseholdId";
@@ -61,6 +62,12 @@ function toIso(value) {
   return date.toISOString();
 }
 
+function toTimestampMs(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.floor(parsed);
+}
+
 export async function getCachedExpenses() {
   return withStore("readonly", EXPENSE_STORE, async (store) => {
     const items = await promisifyRequest(store.getAll());
@@ -95,11 +102,13 @@ export async function getExpenseCacheMeta() {
   return withStore("readonly", META_STORE, async (store) => {
     const [
       lastSyncAtEntry,
+      lastFetchClientAtMsEntry,
       syncCursorEntry,
       cacheUserIdEntry,
       cacheHouseholdIdEntry,
     ] = await Promise.all([
       promisifyRequest(store.get(META_LAST_SYNC_AT_KEY)),
+      promisifyRequest(store.get(META_LAST_FETCH_CLIENT_AT_MS_KEY)),
       promisifyRequest(store.get(META_SYNC_CURSOR_KEY)),
       promisifyRequest(store.get(META_CACHE_USER_ID_KEY)),
       promisifyRequest(store.get(META_CACHE_HOUSEHOLD_ID_KEY)),
@@ -107,6 +116,7 @@ export async function getExpenseCacheMeta() {
 
     return {
       lastSyncAt: toIso(lastSyncAtEntry?.value),
+      lastFetchClientAtMs: toTimestampMs(lastFetchClientAtMsEntry?.value),
       syncCursor: toIso(syncCursorEntry?.value),
       cacheUserId: String(cacheUserIdEntry?.value || "").trim(),
       cacheHouseholdId: String(cacheHouseholdIdEntry?.value || "").trim(),
@@ -115,7 +125,7 @@ export async function getExpenseCacheMeta() {
 }
 
 export async function setExpenseCacheMeta(meta = {}) {
-  const { lastSyncAt, syncCursor } = meta;
+  const { lastSyncAt, lastFetchClientAtMs, syncCursor } = meta;
   await withStore("readwrite", META_STORE, async (store) => {
     if (Object.hasOwn(meta, "lastSyncAt")) {
       store.put({
@@ -127,6 +137,12 @@ export async function setExpenseCacheMeta(meta = {}) {
       store.put({
         key: META_SYNC_CURSOR_KEY,
         value: toIso(syncCursor),
+      });
+    }
+    if (Object.hasOwn(meta, "lastFetchClientAtMs")) {
+      store.put({
+        key: META_LAST_FETCH_CLIENT_AT_MS_KEY,
+        value: toTimestampMs(lastFetchClientAtMs),
       });
     }
     if (Object.hasOwn(meta, "cacheUserId")) {

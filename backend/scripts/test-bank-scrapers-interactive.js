@@ -50,6 +50,11 @@ function sanitizeErrorMessage(message) {
   return firstLine || normalized;
 }
 
+function formatLogValue(value) {
+  if (value == null || value === "") return "-";
+  return String(value);
+}
+
 function getRequiredFields(companyId) {
   const company = SCRAPERS?.[companyId];
   if (!company) return [];
@@ -237,6 +242,7 @@ async function scrapeWithFallback({
   showBrowser,
   startDate,
 }) {
+  const runStartedAtMs = Date.now();
   const attempts = [
     { label: "full", additionalTransactionInformation: true, showBrowser },
     { label: "reduced", additionalTransactionInformation: false, showBrowser },
@@ -251,11 +257,21 @@ async function scrapeWithFallback({
   }
 
   let lastError = "Failed to scrape bank transactions";
+  console.log(
+    `[BANK SYNC ATTEMPT] configured companyId=${formatLogValue(
+      companyId,
+    )} startDate=${startDate instanceof Date ? startDate.toISOString() : formatLogValue(startDate)} attempts=${attempts
+      .map((attempt) => attempt.label)
+      .join("|")} showBrowserCfg=${showBrowser} verboseCfg=${verbose}`,
+  );
 
   for (const [index, attempt] of attempts.entries()) {
     const attemptNumber = index + 1;
+    const attemptStartedAtMs = Date.now();
     console.log(
-      `\n[Attempt ${attemptNumber}/${attempts.length}] mode=${attempt.label}, showBrowser=${attempt.showBrowser}, additionalTransactionInformation=${attempt.additionalTransactionInformation}`,
+      `[BANK SYNC ATTEMPT] start companyId=${formatLogValue(
+        companyId,
+      )} scrapeMode=${attempt.label} attemptNumber=${attemptNumber}/${attempts.length} showBrowser=${attempt.showBrowser} additionalInfo=${attempt.additionalTransactionInformation}`,
     );
 
     try {
@@ -267,14 +283,33 @@ async function scrapeWithFallback({
         additionalTransactionInformation:
           attempt.additionalTransactionInformation,
       });
+      if (typeof scraper.onProgress === "function") {
+        scraper.onProgress((progressCompanyId, payload) => {
+          const progressType = String(payload?.type || "-");
+          console.log(
+            `[BANK SYNC ATTEMPT] progress companyId=${formatLogValue(
+              progressCompanyId || companyId,
+            )} scrapeMode=${attempt.label} progressType=${progressType}`,
+          );
+        });
+      }
 
       const scrapeResult = await scraper.scrape(credentials);
       if (scrapeResult?.success) {
-        console.log(`[Attempt ${attemptNumber}] Success.`);
+        const accountsCount = Array.isArray(scrapeResult?.accounts)
+          ? scrapeResult.accounts.length
+          : 0;
+        const totalDurationMs = Date.now() - runStartedAtMs;
+        console.log(
+          `[BANK SYNC ATTEMPT] success companyId=${formatLogValue(
+            companyId,
+          )} scrapeMode=${attempt.label} attemptNumber=${attemptNumber}/${attempts.length} durationMs=${Date.now() - attemptStartedAtMs} totalDurationMs=${totalDurationMs} accounts=${accountsCount}`,
+        );
         return {
           success: true,
           scrapeMode: attempt.label,
           attemptsUsed: attemptNumber,
+          totalDurationMs,
           scrapeResult,
         };
       }
@@ -285,13 +320,23 @@ async function scrapeWithFallback({
           .join(": "),
       );
       lastError = reason;
-      console.log(`[Attempt ${attemptNumber}] Failed: ${reason}`);
+      console.warn(
+        `[BANK SYNC ATTEMPT] failed companyId=${formatLogValue(
+          companyId,
+        )} scrapeMode=${attempt.label} attemptNumber=${attemptNumber}/${attempts.length} durationMs=${Date.now() - attemptStartedAtMs} error="${reason}"`,
+      );
 
       if (
         (attempt.label === "full" || attempt.label === "reduced") &&
         isLikelyAutomationBlock(reason)
       ) {
-        console.log("Detected likely automation block. Retrying fallback mode...");
+        console.warn(
+          `[BANK SYNC ATTEMPT] fallback_triggered companyId=${formatLogValue(
+            companyId,
+          )} fromMode=${attempt.label} nextMode=${formatLogValue(
+            attempts[index + 1]?.label,
+          )} reason="${reason}"`,
+        );
         await wait(1500);
         continue;
       }
@@ -300,18 +345,29 @@ async function scrapeWithFallback({
         success: false,
         scrapeMode: attempt.label,
         attemptsUsed: attemptNumber,
+        totalDurationMs: Date.now() - runStartedAtMs,
         error: reason,
       };
     } catch (error) {
       const message = sanitizeErrorMessage(error?.message);
       lastError = message;
-      console.log(`[Attempt ${attemptNumber}] Exception: ${message}`);
+      console.warn(
+        `[BANK SYNC ATTEMPT] failed companyId=${formatLogValue(
+          companyId,
+        )} scrapeMode=${attempt.label} attemptNumber=${attemptNumber}/${attempts.length} durationMs=${Date.now() - attemptStartedAtMs} error="${message}"`,
+      );
 
       if (
         (attempt.label === "full" || attempt.label === "reduced") &&
         isLikelyAutomationBlock(message)
       ) {
-        console.log("Detected likely automation block. Retrying fallback mode...");
+        console.warn(
+          `[BANK SYNC ATTEMPT] fallback_triggered companyId=${formatLogValue(
+            companyId,
+          )} fromMode=${attempt.label} nextMode=${formatLogValue(
+            attempts[index + 1]?.label,
+          )} reason="${message}"`,
+        );
         await wait(1500);
         continue;
       }
@@ -320,15 +376,23 @@ async function scrapeWithFallback({
         success: false,
         scrapeMode: attempt.label,
         attemptsUsed: attemptNumber,
+        totalDurationMs: Date.now() - runStartedAtMs,
         error: message,
       };
     }
   }
 
+  const totalDurationMs = Date.now() - runStartedAtMs;
+  console.warn(
+    `[BANK SYNC ATTEMPT] exhausted companyId=${formatLogValue(
+      companyId,
+    )} attemptsUsed=${attempts.length} totalDurationMs=${totalDurationMs} lastError="${sanitizeErrorMessage(lastError)}"`,
+  );
   return {
     success: false,
     scrapeMode: "unknown",
     attemptsUsed: attempts.length,
+    totalDurationMs,
     error: lastError,
   };
 }
@@ -401,7 +465,6 @@ async function main() {
       `- credentials fields provided: ${Object.keys(credentials).join(", ") || "none"}`,
     );
 
-    const startedAt = Date.now();
     const result = await scrapeWithFallback({
       companyId: selected.companyId,
       credentials,
@@ -410,8 +473,8 @@ async function main() {
       startDate,
     });
 
-    const durationMs = Date.now() - startedAt;
-    console.log(`\nCompleted in ${durationMs}ms.`);
+    const durationMs = Number(result?.totalDurationMs || 0);
+    console.log(`\nCompleted in ${durationMs}ms total.`);
     console.log(
       `Mode used: ${result.scrapeMode}, attempts used: ${result.attemptsUsed}`,
     );

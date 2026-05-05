@@ -50,6 +50,29 @@ function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+function formatFetchTimestamp(value, locale) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString(locale, {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function resolveLastFetchClientAtMs(cacheMeta = {}) {
+  const fromClientMs = Number(cacheMeta?.lastFetchClientAtMs || 0);
+  if (Number.isFinite(fromClientMs) && fromClientMs > 0) return fromClientMs;
+  const parsedFromSyncAt = new Date(cacheMeta?.lastSyncAt || "").getTime();
+  if (Number.isFinite(parsedFromSyncAt) && parsedFromSyncAt > 0) {
+    return parsedFromSyncAt;
+  }
+  return 0;
+}
+
 function formatDateTwoDigit(date) {
   const day = String(date.getDate());
   const month = String(date.getMonth() + 1);
@@ -214,6 +237,7 @@ export default function DashboardPage() {
   const [expenses, setExpenses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncingExpenses, setIsSyncingExpenses] = useState(false);
+  const [lastExpensesFetchAtMs, setLastExpensesFetchAtMs] = useState(0);
   const [expandedIds, setExpandedIds] = useState({});
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [bankConnections, setBankConnections] = useState([]);
@@ -243,6 +267,7 @@ export default function DashboardPage() {
       const nowMs = Date.now();
       let cacheMeta = await getExpenseCacheMeta().catch(() => ({
         lastSyncAt: null,
+        lastFetchClientAtMs: 0,
         syncCursor: null,
         cacheUserId: "",
         cacheHouseholdId: "",
@@ -252,24 +277,28 @@ export default function DashboardPage() {
         await clearExpenseCache().catch(() => {});
         cacheMeta = {
           lastSyncAt: null,
+          lastFetchClientAtMs: 0,
           syncCursor: null,
           cacheUserId: cacheScope.cacheUserId,
           cacheHouseholdId: cacheScope.cacheHouseholdId,
         };
         await setExpenseCacheMeta({
           lastSyncAt: null,
+          lastFetchClientAtMs: 0,
           syncCursor: null,
           cacheUserId: cacheScope.cacheUserId,
           cacheHouseholdId: cacheScope.cacheHouseholdId,
         }).catch(() => {});
+        setLastExpensesFetchAtMs(0);
       }
 
+      const lastFetchClientAtMs = resolveLastFetchClientAtMs(cacheMeta);
       if (
         !forceFullFetch &&
         !ignoreFreshWindow &&
-        cacheMeta?.syncCursor &&
-        hasFreshSync(cacheMeta?.lastSyncAt, nowMs)
+        nowMs - lastFetchClientAtMs < BACKGROUND_SYNC_INTERVAL_MS
       ) {
+        setLastExpensesFetchAtMs(lastFetchClientAtMs);
         return;
       }
 
@@ -293,20 +322,24 @@ export default function DashboardPage() {
             const fullCursor = getLatestExpenseCursor(normalizedFullData);
             await setExpenseCacheMeta({
               lastSyncAt: response?.serverTime || new Date().toISOString(),
+              lastFetchClientAtMs: Date.now(),
               syncCursor: fullCursor,
               cacheUserId: cacheScope.cacheUserId,
               cacheHouseholdId: cacheScope.cacheHouseholdId,
             }).catch(() => {});
+            setLastExpensesFetchAtMs(Date.now());
             return;
           }
 
           const nextCursor = response?.cursor || cacheMeta.syncCursor;
           await setExpenseCacheMeta({
             lastSyncAt: response?.serverTime || new Date().toISOString(),
+            lastFetchClientAtMs: Date.now(),
             syncCursor: nextCursor,
             cacheUserId: cacheScope.cacheUserId,
             cacheHouseholdId: cacheScope.cacheHouseholdId,
           }).catch(() => {});
+          setLastExpensesFetchAtMs(Date.now());
           return;
         } catch {
           // Fall back to full fetch when incremental path fails.
@@ -317,12 +350,15 @@ export default function DashboardPage() {
       setExpenses(Array.isArray(data) ? data : []);
       const fullCursor = getLatestExpenseCursor(data);
       await replaceCachedExpenses(data).catch(() => {});
+      const completedAtMs = Date.now();
       await setExpenseCacheMeta({
-        lastSyncAt: new Date().toISOString(),
+        lastSyncAt: new Date(completedAtMs).toISOString(),
+        lastFetchClientAtMs: completedAtMs,
         syncCursor: fullCursor,
         cacheUserId: cacheScope.cacheUserId,
         cacheHouseholdId: cacheScope.cacheHouseholdId,
       }).catch(() => {});
+      setLastExpensesFetchAtMs(completedAtMs);
     },
     [cacheScope],
   );
@@ -335,19 +371,25 @@ export default function DashboardPage() {
     try {
       const cacheMeta = await getExpenseCacheMeta().catch(() => ({
         lastSyncAt: null,
+        lastFetchClientAtMs: 0,
         syncCursor: null,
         cacheUserId: "",
         cacheHouseholdId: "",
       }));
       const hasMatchingScope = matchesCacheScope(cacheMeta, cacheScope);
+      setLastExpensesFetchAtMs(
+        hasMatchingScope ? resolveLastFetchClientAtMs(cacheMeta) : 0,
+      );
       if (!hasMatchingScope) {
         await clearExpenseCache().catch(() => {});
         await setExpenseCacheMeta({
           lastSyncAt: null,
+          lastFetchClientAtMs: 0,
           syncCursor: null,
           cacheUserId: cacheScope.cacheUserId,
           cacheHouseholdId: cacheScope.cacheHouseholdId,
         }).catch(() => {});
+        setLastExpensesFetchAtMs(0);
       }
 
       const cached = hasMatchingScope
@@ -361,6 +403,7 @@ export default function DashboardPage() {
       await refreshExpenses({
         forceFullFetch:
           !hasMatchingScope || !Array.isArray(cached) || cached.length === 0,
+        ignoreFreshWindow: true,
       });
     } finally {
       setIsLoading(false);
@@ -1131,6 +1174,19 @@ export default function DashboardPage() {
                 {t("summaryItems")}: {displayedExpenses.length}
               </Typography>
             </Stack>
+            <Typography
+              variant="caption"
+              dir={direction}
+              sx={{
+                mt: 0.5,
+                display: "block",
+                textAlign: direction === "rtl" ? "right" : "left",
+                color: "text.secondary",
+              }}
+            >
+              Last expense fetch:{" "}
+              {formatFetchTimestamp(lastExpensesFetchAtMs, locale)}
+            </Typography>
           </Box>
           {!isLoading &&
             bankConnections.length === 0 &&

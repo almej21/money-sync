@@ -421,7 +421,7 @@ export default function ShoppingListsPage() {
                   }}
                 >
                   <Stack direction="row" alignItems="baseline" spacing={0.75}>
-                    <Skeleton variant="text" width={180} height={34} />
+                    <Skeleton variant="text" width={120} height={34} />
                     <Skeleton variant="text" width={72} height={18} />
                   </Stack>
                   <Box
@@ -435,9 +435,27 @@ export default function ShoppingListsPage() {
                       width: 116,
                     }}
                   >
-                    <Skeleton variant="rounded" width={32} height={32} />
-                    <Skeleton variant="rounded" width={32} height={32} />
-                    <Skeleton variant="rounded" width={32} height={32} />
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        order: direction === "rtl" ? 3 : 1,
+                      }}
+                    >
+                      <Skeleton variant="rounded" width={32} height={32} />
+                    </Box>
+                    <Box sx={{ width: 32, height: 32, order: 2 }}>
+                      <Skeleton variant="rounded" width={32} height={32} />
+                    </Box>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        order: direction === "rtl" ? 1 : 3,
+                      }}
+                    >
+                      <Skeleton variant="rounded" width={32} height={32} />
+                    </Box>
                   </Box>
                 </Box>
               </CardContent>
@@ -497,7 +515,7 @@ export default function ShoppingListsPage() {
                           direction: "ltr",
                           alignItems: "center",
                           justifyContent: "flex-end",
-                          columnGap: .8,
+                          columnGap: 0.8,
                           width: 116,
                         }}
                       >
@@ -515,7 +533,7 @@ export default function ShoppingListsPage() {
                             width: 32,
                             height: 32,
                             p: 0,
-                            borderRadius: .8,
+                            borderRadius: 0.8,
                             border: "2px solid",
                             order: direction === "rtl" ? 3 : 1,
                           }}
@@ -535,7 +553,7 @@ export default function ShoppingListsPage() {
                             width: 32,
                             height: 32,
                             p: 0,
-                            borderRadius: .8,
+                            borderRadius: 0.8,
                             border: "2px solid",
                             order: 2,
                           }}
@@ -552,7 +570,7 @@ export default function ShoppingListsPage() {
                             width: 32,
                             height: 32,
                             p: 0,
-                            borderRadius: .8,
+                            borderRadius: 0.8,
                             borderColor: "error.main",
                             border: "2px solid",
                             color: "error.main",

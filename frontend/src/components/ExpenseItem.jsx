@@ -328,7 +328,7 @@ function ExpenseItem({
             </IconButton>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               {isEditing ? (
-                <Stack sx={{ gap: 1.3, py: 1 }}>
+                <Stack sx={{ gap: 2.5, py: 1 }}>
                   <TextField
                     variant="outlined"
                     size="small"
@@ -342,6 +342,7 @@ function ExpenseItem({
                     InputLabelProps={{ shrink: true }}
                     InputProps={{ notched: true }}
                     sx={{
+                      mt: 1,
                       "& .MuiOutlinedInput-input": {
                         paddingTop: 1,
                         paddingBottom: 1,
