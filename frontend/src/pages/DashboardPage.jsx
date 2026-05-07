@@ -1082,7 +1082,12 @@ export default function DashboardPage() {
           )}
         </Box>
       </Typography>
-      <Card sx={{ border: "none !important", borderRadius: "16px" }}>
+      <Card
+        sx={{
+          border: "none !important",
+          borderRadius: "16px",
+        }}
+      >
         <CardContent
           sx={{
             px: { xs: 1, sm: 3 },

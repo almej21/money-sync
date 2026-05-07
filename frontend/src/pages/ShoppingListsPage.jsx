@@ -33,6 +33,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
 import GenericModal from "../components/GenericModal";
+import LiquidGlassContainer from "../components/LiquidGlassContainer";
 import { useLanguage } from "../context/LanguageContext";
 import {
   createShoppingList,
@@ -750,23 +751,31 @@ export default function ShoppingListsPage() {
             </Card>
           ))}
 
-      <Button
-        variant="contained"
-        onClick={openCreateModal}
-        sx={{
+      <LiquidGlassContainer
+        cardSx={{
           position: "fixed",
           right: 16,
           bottom: 16,
-          zIndex: (theme) => theme.zIndex.fab || 1200,
+          zIndex: (muiTheme) => muiTheme.zIndex.fab || 1200,
           borderRadius: 999,
-          px: 2,
-          py: 1,
-          boxShadow: 4,
-          whiteSpace: "nowrap",
+          overflow: "hidden",
         }}
       >
-        {t("newListButton")}
-      </Button>
+        <Button
+          variant="text"
+          onClick={openCreateModal}
+          sx={{
+            borderRadius: 999,
+            px: 2.5,
+            minWidth: 0,
+            whiteSpace: "nowrap",
+            color: "text.primary",
+            fontWeight: 600,
+          }}
+        >
+          {t("newListButton")}
+        </Button>
+      </LiquidGlassContainer>
 
       <GenericModal
         open={isCreateModalOpen}

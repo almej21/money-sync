@@ -50,7 +50,14 @@ export default function AccountPage() {
   const [joiningInvitationId, setJoiningInvitationId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const shadeKeys = ["primary", "secondary", "accent", "background", "text", "white"];
+  const shadeKeys = [
+    "primary",
+    "secondary",
+    "accent",
+    "background",
+    "text",
+    "white",
+  ];
 
   const userDefaultIds = useMemo(
     () =>
@@ -286,35 +293,35 @@ export default function AccountPage() {
                     const scheme = COLOR_SCHEMES[key];
                     const displayName = `${key.charAt(0).toUpperCase()}${key.slice(1)}`;
                     return (
-                    <MenuItem key={key} value={key}>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        width="100%"
-                        spacing={1}
-                      >
-                        <Typography variant="body2">{displayName}</Typography>
-                        <Stack direction="row" spacing={0.5}>
-                          {shadeKeys.map((shadeKey) => (
-                            <Box
-                              key={`${key}-${shadeKey}`}
-                              sx={{
-                                width: 14,
-                                height: 14,
-                                borderRadius: 0.5,
-                                bgcolor: scheme?.[shadeKey] || "transparent",
-                                border: "1px solid",
-                                borderColor:
-                                  shadeKey === "white"
-                                    ? "divider"
-                                    : "transparent",
-                              }}
-                            />
-                          ))}
+                      <MenuItem key={key} value={key}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          width="100%"
+                          spacing={1}
+                        >
+                          <Typography variant="body2">{displayName}</Typography>
+                          <Stack direction="row" spacing={0.5}>
+                            {shadeKeys.map((shadeKey) => (
+                              <Box
+                                key={`${key}-${shadeKey}`}
+                                sx={{
+                                  width: 14,
+                                  height: 14,
+                                  borderRadius: 0.5,
+                                  bgcolor: scheme?.[shadeKey] || "transparent",
+                                  border: "1px solid",
+                                  borderColor:
+                                    shadeKey === "white"
+                                      ? "divider"
+                                      : "transparent",
+                                }}
+                              />
+                            ))}
+                          </Stack>
                         </Stack>
-                      </Stack>
-                    </MenuItem>
+                      </MenuItem>
                     );
                   })}
                 </TextField>

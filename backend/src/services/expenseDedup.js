@@ -133,24 +133,30 @@ export function buildExpenseUpsertFilter(expense = {}) {
       transactionType: normalizedExpenseTransactionType,
       sourceCompanyId: String(expense.sourceCompanyId || "").trim(),
       sourceAccountId: String(expense.sourceAccountId || "").trim(),
-      $or: [
-        { merchant: normalizedMerchant },
-        { description: normalizedDescription },
-      ],
-      // Support both BSON Date and ISO string legacy `date` values without
-      // using $expr (Mongo does not allow $expr in upsert predicates).
-      $or: [
+      $and: [
         {
-          date: {
-            $gte: fallbackStartDate,
-            $lte: fallbackEndDate,
-          },
+          $or: [
+            { merchant: normalizedMerchant },
+            { description: normalizedDescription },
+          ],
         },
+        // Support both BSON Date and ISO string legacy `date` values without
+        // using $expr (Mongo does not allow $expr in upsert predicates).
         {
-          date: {
-            $gte: dayStartIso,
-            $lte: dayEndIso,
-          },
+          $or: [
+            {
+              date: {
+                $gte: fallbackStartDate,
+                $lte: fallbackEndDate,
+              },
+            },
+            {
+              date: {
+                $gte: dayStartIso,
+                $lte: dayEndIso,
+              },
+            },
+          ],
         },
       ],
     });

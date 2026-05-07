@@ -41,6 +41,13 @@ function latestIso(...values) {
   return latest.toISOString();
 }
 
+function toDateOrOriginal(value) {
+  if (!value) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed;
+}
+
 async function getGlobalSyncStateForHousehold(householdId) {
   if (!householdId) return null;
 
@@ -279,6 +286,8 @@ export async function importExpenses(req, res) {
     const transactionType =
       t.transactionType === "return" ? "return" : "expense";
     const status = normalizeExpenseStatus(t.status);
+    const normalizedDate = toDateOrOriginal(t.date);
+    const normalizedProcessedDate = toDateOrOriginal(t.processedDate);
     const visibility = resolveExpenseVisibilityForConnection({
       sourceConnectionKey: t.sourceConnectionKey,
       sourceAccountId: t.sourceAccountId,
@@ -287,6 +296,8 @@ export async function importExpenses(req, res) {
     });
     return {
       ...t,
+      date: normalizedDate,
+      processedDate: normalizedProcessedDate,
       amount: normalizedAmount,
       transactionType,
       status,

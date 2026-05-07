@@ -30,6 +30,8 @@ const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 30_000;
 const DEFAULT_RETRY_DELAY_MS = 1_500;
 const PENDING_REVISIT_BUFFER_DAYS = 2;
 const MAX_PENDING_REVISIT_DAYS = 90;
+const PENDING_POSTED_MAX_DATE_DIFF_MS = 10 * 24 * 60 * 60 * 1000;
+const MATCH_TEXT_MIN_TOKEN_LENGTH = 2;
 const BANK_COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
   leumi: "Bank Leumi",
@@ -434,17 +436,58 @@ function toDateOrNull(value) {
 }
 
 function buildPendingPostedSignature(expense = {}) {
-  const merchant = normalizeTextForMatch(expense.merchant);
-  const description = normalizeTextForMatch(expense.description);
-  const textKey = merchant || description;
   return [
     String(expense.householdId || "").trim(),
     String(expense.sourceCompanyId || "").trim(),
     String(expense.sourceAccountId || "").trim(),
     String(expense.transactionType || "expense").trim().toLowerCase(),
     toMatchAmount(expense.amount),
-    textKey,
   ].join("|");
+}
+
+function buildComparableTextValues(expense = {}) {
+  const merchant = normalizeTextForMatch(expense.merchant);
+  const description = normalizeTextForMatch(expense.description);
+  return [merchant, description].filter(Boolean);
+}
+
+function tokenizeForMatch(value = "") {
+  return normalizeTextForMatch(value)
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= MATCH_TEXT_MIN_TOKEN_LENGTH);
+}
+
+function hasTextAffinity(leftValue = "", rightValue = "") {
+  const left = normalizeTextForMatch(leftValue);
+  const right = normalizeTextForMatch(rightValue);
+  if (!left || !right) return false;
+  if (left === right || left.includes(right) || right.includes(left)) {
+    return true;
+  }
+
+  const leftTokens = new Set(tokenizeForMatch(left));
+  const rightTokens = tokenizeForMatch(right);
+  if (!leftTokens.size || !rightTokens.length) return false;
+  return rightTokens.some((token) => leftTokens.has(token));
+}
+
+function hasPendingPostedTextMatch(pending = {}, candidate = {}) {
+  const pendingTextValues = buildComparableTextValues(pending);
+  const candidateTextValues = buildComparableTextValues(candidate);
+  if (!pendingTextValues.length || !candidateTextValues.length) {
+    return false;
+  }
+
+  return pendingTextValues.some((pendingText) =>
+    candidateTextValues.some((candidateText) =>
+      hasTextAffinity(pendingText, candidateText),
+    ),
+  );
+}
+
+function toIdString(value) {
+  return String(value || "").trim();
 }
 
 async function reconcilePendingWithPosted({
@@ -457,11 +500,16 @@ async function reconcilePendingWithPosted({
   }
 
   const since = toDateOrNull(sinceDate) || subtractUtcDays(new Date(), 90);
+  const sinceIso = since ? since.toISOString() : null;
+  const dateClauses = [{ date: { $gte: since } }];
+  if (sinceIso) {
+    dateClauses.push({ date: { $gte: sinceIso } });
+  }
   const rows = await Expense.find({
     householdId,
     source: "israeli-bank-scrapers",
     sourceConnectionKey: { $in: connectionKeys },
-    date: { $gte: since },
+    $or: dateClauses,
   })
     .select({
       _id: 1,
@@ -489,7 +537,7 @@ async function reconcilePendingWithPosted({
   const pendingRows = [];
   for (const row of rows) {
     const signature = buildPendingPostedSignature(row);
-    if (!signature || signature.endsWith("|")) continue;
+    if (!signature) continue;
     if (String(row.status || "").trim().toLowerCase() === "pending") {
       pendingRows.push({ ...row, __signature: signature });
       continue;
@@ -506,19 +554,41 @@ async function reconcilePendingWithPosted({
     if (!candidates.length) continue;
 
     const pendingDate = toDateOrNull(pending.date);
-    const match = [...candidates]
+    const match = candidates
       .map((candidate) => {
         const candidateDate = toDateOrNull(candidate.date);
         const diffMs =
           pendingDate && candidateDate
             ? Math.abs(candidateDate.getTime() - pendingDate.getTime())
             : Number.MAX_SAFE_INTEGER;
-        return { candidate, diffMs };
+        return {
+          candidate,
+          diffMs,
+          textMatched: hasPendingPostedTextMatch(pending, candidate),
+        };
+      })
+      .filter((item) => {
+        if (item.diffMs > PENDING_POSTED_MAX_DATE_DIFF_MS) return false;
+        if (item.textMatched) return true;
+        // Allow user-altered pending rows to reconcile even if text diverged.
+        return Boolean(pending.isUserAltered);
       })
       .sort((a, b) => a.diffMs - b.diffMs)[0];
 
-    if (!match || match.diffMs > 48 * 60 * 60 * 1000) continue;
+    if (!match) continue;
     matchedPairs += 1;
+
+    const matchedCandidateId = toIdString(match.candidate?._id);
+    if (matchedCandidateId) {
+      const remaining = candidates.filter(
+        (candidate) => toIdString(candidate?._id) !== matchedCandidateId,
+      );
+      if (remaining.length > 0) {
+        postedBySignature.set(pending.__signature, remaining);
+      } else {
+        postedBySignature.delete(pending.__signature);
+      }
+    }
 
     if (pending.isUserAltered && !match.candidate.isUserAltered) {
       const nextTags = Array.isArray(pending.tags)
@@ -1163,8 +1233,15 @@ export async function syncLastMonthExpensesForUser(user, options = {}) {
         }
         const normalizedTransactionType =
           normalizedItem.transactionType === "return" ? "return" : "expense";
+        const normalizedDate = toDateOrNull(normalizedItem.date) || normalizedItem.date;
+        const normalizedProcessedDate =
+          toDateOrNull(normalizedItem.processedDate) ||
+          normalizedItem.processedDate ||
+          null;
         const preparedDoc = {
           ...normalizedItem,
+          date: normalizedDate,
+          processedDate: normalizedProcessedDate,
           amount: Math.abs(normalizedAmount),
           transactionType: normalizedTransactionType,
           status: normalizedStatus,
