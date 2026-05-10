@@ -15,6 +15,7 @@ import {
   MenuItem,
   Slider,
   Stack,
+  TextField,
   ThemeProvider,
   Typography,
   createTheme,
@@ -42,6 +43,10 @@ export default function DashboardFilters({
   onAccountFilterChange,
   timeRange,
   onTimeRangeChange,
+  customStartDate,
+  customEndDate,
+  onCustomStartDateChange,
+  onCustomEndDateChange,
   lastSixMonthOptions,
   sortBy,
   onSortByChange,
@@ -190,6 +195,36 @@ export default function DashboardFilters({
                     </MenuItem>
                   ))}
                 </Dropdown>
+                {timeRange === "custom_range" && (
+                  <Stack
+                    direction="row"
+                    useFlexGap
+                    sx={{ gap: 2 }}
+                  >
+                    <TextField
+                      id="custom-start-date"
+                      type="date"
+                      label={t("startDate")}
+                      value={customStartDate}
+                      onChange={(event) =>
+                        onCustomStartDateChange(event.target.value)
+                      }
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                    />
+                    <TextField
+                      id="custom-end-date"
+                      type="date"
+                      label={t("endDate")}
+                      value={customEndDate}
+                      onChange={(event) =>
+                        onCustomEndDateChange(event.target.value)
+                      }
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                    />
+                  </Stack>
+                )}
 
                   <Dropdown
                     labelId="sort-by-label"

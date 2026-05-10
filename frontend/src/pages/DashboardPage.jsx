@@ -1,13 +1,15 @@
+import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
+import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import {
   alpha,
   Box,
   Card,
   CardContent,
   Divider,
+  IconButton,
   List,
   Skeleton,
   Stack,
-  TextField,
   Typography,
   useMediaQuery,
   useTheme,
@@ -902,6 +904,17 @@ export default function DashboardPage() {
     const maxDate = new Date(Math.max(...timestamps));
     return formatDisplayedRange(minDate, maxDate);
   }, [customEndDate, customStartDate, displayedExpenses, timeRange]);
+
+  const isAmountSortActive =
+    sortBy === "amount_desc" || sortBy === "amount_asc";
+
+  const handleAmountSortToggle = useCallback(() => {
+    setSortBy((prev) => {
+      if (prev === "amount_desc") return "amount_asc";
+      if (prev === "amount_asc") return "amount_desc";
+      return "amount_desc";
+    });
+  }, []);
   const shouldShowTotalLoading = isLoading || isTotalCalculating;
   const renderSelectedCategoriesValue = useCallback(
     (selected) => {
@@ -1113,6 +1126,10 @@ export default function DashboardPage() {
             onAccountFilterChange={onAccountFilterChange}
             timeRange={timeRange}
             onTimeRangeChange={setTimeRange}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onCustomStartDateChange={setCustomStartDate}
+            onCustomEndDateChange={setCustomEndDate}
             lastSixMonthOptions={lastSixMonthOptions}
             sortBy={sortBy}
             onSortByChange={setSortBy}
@@ -1121,32 +1138,6 @@ export default function DashboardPage() {
             maxExpenseAmount={maxExpenseAmount}
             onAmountRangeChange={setSelectedAmountRange}
           />
-          {timeRange === "custom_range" && (
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              useFlexGap
-              sx={{ mb: 2, gap: 2 }}
-            >
-              <TextField
-                id="custom-start-date"
-                type="date"
-                label={t("startDate")}
-                value={customStartDate}
-                onChange={(event) => setCustomStartDate(event.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
-              <TextField
-                id="custom-end-date"
-                type="date"
-                label={t("endDate")}
-                value={customEndDate}
-                onChange={(event) => setCustomEndDate(event.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
-            </Stack>
-          )}
           {timeRange === "custom_range" &&
             customStartDate &&
             customEndDate &&
@@ -1179,19 +1170,6 @@ export default function DashboardPage() {
                 {t("summaryItems")}: {displayedExpenses.length}
               </Typography>
             </Stack>
-            <Typography
-              variant="caption"
-              dir={direction}
-              sx={{
-                mt: 0.5,
-                display: "block",
-                textAlign: direction === "rtl" ? "right" : "left",
-                color: "text.secondary",
-              }}
-            >
-              Last expense fetch:{" "}
-              {formatFetchTimestamp(lastExpensesFetchAtMs, locale)}
-            </Typography>
           </Box>
           {!isLoading &&
             bankConnections.length === 0 &&
@@ -1207,6 +1185,37 @@ export default function DashboardPage() {
                 </Typography>
               </Box>
             )}
+          <Box
+            sx={{
+              display: "flex",
+              direction: "ltr",
+              justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
+            }}
+          >
+            <IconButton
+              onClick={handleAmountSortToggle}
+              aria-label={
+                sortBy === "amount_asc"
+                  ? t("sortPriceLowToHigh")
+                  : t("sortPriceHighToLow")
+              }
+              sx={{
+                // border: "1px solid",
+                borderColor: isAmountSortActive ? "primary.main" : "divider",
+                bgcolor: isAmountSortActive
+                  ? alpha(theme.palette.primary.main, 0.08)
+                  : "background.paper",
+                borderRadius: 1.25,
+                scale: 0.8,
+              }}
+            >
+              {sortBy === "amount_asc" ? (
+                <ArrowUpwardRoundedIcon fontSize="small" />
+              ) : (
+                <ArrowDownwardRoundedIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Box>
           <List disablePadding ref={listContainerRef}>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, index) => (

@@ -445,6 +445,27 @@ function buildPendingPostedSignature(expense = {}) {
   ].join("|");
 }
 
+function buildPendingPostedLooseSignature(expense = {}) {
+  return [
+    String(expense.householdId || "").trim(),
+    String(expense.sourceCompanyId || "").trim(),
+    String(expense.sourceAccountId || "").trim(),
+    String(expense.transactionType || "expense").trim().toLowerCase(),
+  ].join("|");
+}
+
+function buildExternalIdentitySignature(expense = {}) {
+  const externalId = String(expense.externalId || "").trim();
+  if (!externalId) return "";
+  return [
+    String(expense.householdId || "").trim(),
+    String(expense.sourceCompanyId || "").trim(),
+    String(expense.sourceAccountId || "").trim(),
+    String(expense.transactionType || "expense").trim().toLowerCase(),
+    externalId,
+  ].join("|");
+}
+
 function buildComparableTextValues(expense = {}) {
   const merchant = normalizeTextForMatch(expense.merchant);
   const description = normalizeTextForMatch(expense.description);
@@ -513,6 +534,7 @@ async function reconcilePendingWithPosted({
   })
     .select({
       _id: 1,
+      externalId: 1,
       status: 1,
       householdId: 1,
       sourceCompanyId: 1,
@@ -534,23 +556,60 @@ async function reconcilePendingWithPosted({
     .lean();
 
   const postedBySignature = new Map();
+  const postedByLooseSignature = new Map();
+  const postedByExternalId = new Map();
   const pendingRows = [];
   for (const row of rows) {
     const signature = buildPendingPostedSignature(row);
+    const looseSignature = buildPendingPostedLooseSignature(row);
+    const externalSignature = buildExternalIdentitySignature(row);
     if (!signature) continue;
     if (String(row.status || "").trim().toLowerCase() === "pending") {
-      pendingRows.push({ ...row, __signature: signature });
+      pendingRows.push({
+        ...row,
+        __signature: signature,
+        __looseSignature: looseSignature,
+        __externalSignature: externalSignature,
+      });
       continue;
     }
     if (!postedBySignature.has(signature)) postedBySignature.set(signature, []);
     postedBySignature.get(signature).push(row);
+    if (looseSignature) {
+      if (!postedByLooseSignature.has(looseSignature)) {
+        postedByLooseSignature.set(looseSignature, []);
+      }
+      postedByLooseSignature.get(looseSignature).push(row);
+    }
+    if (externalSignature) {
+      if (!postedByExternalId.has(externalSignature)) {
+        postedByExternalId.set(externalSignature, []);
+      }
+      postedByExternalId.get(externalSignature).push(row);
+    }
   }
 
   let merged = 0;
   let deleted = 0;
   let matchedPairs = 0;
   for (const pending of pendingRows) {
-    const candidates = postedBySignature.get(pending.__signature) || [];
+    const primaryExternalCandidates = pending.__externalSignature
+      ? postedByExternalId.get(pending.__externalSignature) || []
+      : [];
+    const signatureCandidates = postedBySignature.get(pending.__signature) || [];
+    const looseSignatureCandidates = pending.__looseSignature
+      ? postedByLooseSignature.get(pending.__looseSignature) || []
+      : [];
+    const candidates = [
+      ...primaryExternalCandidates,
+      ...signatureCandidates,
+      ...looseSignatureCandidates,
+    ].filter(
+      (candidate, index, arr) =>
+        arr.findIndex(
+          (item) => toIdString(item?._id) === toIdString(candidate?._id),
+        ) === index,
+    );
     if (!candidates.length) continue;
 
     const pendingDate = toDateOrNull(pending.date);
@@ -568,6 +627,11 @@ async function reconcilePendingWithPosted({
         };
       })
       .filter((item) => {
+        const pendingExternalId = String(pending.externalId || "").trim();
+        const candidateExternalId = String(item.candidate.externalId || "").trim();
+        if (pendingExternalId && pendingExternalId === candidateExternalId) {
+          return true;
+        }
         if (item.diffMs > PENDING_POSTED_MAX_DATE_DIFF_MS) return false;
         if (item.textMatched) return true;
         // Allow user-altered pending rows to reconcile even if text diverged.
@@ -583,6 +647,26 @@ async function reconcilePendingWithPosted({
       const remaining = candidates.filter(
         (candidate) => toIdString(candidate?._id) !== matchedCandidateId,
       );
+      if (pending.__externalSignature) {
+        const externalRemaining = (
+          postedByExternalId.get(pending.__externalSignature) || []
+        ).filter((candidate) => toIdString(candidate?._id) !== matchedCandidateId);
+        if (externalRemaining.length > 0) {
+          postedByExternalId.set(pending.__externalSignature, externalRemaining);
+        } else {
+          postedByExternalId.delete(pending.__externalSignature);
+        }
+      }
+      if (pending.__looseSignature) {
+        const looseRemaining = (
+          postedByLooseSignature.get(pending.__looseSignature) || []
+        ).filter((candidate) => toIdString(candidate?._id) !== matchedCandidateId);
+        if (looseRemaining.length > 0) {
+          postedByLooseSignature.set(pending.__looseSignature, looseRemaining);
+        } else {
+          postedByLooseSignature.delete(pending.__looseSignature);
+        }
+      }
       if (remaining.length > 0) {
         postedBySignature.set(pending.__signature, remaining);
       } else {
