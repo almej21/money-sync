@@ -13,6 +13,12 @@ import {
 import {
   getExpenseSyncState,
 } from "../services/expenseSyncCoordinator.js";
+import {
+  createManualExpensesForUser,
+  deleteManualExpenseForUser,
+  listManualExpensesForUser,
+  updateManualExpenseForUser,
+} from "../services/manualExpenseService.js";
 
 function normalizeExpenseStatus(statusValue) {
   return String(statusValue || "").trim().toLowerCase() === "pending"
@@ -203,6 +209,58 @@ export async function createExpense(req, res) {
   });
 
   res.status(201).json(expense);
+}
+
+export async function createManualExpense(req, res) {
+  try {
+    const result = await createManualExpensesForUser(req.user, req.body || {});
+    res.status(201).json(result);
+  } catch (error) {
+    const status = Number(error?.status || 500);
+    res.status(status).json({
+      message: String(error?.message || "Failed to create manual expense"),
+    });
+  }
+}
+
+export async function listManualExpenses(req, res) {
+  try {
+    const expenses = await listManualExpensesForUser(req.user, req.query || {});
+    res.json(expenses);
+  } catch (error) {
+    const status = Number(error?.status || 500);
+    res.status(status).json({
+      message: String(error?.message || "Failed to list manual expenses"),
+    });
+  }
+}
+
+export async function updateManualExpense(req, res) {
+  try {
+    const expense = await updateManualExpenseForUser(
+      req.user,
+      req.params?.id,
+      req.body || {},
+    );
+    res.json(expense);
+  } catch (error) {
+    const status = Number(error?.status || 500);
+    res.status(status).json({
+      message: String(error?.message || "Failed to update manual expense"),
+    });
+  }
+}
+
+export async function deleteManualExpense(req, res) {
+  try {
+    const result = await deleteManualExpenseForUser(req.user, req.params?.id);
+    res.json(result);
+  } catch (error) {
+    const status = Number(error?.status || 500);
+    res.status(status).json({
+      message: String(error?.message || "Failed to delete manual expense"),
+    });
+  }
 }
 
 export async function updateExpense(req, res) {

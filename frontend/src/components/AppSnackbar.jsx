@@ -6,7 +6,7 @@ export default function AppSnackbar({
   severity = "info",
   onClose,
   autoHideDuration = 4000,
-  anchorOrigin = { vertical: "top", horizontal: "center" },
+  anchorOrigin = { vertical: "bottom", horizontal: "center" },
   topOffset = {
     xs: "calc(env(safe-area-inset-top, 0px) + 122px)",
     sm: "calc(env(safe-area-inset-top, 0px) + 16px)",
@@ -19,22 +19,22 @@ export default function AppSnackbar({
   alertSx,
   variant = "filled",
 }) {
-  const isTopAnchored = anchorOrigin?.vertical === "top";
-  const isBottomAnchored = anchorOrigin?.vertical === "bottom";
+  const resolvedAnchorOrigin = { vertical: "bottom", horizontal: "center" };
+  const isBottomAnchored = true;
 
   return (
     <Snackbar
       open={Boolean(open && message)}
       onClose={onClose}
       autoHideDuration={autoHideDuration}
-      anchorOrigin={anchorOrigin}
+      anchorOrigin={resolvedAnchorOrigin}
       sx={[
         {
-          zIndex: (theme) => theme.zIndex.snackbar + 10,
+          zIndex: (theme) =>
+            Math.max(theme.zIndex.snackbar, theme.zIndex.modal + 100),
           left: { xs: 8, sm: "auto" },
           right: { xs: 8, sm: "auto" },
           maxWidth: { xs: "calc(100vw - 16px)", sm: "min(560px, calc(100vw - 32px))" },
-          ...(isTopAnchored ? { top: topOffset } : {}),
           ...(isBottomAnchored ? { bottom: bottomOffset } : {}),
         },
         ...(Array.isArray(snackbarSx)

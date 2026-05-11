@@ -1,10 +1,13 @@
 import {
   Box,
+  Chip,
   CircularProgress,
   Container,
   createTheme,
   CssBaseline,
   ThemeProvider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useMemo } from "react";
 import {
@@ -26,6 +29,36 @@ import DashboardPage from "./pages/DashboardPage";
 import DashboardTargetsPage from "./pages/DashboardTargetsPage";
 import LoginPage from "./pages/LoginPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
+
+function ScreenSizeDebugBadge() {
+  const theme = useTheme();
+  const upSm = useMediaQuery(theme.breakpoints.up("sm"));
+  const upMd = useMediaQuery(theme.breakpoints.up("md"));
+  const upLg = useMediaQuery(theme.breakpoints.up("lg"));
+  const upXl = useMediaQuery(theme.breakpoints.up("xl"));
+
+  let label = "xs";
+  if (upXl) label = "xl";
+  else if (upLg) label = "lg";
+  else if (upMd) label = "md";
+  else if (upSm) label = "sm";
+
+  return (
+    <Chip
+      size="small"
+      label={`screen: ${label}`}
+      sx={{
+        position: "fixed",
+        bottom: 10,
+        right: 10,
+        zIndex: 2000,
+        fontWeight: 700,
+        bgcolor: "rgba(0,0,0,0.8)",
+        color: "#fff",
+      }}
+    />
+  );
+}
 
 function DashboardSectionLayout() {
   return (
@@ -235,6 +268,9 @@ function AppContent() {
       }),
     [colors.text, direction, themeColors],
   );
+  const debugScreenSizeEnabled =
+    String(import.meta.env.VITE_DEBUG_SCREEN_SIZE || "").toLowerCase() ===
+      "true" || window.location.hostname === "localhost";
 
   return (
     <ThemeProvider theme={theme}>
@@ -251,6 +287,7 @@ function AppContent() {
             dir={direction}
           >
             <ProtectedRoutes />
+            {debugScreenSizeEnabled && <ScreenSizeDebugBadge />}
           </Box>
         </BrowserRouter>
       </AuthProvider>

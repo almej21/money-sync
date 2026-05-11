@@ -44,9 +44,11 @@ export default function GenericModal({
             bgcolor: "background.paper",
             border: "1px solid",
             borderColor: "divider",
-            borderRadius: 2,
+            borderRadius: 1,
             boxShadow: 24,
-            p: 2,
+            pt: 1,
+            pb: 2,
+            px: 2,
           }}
         >
           <Stack
@@ -57,7 +59,7 @@ export default function GenericModal({
           >
             <Stack direction="row" alignItems="center" spacing={1}>
               {headerIcon}
-              <Typography variant="h6">{headerText}</Typography>
+              <Typography variant="subtitle1">{headerText}</Typography>
             </Stack>
             {showCloseButton && (
               <IconButton aria-label="Close modal" onClick={onClose} size="small">

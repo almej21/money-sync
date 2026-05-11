@@ -1,28 +1,18 @@
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import SyncIcon from "@mui/icons-material/Sync";
 import {
-  Box,
-  Button,
   Card,
   CardContent,
   CircularProgress,
-  Collapse,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
-  MenuItem,
   Stack,
-  TextField,
   Typography,
-  useTheme,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
-import Dropdown from "../components/Dropdown";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+import AddConnectionForm from "../components/bankCredentials/AddConnectionForm";
+import Connection from "../components/bankCredentials/Connection";
+import ManualExpenseEditModal from "../components/bankCredentials/ManualExpenseEditModal";
+import ManualExpenseModal from "../components/bankCredentials/ManualExpenseModal";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import {
@@ -34,6 +24,11 @@ import {
   saveConnectionAccountVisibility,
   triggerBankConnectionSync,
 } from "../services/bankService";
+import {
+  deleteManualExpense,
+  getExpenses,
+  listManualExpenses,
+} from "../services/expenseService";
 
 const HIDDEN_COMPANY_IDS = new Set(["isracard"]);
 
@@ -96,25 +91,7 @@ function getBillingDayOptions() {
   return Array.from({ length: 31 }, (_, index) => index + 1);
 }
 
-function isCardSuffix(value) {
-  return /^\d{4}$/.test(String(value || "").trim());
-}
-
-function formatSourceAccountLabel(account = {}, t) {
-  const sourceAccountId = String(account?.sourceAccountId || "").trim();
-  const sourceAccountName = String(account?.sourceAccountName || "").trim();
-  if (isCardSuffix(sourceAccountId)) {
-    return `${t("cardEndingWith")} ${sourceAccountId}`;
-  }
-  if (!sourceAccountName) return sourceAccountId;
-  if (!sourceAccountId || sourceAccountName === sourceAccountId) {
-    return sourceAccountName;
-  }
-  return `${sourceAccountName} (${sourceAccountId})`;
-}
-
 export default function BankCredentialsPage() {
-  const theme = useTheme();
   const { user } = useAuth();
   const { t, direction } = useLanguage();
   const [providers, setProviders] = useState([]);
@@ -143,6 +120,24 @@ export default function BankCredentialsPage() {
     useState(false);
   const [isAddAccountExpanded, setIsAddAccountExpanded] = useState(false);
   const [expandedConnectionIds, setExpandedConnectionIds] = useState({});
+  const [expenseCategories, setExpenseCategories] = useState([]);
+  const [manualExpensesByConnection, setManualExpensesByConnection] = useState(
+    {},
+  );
+  const [manualExpensesLoadingByConnection, setManualExpensesLoadingByConnection] =
+    useState({});
+  const [deletingManualExpenseId, setDeletingManualExpenseId] = useState("");
+  const [pendingManualExpenseDelete, setPendingManualExpenseDelete] =
+    useState(null);
+  const [manualExpenseSourceConnectionKey, setManualExpenseSourceConnectionKey] =
+    useState("");
+  const [manualExpenseSourceAccountId, setManualExpenseSourceAccountId] =
+    useState("");
+  const [isManualExpenseModalOpen, setIsManualExpenseModalOpen] =
+    useState(false);
+  const [editingManualExpense, setEditingManualExpense] = useState(null);
+  const [isManualExpenseEditModalOpen, setIsManualExpenseEditModalOpen] =
+    useState(false);
   const canManageBankConnections = (user?.role || "manager") === "manager";
 
   const selectedProvider = useMemo(
@@ -209,10 +204,56 @@ export default function BankCredentialsPage() {
         visibilityScope: "shared",
         credentials: buildEmptyCredentials(provider?.fields || []),
       });
+
+      const connectionIds = nextConnections
+        .map((item) => String(item?.id || "").trim())
+        .filter(Boolean);
+      for (const connectionId of connectionIds) {
+        loadManualExpensesForConnection(connectionId);
+      }
     } catch (err) {
       setError(err.message || t("failedLoadBankStatus"));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadManualExpensesForConnection(connectionId) {
+    const normalizedConnectionId = String(connectionId || "").trim();
+    if (!normalizedConnectionId) return;
+    setManualExpensesLoadingByConnection((prev) => ({
+      ...prev,
+      [normalizedConnectionId]: true,
+    }));
+    try {
+      const expenses = await listManualExpenses(normalizedConnectionId, "");
+      setManualExpensesByConnection((prev) => ({
+        ...prev,
+        [normalizedConnectionId]: Array.isArray(expenses) ? expenses : [],
+      }));
+    } catch (error) {
+      const message = String(error?.message || "").toLowerCase();
+      const shouldTreatAsEmpty =
+        message.includes("manual expense not found") ||
+        message.includes("not found") ||
+        message.includes("request failed");
+      if (shouldTreatAsEmpty) {
+        setManualExpensesByConnection((prev) => ({
+          ...prev,
+          [normalizedConnectionId]: [],
+        }));
+      } else {
+        setError(error?.message || t("failedLoadManualExpenses"));
+        setManualExpensesByConnection((prev) => ({
+          ...prev,
+          [normalizedConnectionId]: [],
+        }));
+      }
+    } finally {
+      setManualExpensesLoadingByConnection((prev) => ({
+        ...prev,
+        [normalizedConnectionId]: false,
+      }));
     }
   }
 
@@ -343,7 +384,90 @@ export default function BankCredentialsPage() {
   useEffect(() => {
     loadBankConfig();
   }, []);
+  useEffect(() => {
+    let isActive = true;
+    async function loadExpenseCategories() {
+      try {
+        const expenses = await getExpenses();
+        if (!isActive) return;
+        const categories = Array.from(
+          new Set(
+            (Array.isArray(expenses) ? expenses : [])
+              .map((expense) => String(expense?.category || "").trim())
+              .filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b));
+        setExpenseCategories(categories);
+      } catch {
+        if (!isActive) return;
+        setExpenseCategories([]);
+      }
+    }
+    loadExpenseCategories();
+    return () => {
+      isActive = false;
+    };
+  }, []);
   const billingDayOptions = useMemo(() => getBillingDayOptions(), []);
+
+  function openManualExpenseModal(connectionId, sourceAccount) {
+    const sourceConnectionKey = String(connectionId || "").trim();
+    const sourceAccountId = String(sourceAccount?.sourceAccountId || "").trim();
+    if (!sourceConnectionKey || !sourceAccountId) return;
+    setManualExpenseSourceConnectionKey(sourceConnectionKey);
+    setManualExpenseSourceAccountId(sourceAccountId);
+    setIsManualExpenseModalOpen(true);
+  }
+
+  function closeManualExpenseModal() {
+    setIsManualExpenseModalOpen(false);
+    setManualExpenseSourceConnectionKey("");
+    setManualExpenseSourceAccountId("");
+  }
+
+  function openManualExpenseEditModal(expense) {
+    if (!expense?._id) return;
+    setEditingManualExpense(expense);
+    setIsManualExpenseEditModalOpen(true);
+  }
+
+  function closeManualExpenseEditModal() {
+    setIsManualExpenseEditModalOpen(false);
+    setEditingManualExpense(null);
+  }
+
+  function onDeleteManualExpense(expense) {
+    if (!expense?._id) return;
+    setPendingManualExpenseDelete(expense);
+  }
+
+  function closeManualExpenseDeleteConfirmation() {
+    if (Boolean(deletingManualExpenseId)) return;
+    setPendingManualExpenseDelete(null);
+  }
+
+  async function confirmDeleteManualExpense() {
+    const expense = pendingManualExpenseDelete;
+    const manualExpenseId = String(expense?._id || "").trim();
+    const sourceConnectionKey = String(expense?.sourceConnectionKey || "").trim();
+    if (!manualExpenseId || !sourceConnectionKey) return;
+    setDeletingManualExpenseId(manualExpenseId);
+    try {
+      await deleteManualExpense(manualExpenseId);
+      setSuccess(t("manualExpenseDeleted"));
+      setManualExpensesByConnection((prev) => ({
+        ...prev,
+        [sourceConnectionKey]: (prev[sourceConnectionKey] || []).filter(
+          (item) => String(item?._id || "").trim() !== manualExpenseId,
+        ),
+      }));
+    } catch (error) {
+      setError(error?.message || t("failedDeleteManualExpense"));
+    } finally {
+      setDeletingManualExpenseId("");
+      setPendingManualExpenseDelete(null);
+    }
+  }
 
   function onCompanyChange(nextCompanyId) {
     const provider = providers.find((item) => item.companyId === nextCompanyId);
@@ -525,517 +649,78 @@ export default function BankCredentialsPage() {
             )}
             {connections.map((connection) => {
               const connectionId = String(connection?.id || "").trim();
-              const isExpanded = Boolean(expandedConnectionIds[connectionId]);
-              const showSyncButton = canTriggerConnectionSync(
-                connection?.lastBankFetchAt,
-              );
-              const isSyncingThisConnection =
-                syncingConnectionId === connectionId;
               return (
-                <Card
+                <Connection
                   key={connection.id}
-                  variant="outlined"
-                  sx={{ border: `2px solid ${theme.palette.primary.main}` }}
-                >
-                  <CardContent
-                    sx={{
-                      backgroundColor: theme.palette.secondary.main,
-                      display: "flex",
-                      alignItems: "stretch",
-                      position: "relative",
-                      py: 2,
-                      pr: 2,
-                      pb: 2,
-                    }}
-                  >
-                    <Stack
-                      direction={{ xs: "row" }}
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                      sx={{ width: "100%", minWidth: 0, pb: 0 }}
-                    >
-                      <Stack
-                        spacing={0.5}
-                        justifyContent="center"
-                        sx={{ width: "100%", minWidth: 0 }}
-                      >
-                        <Typography
-                          sx={{
-                            fontWeight: 600,
-                            color: theme.palette.text.contrastText,
-                          }}
-                        >
-                          {providerLabelById[connection.companyId] ||
-                            connection.companyId}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: theme.palette.text.contrastText }}
-                        >
-                          {connection.visibilityScope === "private"
-                            ? t("privateConnection")
-                            : t("sharedConnection")}
-                        </Typography>
-                        {connection.lastBankFetchAt && (
-                          <Typography
-                            variant="body2"
-                            sx={{ color: theme.palette.text.contrastText }}
-                          >
-                            {t("lastBankFetch")}:{" "}
-                            {formatFetchTimestamp(connection.lastBankFetchAt)}
-                          </Typography>
-                        )}
-                        <Button
-                          type="button"
-                          variant="text"
-                          onClick={() => toggleConnectionExpanded(connectionId)}
-                          sx={{
-                            mt: 0.5,
-                            px: 0,
-                            justifyContent: "center",
-                            color: theme.palette.text.contrastText,
-                            width: "fit-content",
-                            minWidth: 0,
-                            alignSelf: "center",
-                            mx: "auto",
-                            textTransform: "none",
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </Button>
-                        <Collapse
-                          in={isExpanded}
-                          sx={{ width: "100%", maxWidth: "100%", minWidth: 0 }}
-                        >
-                          <Stack
-                            spacing={1}
-                            sx={{
-                              mt: 1,
-                              width: "100%",
-                              maxWidth: "100%",
-                              minWidth: 0,
-                            }}
-                          >
-                            {(connection.sourceAccounts || []).length > 0 ? (
-                              (connection.sourceAccounts || []).map(
-                                (account) => {
-                                  const sourceAccountId = String(
-                                    account?.sourceAccountId || "",
-                                  ).trim();
-                                  const requestKey = `${connection.id}:${sourceAccountId}`;
-                                  const accountVisibility =
-                                    accountVisibilityByConnection?.[
-                                      connection.id
-                                    ]?.[sourceAccountId] ||
-                                    account?.visibilityScope ||
-                                    connection?.visibilityScope ||
-                                    "shared";
-                                  return (
-                                    <Box
-                                      key={`${connection.id}:${sourceAccountId}`}
-                                      sx={{
-                                        width: "100%",
-                                        maxWidth: "100%",
-                                        minWidth: 0,
-                                      }}
-                                    >
-                                      <Divider
-                                        sx={{
-                                          borderColor:
-                                            theme.palette.text.contrastText,
-                                          opacity: 1,
-                                          mb: 1,
-                                        }}
-                                      />
-                                      <Stack
-                                        direction={{ xs: "column", sm: "row" }}
-                                        spacing={1}
-                                        sx={{
-                                          width: "100%",
-                                          maxWidth: "100%",
-                                          minWidth: 0,
-                                        }}
-                                        alignItems={{
-                                          xs: "stretch",
-                                          sm: "flex-start",
-                                        }}
-                                      >
-                                        <Typography
-                                          variant="body2"
-                                          sx={{
-                                            color:
-                                              theme.palette.text.contrastText,
-                                            px: ".3rem",
-                                            pb: "1rem",
-                                            overflowWrap: "anywhere",
-                                          }}
-                                        >
-                                          {formatSourceAccountLabel(account, t)}
-                                        </Typography>
-                                        <Stack
-                                          spacing={0}
-                                          sx={{
-                                            width: { xs: "100%", sm: 320 },
-                                            maxWidth: "100%",
-                                            minWidth: 0,
-                                          }}
-                                        >
-                                          <Box sx={{ mt: { xs: 0, sm: 3 } }}>
-                                            <Dropdown
-                                              labelId={`account-visibility-${connection.id}-${sourceAccountId}`}
-                                              label={t("cardVisibility")}
-                                              value={accountVisibility}
-                                              onChange={(e) =>
-                                                updateCardSettings(
-                                                  connectionId,
-                                                  sourceAccountId,
-                                                  e.target.value,
-                                                  billingDayByConnection?.[
-                                                    connectionId
-                                                  ]?.[sourceAccountId] || "",
-                                                )
-                                              }
-                                              required
-                                              disabled={
-                                                saving ||
-                                                loading ||
-                                                !canManageBankConnections ||
-                                                Boolean(
-                                                  updatingAccountVisibilityKey,
-                                                ) ||
-                                                !sourceAccountId
-                                              }
-                                              sx={{
-                                                width: "100%",
-                                                maxWidth: "100%",
-                                                minWidth: 0,
-                                                boxSizing: "border-box",
-                                                "& .MuiInputBase-root": {
-                                                  color:
-                                                    theme.palette.text
-                                                      .contrastText,
-                                                },
-                                              }}
-                                            >
-                                              <MenuItem value="shared">
-                                                {t("sharedConnection")}
-                                              </MenuItem>
-                                              <MenuItem value="private">
-                                                {t("privateConnection")}
-                                              </MenuItem>
-                                            </Dropdown>
-                                          </Box>
-                                          <Box sx={{ mt: 3 }}>
-                                            <Dropdown
-                                              labelId={`account-billing-day-${connection.id}-${sourceAccountId}`}
-                                              label={t("billingDate")}
-                                              labelShrink
-                                              value={
-                                                billingDayByConnection?.[
-                                                  connectionId
-                                                ]?.[sourceAccountId] || ""
-                                              }
-                                              onChange={(e) =>
-                                                updateCardSettings(
-                                                  connectionId,
-                                                  sourceAccountId,
-                                                  accountVisibility,
-                                                  e.target.value,
-                                                )
-                                              }
-                                              disabled={
-                                                saving ||
-                                                loading ||
-                                                !canManageBankConnections ||
-                                                Boolean(
-                                                  updatingAccountVisibilityKey,
-                                                ) ||
-                                                !sourceAccountId
-                                              }
-                                              sx={{
-                                                width: "100%",
-                                                maxWidth: "100%",
-                                                minWidth: 0,
-                                                boxSizing: "border-box",
-                                                "& .MuiInputBase-root": {
-                                                  color:
-                                                    theme.palette.text
-                                                      .contrastText,
-                                                },
-                                              }}
-                                            >
-                                              <MenuItem value="">
-                                                {t("optional")}
-                                              </MenuItem>
-                                              {billingDayOptions.map((day) => (
-                                                <MenuItem key={day} value={day}>
-                                                  {day}
-                                                </MenuItem>
-                                              ))}
-                                            </Dropdown>
-                                          </Box>
-                                        </Stack>
-                                        {updatingAccountVisibilityKey ===
-                                          requestKey && (
-                                          <CircularProgress
-                                            size={16}
-                                            sx={{
-                                              color:
-                                                theme.palette.text.contrastText,
-                                            }}
-                                          />
-                                        )}
-                                      </Stack>
-                                    </Box>
-                                  );
-                                },
-                              )
-                            ) : (
-                              <Typography
-                                variant="body2"
-                                sx={{ color: theme.palette.text.contrastText }}
-                              >
-                                {t("noConnectionCardsDetected")}
-                              </Typography>
-                            )}
-                          </Stack>
-                        </Collapse>
-                      </Stack>
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{
-                        position: "absolute",
-                        top: 12,
-                        ...(direction === "rtl" ? { left: 12 } : { right: 12 }),
-                        direction: "ltr",
-                        alignItems: "center",
-                      }}
-                    >
-                      {direction === "rtl" && (
-                        <Button
-                          type="button"
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => openRemoveConfirmation(connectionId)}
-                          disabled={
-                            saving || loading || !canManageBankConnections
-                          }
-                          sx={{
-                            minWidth: 0,
-                            width: 32,
-                            height: 32,
-                            p: 0,
-                            borderRadius: 0.7,
-                            borderColor: "error.main",
-                            border: "2px solid",
-                            color: "error.main",
-                            "&:hover": {
-                              bgcolor: "error.main",
-                              borderColor: "error.main",
-                              color: "common.white",
-                            },
-                          }}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </Button>
-                      )}
-                      {showSyncButton && (
-                        <Button
-                          type="button"
-                          variant="outlined"
-                          size="small"
-                          onClick={() => syncConnection(connectionId)}
-                          disabled={
-                            saving ||
-                            loading ||
-                            !canManageBankConnections ||
-                            Boolean(syncingConnectionId)
-                          }
-                          aria-label={t("syncConnection")}
-                          sx={{
-                            minWidth: 0,
-                            width: 32,
-                            height: 32,
-                            p: 0,
-                            borderRadius: 0.7,
-                            borderColor: theme.palette.primary.main,
-                            border: "2px solid",
-                            color: theme.palette.primary.main,
-                            "&:hover": {
-                              bgcolor: theme.palette.primary.main,
-                              borderColor: theme.palette.primary.main,
-                              color: "common.white",
-                            },
-                          }}
-                        >
-                          {isSyncingThisConnection ? (
-                            <CircularProgress size={14} color="inherit" />
-                          ) : (
-                            <SyncIcon fontSize="small" />
-                          )}
-                        </Button>
-                      )}
-                      {direction !== "rtl" && (
-                        <Button
-                          type="button"
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => openRemoveConfirmation(connectionId)}
-                          disabled={
-                            saving || loading || !canManageBankConnections
-                          }
-                          sx={{
-                            minWidth: 0,
-                            width: 32,
-                            height: 32,
-                            p: 0,
-                            borderRadius: 0.7,
-                            borderColor: "error.main",
-                            border: "2px solid",
-                            color: "error.main",
-                            "&:hover": {
-                              bgcolor: "error.main",
-                              borderColor: "error.main",
-                              color: "common.white",
-                            },
-                          }}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </Button>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
+                  connection={connection}
+                  isExpanded={Boolean(expandedConnectionIds[connectionId])}
+                  showSyncButton={canTriggerConnectionSync(
+                    connection?.lastBankFetchAt,
+                  )}
+                  isSyncingThisConnection={syncingConnectionId === connectionId}
+                  providerLabel={
+                    providerLabelById[connection.companyId] || connection.companyId
+                  }
+                  formattedLastFetch={formatFetchTimestamp(
+                    connection.lastBankFetchAt,
+                  )}
+                  direction={direction}
+                  syncingConnectionId={syncingConnectionId}
+                  saving={saving}
+                  loading={loading}
+                  canManageBankConnections={canManageBankConnections}
+                  accountVisibilityByConnection={accountVisibilityByConnection}
+                  billingDayByConnection={billingDayByConnection}
+                  updatingAccountVisibilityKey={updatingAccountVisibilityKey}
+                  billingDayOptions={billingDayOptions}
+                  toggleConnectionExpanded={toggleConnectionExpanded}
+                  updateCardSettings={updateCardSettings}
+                  openRemoveConfirmation={openRemoveConfirmation}
+                  onOpenManualExpense={openManualExpenseModal}
+                  manualExpensesByConnection={manualExpensesByConnection}
+                  manualExpensesLoadingByConnection={
+                    manualExpensesLoadingByConnection
+                  }
+                  deletingManualExpenseId={deletingManualExpenseId}
+                  onEditManualExpense={openManualExpenseEditModal}
+                  onDeleteManualExpense={onDeleteManualExpense}
+                  syncConnection={syncConnection}
+                  t={t}
+                />
               );
             })}
           </Stack>
 
           <Divider sx={{ mb: 2 }} />
 
-          <Stack spacing={2}>
-            {!canManageBankConnections && (
-              <Typography color="warning.main">
-                {t("bankManagerOnlyMessage")}
-              </Typography>
-            )}
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={() => setIsAddAccountExpanded((prev) => !prev)}
-              disabled={!canManageBankConnections}
-              sx={{
-                width: { xs: "100%", sm: "auto" },
-                alignSelf: "flex-start",
-              }}
-            >
-              {isAddAccountExpanded
-                ? `${t("addConnection")} -`
-                : `${t("addConnection")} +`}
-            </Button>
-            <Collapse in={isAddAccountExpanded}>
-              <Box component="form" onSubmit={saveCredentials}>
-                <Stack spacing={2}>
-                  <Typography variant="subtitle1">
-                    {t("addConnection")}
-                  </Typography>
-                  <Dropdown
-                    labelId="bank-provider-label"
-                    label={t("bankOrCreditCardCompany")}
-                    value={form.companyId}
-                    onChange={(e) => onCompanyChange(e.target.value)}
-                    required
-                  >
-                    {providers.map((provider) => (
-                      <MenuItem
-                        key={provider.companyId}
-                        value={provider.companyId}
-                      >
-                        {provider.label} ({provider.companyId})
-                      </MenuItem>
-                    ))}
-                  </Dropdown>
-
-                  <TextField
-                    label={t("connectionName")}
-                    value={form.connectionName}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        connectionName: e.target.value,
-                      }))
-                    }
-                    helperText={t("optional")}
-                    fullWidth
-                  />
-                  <Dropdown
-                    labelId="bank-connection-visibility-label"
-                    label={t("connectionVisibility")}
-                    value={form.visibilityScope}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        visibilityScope: e.target.value,
-                      }))
-                    }
-                    required
-                  >
-                    <MenuItem value="shared">{t("sharedConnection")}</MenuItem>
-                    <MenuItem value="private">
-                      {t("privateConnection")}
-                    </MenuItem>
-                  </Dropdown>
-
-                  {(selectedProvider?.fields || []).map((field) => (
-                    <TextField
-                      key={field.name}
-                      label={field.label || field.name}
-                      type={field.type || "text"}
-                      value={form.credentials[field.name] || ""}
-                      onChange={(e) =>
-                        onFieldChange(field.name, e.target.value)
-                      }
-                      required={Boolean(field.required)}
-                      helperText={
-                        field.required ? t("required") : t("optional")
-                      }
-                      fullWidth
-                    />
-                  ))}
-
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      disabled={saving || loading || !canManageBankConnections}
-                      sx={{ width: { xs: "100%", sm: "auto" } }}
-                    >
-                      {t("addConnection")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      color="error"
-                      onClick={openRemoveAllConfirmation}
-                      disabled={
-                        saving ||
-                        loading ||
-                        connectedCount === 0 ||
-                        !canManageBankConnections
-                      }
-                      sx={{ width: { xs: "100%", sm: "auto" } }}
-                    >
-                      {t("removeAllConnections")}
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Box>
-            </Collapse>
-          </Stack>
+          <AddConnectionForm
+            t={t}
+            isExpanded={isAddAccountExpanded}
+            onToggle={() => setIsAddAccountExpanded((prev) => !prev)}
+            canManageBankConnections={canManageBankConnections}
+            form={form}
+            providers={providers}
+            selectedProvider={selectedProvider}
+            saving={saving}
+            loading={loading}
+            connectedCount={connectedCount}
+            onSubmit={saveCredentials}
+            onCompanyChange={onCompanyChange}
+            onConnectionNameChange={(value) =>
+              setForm((prev) => ({
+                ...prev,
+                connectionName: value,
+              }))
+            }
+            onVisibilityChange={(value) =>
+              setForm((prev) => ({
+                ...prev,
+                visibilityScope: value,
+              }))
+            }
+            onCredentialFieldChange={onFieldChange}
+            onRemoveAll={openRemoveAllConfirmation}
+          />
         </CardContent>
       </Card>
 
@@ -1051,54 +736,74 @@ export default function BankCredentialsPage() {
         severity="success"
         onClose={() => setSuccess("")}
       />
-      <Dialog
+      <ConfirmationDialog
         open={Boolean(pendingRemovalConnectionId)}
+        title={t("logoutConfirmMessage")}
+        description={t("removeSelectedBankConnectionConfirm")}
+        cancelLabel={t("cancel")}
+        confirmLabel={t("removeConnection")}
         onClose={closeRemoveConfirmation}
-      >
-        <DialogTitle>Are you sure?</DialogTitle>
-        <DialogContent>
-          <Typography color="text.primary">
-            {t("removeSelectedBankConnectionConfirm")}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeRemoveConfirmation} disabled={saving}>
-            {t("cancel")}
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={confirmRemoveConnection}
-            disabled={saving}
-          >
-            {t("removeConnection")}
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog
+        onConfirm={confirmRemoveConnection}
+        disabled={saving}
+      />
+      <ConfirmationDialog
         open={pendingRemoveAllConfirmation}
+        title={t("logoutConfirmMessage")}
+        description={t("removeAllBankConnectionsConfirm")}
+        cancelLabel={t("cancel")}
+        confirmLabel={t("removeAllConnections")}
         onClose={closeRemoveAllConfirmation}
-      >
-        <DialogTitle>Are you sure?</DialogTitle>
-        <DialogContent>
-          <Typography color="text.primary">
-            {t("removeAllBankConnectionsConfirm")}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeRemoveAllConfirmation} disabled={saving}>
-            {t("cancel")}
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={confirmRemoveAllConnections}
-            disabled={saving}
-          >
-            {t("removeAllConnections")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={confirmRemoveAllConnections}
+        disabled={saving}
+      />
+      <ConfirmationDialog
+        open={Boolean(pendingManualExpenseDelete)}
+        title={t("logoutConfirmMessage")}
+        description={t("manualExpenseDeleteConfirm")}
+        cancelLabel={t("cancel")}
+        confirmLabel={t("manualExpenseDelete")}
+        onClose={closeManualExpenseDeleteConfirmation}
+        onConfirm={confirmDeleteManualExpense}
+        disabled={Boolean(deletingManualExpenseId)}
+      />
+      <ManualExpenseModal
+        open={isManualExpenseModalOpen}
+        onClose={closeManualExpenseModal}
+        sourceConnectionKey={manualExpenseSourceConnectionKey}
+        sourceAccountId={manualExpenseSourceAccountId}
+        categories={expenseCategories}
+        t={t}
+        onSaved={() => {
+          setSuccess(t("manualExpenseSaved"));
+          loadManualExpensesForConnection(manualExpenseSourceConnectionKey);
+        }}
+        onError={setError}
+      />
+      <ManualExpenseEditModal
+        open={isManualExpenseEditModalOpen}
+        onClose={closeManualExpenseEditModal}
+        expense={editingManualExpense}
+        categories={expenseCategories}
+        t={t}
+        onSaved={(updated) => {
+          setSuccess(t("manualExpenseUpdated"));
+          const sourceConnectionKey = String(
+            updated?.sourceConnectionKey ||
+              editingManualExpense?.sourceConnectionKey ||
+              "",
+          ).trim();
+          if (!sourceConnectionKey) return;
+          setManualExpensesByConnection((prev) => ({
+            ...prev,
+            [sourceConnectionKey]: (prev[sourceConnectionKey] || []).map((item) =>
+              String(item?._id || "").trim() === String(updated?._id || "").trim()
+                ? updated
+                : item,
+            ),
+          }));
+        }}
+        onError={setError}
+      />
     </Stack>
   );
 }
