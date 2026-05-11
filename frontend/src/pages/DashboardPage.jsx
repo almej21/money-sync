@@ -1190,29 +1190,98 @@ export default function DashboardPage() {
               display: "flex",
               direction: "ltr",
               justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
+              mt: -2,
             }}
           >
             <IconButton
+              className="amount-sort-button"
               onClick={handleAmountSortToggle}
+              disableRipple
+              disableFocusRipple
               aria-label={
                 sortBy === "amount_asc"
                   ? t("sortPriceLowToHigh")
                   : t("sortPriceHighToLow")
               }
               sx={{
-                // border: "1px solid",
-                borderColor: isAmountSortActive ? "primary.main" : "divider",
-                bgcolor: isAmountSortActive
-                  ? alpha(theme.palette.primary.main, 0.08)
-                  : "background.paper",
+                borderColor: "transparent",
+                border: "2px solid transparent",
+                bgcolor: "background.paper",
+                color: isAmountSortActive
+                  ? theme.palette.primary.main
+                  : theme.palette.text.primary,
+                opacity: 1,
                 borderRadius: 1.25,
                 scale: 0.8,
+                transition: "none !important",
+                "&.amount-sort-button, &.amount-sort-button:hover, &.amount-sort-button:active": {
+                  color: `${isAmountSortActive ? theme.palette.primary.main : theme.palette.text.primary} !important`,
+                  opacity: "1 !important",
+                },
+                "&:hover": {
+                  bgcolor: "background.paper",
+                  color: isAmountSortActive
+                    ? theme.palette.primary.main
+                    : theme.palette.text.primary,
+                  opacity: 1,
+                },
+                "&:active": {
+                  bgcolor: "background.paper",
+                  color: isAmountSortActive
+                    ? theme.palette.primary.main
+                    : theme.palette.text.primary,
+                  opacity: 1,
+                },
+                "&.Mui-focusVisible": {
+                  bgcolor: "background.paper !important",
+                  color: "inherit !important",
+                  opacity: "1 !important",
+                  boxShadow: "none !important",
+                  border: `2px solid ${theme.palette.primary.main}`,
+                  outline: "none !important",
+                },
+                "&:focus": {
+                  bgcolor: "background.paper !important",
+                  color: "inherit !important",
+                  opacity: "1 !important",
+                  boxShadow: "none !important",
+                  border: `2px solid ${theme.palette.primary.main}`,
+                  outline: "none !important",
+                },
+                "& .MuiTouchRipple-root": {
+                  display: "none",
+                },
+                "&:focus .MuiSvgIcon-root, &:focus-visible .MuiSvgIcon-root, &.Mui-focusVisible .MuiSvgIcon-root": {
+                  color: `${isAmountSortActive ? theme.palette.primary.main : theme.palette.text.primary} !important`,
+                  opacity: "1 !important",
+                  fill: "currentColor",
+                },
               }}
             >
               {sortBy === "amount_asc" ? (
-                <ArrowUpwardRoundedIcon fontSize="small" />
+                <ArrowUpwardRoundedIcon
+                  fontSize="small"
+                  sx={{
+                    color: isAmountSortActive
+                      ? theme.palette.primary.main
+                      : theme.palette.text.primary,
+                    opacity: "1 !important",
+                    transition: "none !important",
+                    fill: "currentColor",
+                  }}
+                />
               ) : (
-                <ArrowDownwardRoundedIcon fontSize="small" />
+                <ArrowDownwardRoundedIcon
+                  fontSize="small"
+                  sx={{
+                    color: isAmountSortActive
+                      ? theme.palette.primary.main
+                      : theme.palette.text.primary,
+                    opacity: "1 !important",
+                    transition: "none !important",
+                    fill: "currentColor",
+                  }}
+                />
               )}
             </IconButton>
           </Box>

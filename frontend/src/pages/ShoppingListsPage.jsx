@@ -466,6 +466,10 @@ export default function ShoppingListsPage() {
             <Card key={list._id}>
               {(() => {
                 const expanded = isListExpanded(list._id);
+                const listItems = Array.isArray(list.items) ? list.items : [];
+                const allItemsCompleted =
+                  listItems.length > 0 &&
+                  listItems.every((item) => Boolean(item?.completed));
                 return (
                   <CardContent
                     sx={{
@@ -493,9 +497,16 @@ export default function ShoppingListsPage() {
                         <Typography
                           variant="h8"
                           sx={{
-                            textDecoration: "underline",
-                            textDecorationThickness: "2px",
-                            textUnderlineOffset: "5px",
+                            textDecoration: allItemsCompleted
+                              ? "line-through"
+                              : "underline",
+                            textDecorationThickness: allItemsCompleted
+                              ? "1.5px"
+                              : "2px",
+                            textUnderlineOffset: allItemsCompleted
+                              ? "0px"
+                              : "5px",
+                            opacity: allItemsCompleted ? 0.75 : 1,
                           }}
                         >
                           {list.title}
