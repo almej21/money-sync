@@ -50,10 +50,12 @@ export default function DashboardFilters({
   lastSixMonthOptions,
   sortBy,
   onSortByChange,
+  showSort = true,
   selectedAmountRange,
   minExpenseAmount,
   maxExpenseAmount,
   onAmountRangeChange,
+  footerContent,
 }) {
   const theme = useTheme();
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -226,22 +228,24 @@ export default function DashboardFilters({
                   </Stack>
                 )}
 
+                {showSort && (
                   <Dropdown
                     labelId="sort-by-label"
                     value={sortBy}
                     label={labelWithIcon(t("sortBy"), SortOutlinedIcon)}
                     onChange={(event) => onSortByChange(event.target.value)}
                     sx={{ width: "100%" }}
-                >
-                  <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
-                  <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
-                  <MenuItem value="amount_desc">
-                    {t("sortPriceHighToLow")}
-                  </MenuItem>
-                  <MenuItem value="amount_asc">
-                    {t("sortPriceLowToHigh")}
-                  </MenuItem>
-                </Dropdown>
+                  >
+                    <MenuItem value="date_desc">{t("sortDateNewest")}</MenuItem>
+                    <MenuItem value="date_asc">{t("sortDateOldest")}</MenuItem>
+                    <MenuItem value="amount_desc">
+                      {t("sortPriceHighToLow")}
+                    </MenuItem>
+                    <MenuItem value="amount_asc">
+                      {t("sortPriceLowToHigh")}
+                    </MenuItem>
+                  </Dropdown>
+                )}
 
                   <Dropdown
                     labelId="account-filter-label"
@@ -320,8 +324,8 @@ export default function DashboardFilters({
                     component="span"
                     sx={{ direction: "ltr", unicodeBidi: "isolate" }}
                   >
-                    {Math.round(selectedAmountRange[0])}₪ -{" "}
-                    {Math.round(selectedAmountRange[1])}₪
+                    ₪{Math.round(selectedAmountRange[0])} - ₪
+                    {Math.round(selectedAmountRange[1])}
                   </Box>
                 </Typography>
                 <ThemeProvider theme={ltrSliderTheme}>
@@ -339,12 +343,24 @@ export default function DashboardFilters({
                     }}
                     valueLabelDisplay="auto"
                     valueLabelFormat={(value) =>
-                      `${Math.round(Number(value))}₪`
+                      `₪${Math.round(Number(value))}`
                     }
                     sx={{ direction: "ltr" }}
                   />
                 </ThemeProvider>
               </Box>
+              {footerContent ? (
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    px: { xs: 0.5, sm: 1 },
+                    width: { xs: "100%", md: "80%" },
+                    mx: "auto",
+                  }}
+                >
+                  {footerContent}
+                </Box>
+              ) : null}
             </Box>
           </Box>
         </Box>
