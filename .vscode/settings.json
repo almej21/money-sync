@@ -2,7 +2,9 @@
   "editor.inlineSuggest.enabled": false,
   "scm.diffDecorations": "all",
   "git.enabled": true,
-  "cSpell.words": [
-    "cooldown"
-  ]
+  "git.decorations.enabled": true,
+  "scm.alwaysShowRepositories": true,
+  "explorer.decorations.colors": true,
+  "explorer.decorations.badges": true,
+  "cSpell.words": ["cooldown"]
 }

@@ -19,6 +19,7 @@ import {
   listManualExpensesForUser,
   updateManualExpenseForUser,
 } from "../services/manualExpenseService.js";
+import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 
 function normalizeExpenseStatus(statusValue) {
   return String(statusValue || "").trim().toLowerCase() === "pending"
@@ -188,6 +189,10 @@ export async function createExpense(req, res) {
       ? "return"
       : "expense";
   const status = normalizeExpenseStatus(req.body.status);
+  const normalizedCategory = normalizeExpenseCategory(
+    req.body.category,
+    "General",
+  );
   const expense = await Expense.create({
     householdId: req.user.householdId,
     source: req.body.source || "manual",
@@ -201,7 +206,7 @@ export async function createExpense(req, res) {
     currency: req.body.currency || "₪",
     description: req.body.description,
     merchant: req.body.merchant || "",
-    category: req.body.category || "General",
+    category: normalizedCategory,
     notes: req.body.notes || "",
     tags: req.body.tags || [],
     createdBy: req.user._id,
@@ -296,8 +301,10 @@ export async function updateExpense(req, res) {
   }
 
   if (hasCategory) {
-    const nextCategory =
-      String(req.body.category || "").trim() || "Uncategorized";
+    const nextCategory = normalizeExpenseCategory(
+      req.body.category,
+      "Uncategorized",
+    );
     if (nextCategory !== expense.category) {
       hasChanged = true;
       expense.category = nextCategory;

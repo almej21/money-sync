@@ -16,6 +16,7 @@ import {
   toStoredEncryptedFields,
 } from "./householdBankConnections.js";
 import { assertSupportedNodeVersion } from "../utils/nodeVersion.js";
+import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
   "email",
@@ -688,7 +689,7 @@ async function reconcilePendingWithPosted({
         mergeSet.description = String(pending.description || "").trim();
       }
       if (String(pending.category || "").trim()) {
-        mergeSet.category = String(pending.category || "").trim();
+        mergeSet.category = normalizeExpenseCategory(pending.category);
       }
       if (String(pending.notes || "").trim()) {
         mergeSet.notes = String(pending.notes || "").trim();

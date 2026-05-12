@@ -124,13 +124,17 @@ export default function BankCredentialsPage() {
   const [manualExpensesByConnection, setManualExpensesByConnection] = useState(
     {},
   );
-  const [manualExpensesLoadingByConnection, setManualExpensesLoadingByConnection] =
-    useState({});
+  const [
+    manualExpensesLoadingByConnection,
+    setManualExpensesLoadingByConnection,
+  ] = useState({});
   const [deletingManualExpenseId, setDeletingManualExpenseId] = useState("");
   const [pendingManualExpenseDelete, setPendingManualExpenseDelete] =
     useState(null);
-  const [manualExpenseSourceConnectionKey, setManualExpenseSourceConnectionKey] =
-    useState("");
+  const [
+    manualExpenseSourceConnectionKey,
+    setManualExpenseSourceConnectionKey,
+  ] = useState("");
   const [manualExpenseSourceAccountId, setManualExpenseSourceAccountId] =
     useState("");
   const [isManualExpenseModalOpen, setIsManualExpenseModalOpen] =
@@ -449,7 +453,9 @@ export default function BankCredentialsPage() {
   async function confirmDeleteManualExpense() {
     const expense = pendingManualExpenseDelete;
     const manualExpenseId = String(expense?._id || "").trim();
-    const sourceConnectionKey = String(expense?.sourceConnectionKey || "").trim();
+    const sourceConnectionKey = String(
+      expense?.sourceConnectionKey || "",
+    ).trim();
     if (!manualExpenseId || !sourceConnectionKey) return;
     setDeletingManualExpenseId(manualExpenseId);
     try {
@@ -659,7 +665,8 @@ export default function BankCredentialsPage() {
                   )}
                   isSyncingThisConnection={syncingConnectionId === connectionId}
                   providerLabel={
-                    providerLabelById[connection.companyId] || connection.companyId
+                    providerLabelById[connection.companyId] ||
+                    connection.companyId
                   }
                   formattedLastFetch={formatFetchTimestamp(
                     connection.lastBankFetchAt,
@@ -795,10 +802,12 @@ export default function BankCredentialsPage() {
           if (!sourceConnectionKey) return;
           setManualExpensesByConnection((prev) => ({
             ...prev,
-            [sourceConnectionKey]: (prev[sourceConnectionKey] || []).map((item) =>
-              String(item?._id || "").trim() === String(updated?._id || "").trim()
-                ? updated
-                : item,
+            [sourceConnectionKey]: (prev[sourceConnectionKey] || []).map(
+              (item) =>
+                String(item?._id || "").trim() ===
+                String(updated?._id || "").trim()
+                  ? updated
+                  : item,
             ),
           }));
         }}

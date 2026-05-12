@@ -1204,32 +1204,26 @@ export default function DashboardPage() {
                   : t("sortPriceHighToLow")
               }
               sx={{
-                borderColor: "transparent",
-                border: "2px solid transparent",
+                border: `2px solid ${isAmountSortActive ? theme.palette.primary.main : "transparent"}`,
                 bgcolor: "background.paper",
-                color: isAmountSortActive
-                  ? theme.palette.primary.main
-                  : theme.palette.text.primary,
+                color: theme.palette.text.primary,
                 opacity: 1,
                 borderRadius: 1.25,
                 scale: 0.8,
                 transition: "none !important",
-                "&.amount-sort-button, &.amount-sort-button:hover, &.amount-sort-button:active": {
-                  color: `${isAmountSortActive ? theme.palette.primary.main : theme.palette.text.primary} !important`,
-                  opacity: "1 !important",
-                },
+                "&.amount-sort-button, &.amount-sort-button:hover, &.amount-sort-button:active":
+                  {
+                    color: `${theme.palette.text.primary} !important`,
+                    opacity: "1 !important",
+                  },
                 "&:hover": {
                   bgcolor: "background.paper",
-                  color: isAmountSortActive
-                    ? theme.palette.primary.main
-                    : theme.palette.text.primary,
+                  color: theme.palette.text.primary,
                   opacity: 1,
                 },
                 "&:active": {
                   bgcolor: "background.paper",
-                  color: isAmountSortActive
-                    ? theme.palette.primary.main
-                    : theme.palette.text.primary,
+                  color: theme.palette.text.primary,
                   opacity: 1,
                 },
                 "&.Mui-focusVisible": {
@@ -1251,20 +1245,19 @@ export default function DashboardPage() {
                 "& .MuiTouchRipple-root": {
                   display: "none",
                 },
-                "&:focus .MuiSvgIcon-root, &:focus-visible .MuiSvgIcon-root, &.Mui-focusVisible .MuiSvgIcon-root": {
-                  color: `${isAmountSortActive ? theme.palette.primary.main : theme.palette.text.primary} !important`,
-                  opacity: "1 !important",
-                  fill: "currentColor",
-                },
+                "&:focus .MuiSvgIcon-root, &:focus-visible .MuiSvgIcon-root, &.Mui-focusVisible .MuiSvgIcon-root":
+                  {
+                    color: `${theme.palette.text.primary} !important`,
+                    opacity: "1 !important",
+                    fill: "currentColor",
+                  },
               }}
             >
               {sortBy === "amount_asc" ? (
                 <ArrowUpwardRoundedIcon
                   fontSize="small"
                   sx={{
-                    color: isAmountSortActive
-                      ? theme.palette.primary.main
-                      : theme.palette.text.primary,
+                    color: theme.palette.text.primary,
                     opacity: "1 !important",
                     transition: "none !important",
                     fill: "currentColor",
@@ -1274,9 +1267,7 @@ export default function DashboardPage() {
                 <ArrowDownwardRoundedIcon
                   fontSize="small"
                   sx={{
-                    color: isAmountSortActive
-                      ? theme.palette.primary.main
-                      : theme.palette.text.primary,
+                    color: theme.palette.text.primary,
                     opacity: "1 !important",
                     transition: "none !important",
                     fill: "currentColor",

@@ -1,4 +1,5 @@
 import { createExpenseDedupKey } from "./expenseDedup.js";
+import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 
 function toNumber(value) {
   const parsed = Number(value);
@@ -98,10 +99,7 @@ export function normalizeScrapedTransactions(scraped = []) {
       installmentNumber: installments.number,
       installmentTotal: installments.total,
       isInstallmentCharged,
-      category:
-        typeof t.category === "string" && t.category.trim()
-          ? t.category.trim()
-          : "Imported",
+      category: normalizeExpenseCategory(t.category, "Imported"),
       tags: [],
       dedupKey: createExpenseDedupKey({
         date: t.date,

@@ -4,6 +4,7 @@ import {
   buildHouseholdConnectionVisibilityMap,
   resolveExpenseVisibilityForConnection,
 } from "./expenseVisibility.js";
+import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 
 const ENTRY_TYPE_SINGLE = "single";
 const ENTRY_TYPE_STANDING = "standing";
@@ -134,7 +135,7 @@ export async function createManualExpensesForUser(user, payload = {}) {
     throw toValidationError("description is required");
   }
 
-  const category = normalizeText(payload?.category) || "Uncategorized";
+  const category = normalizeExpenseCategory(payload?.category, "Uncategorized");
   const amount = parsePositiveAmount(payload?.amount);
   if (!amount) {
     throw toValidationError("amount must be a positive number");
@@ -335,7 +336,10 @@ export async function updateManualExpenseForUser(user, expenseId, payload = {}) 
   }
 
   if (Object.hasOwn(payload, "category")) {
-    const nextCategory = normalizeText(payload?.category) || "Uncategorized";
+    const nextCategory = normalizeExpenseCategory(
+      payload?.category,
+      "Uncategorized",
+    );
     if (nextCategory !== expense.category) {
       expense.category = nextCategory;
       hasChanges = true;
