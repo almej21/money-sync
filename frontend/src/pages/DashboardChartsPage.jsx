@@ -942,7 +942,7 @@ export default function DashboardChartsPage() {
           <Stack direction="row" alignItems="center" spacing={1}>
             <BarChartRoundedIcon fontSize="small" />
             <Typography variant="subtitle1" dir={direction}>
-              {t("dashboardCharts")}: {displayedDateRange}
+              {t("summaryDates")}: {displayedDateRange}
             </Typography>
           </Stack>
         </Box>

@@ -1,5 +1,14 @@
-import { Button, MenuItem, Stack, TextField } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
+import {
+  Box,
+  Button,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Stack,
+  TextField,
+} from "@mui/material";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../../context/LanguageContext";
 import { createManualExpense } from "../../services/expenseService";
 import Dropdown from "../Dropdown";
@@ -17,14 +26,118 @@ function formatDateInput(value) {
   return String(value || "").trim();
 }
 
-function formatDateDisplay(value) {
+function normalizeDateToIso(value) {
   const raw = String(value || "").trim();
-  if (!raw) return "";
-  const parts = raw.split("-");
-  if (parts.length !== 3) return "";
-  const [year, month, day] = parts;
-  if (!year || !month || !day) return "";
-  return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
+  if (!raw) return null;
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    const parsed = new Date(year, month - 1, day);
+    if (
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day
+    ) {
+      return raw;
+    }
+    return null;
+  }
+
+  const displayMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!displayMatch) return null;
+
+  const day = Number(displayMatch[1]);
+  const month = Number(displayMatch[2]);
+  const year = Number(displayMatch[3]);
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+    return null;
+  }
+
+  const parsed = new Date(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function formatIsoToDisplay(value) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function DateInputWithPicker({
+  label,
+  value,
+  onChange,
+  inputLabelSx,
+}) {
+  const pickerRef = useRef(null);
+  const pickerIsoValue = normalizeDateToIso(value) || "";
+
+  function openPicker() {
+    const input = pickerRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+    input.focus();
+    input.click();
+  }
+
+  return (
+    <Box sx={{ position: "relative" }}>
+      <TextField
+        fullWidth
+        label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="dd/MM/yyyy"
+        inputProps={{ inputMode: "numeric", pattern: "\\d{2}/\\d{2}/\\d{4}" }}
+        InputLabelProps={{ shrink: true, sx: inputLabelSx }}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                size="small"
+                onClick={openPicker}
+                aria-label="Open date picker"
+              >
+                <CalendarTodayOutlinedIcon fontSize="small" />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+      <input
+        ref={pickerRef}
+        type="date"
+        value={pickerIsoValue}
+        onChange={(event) => {
+          const displayValue = formatIsoToDisplay(event.target.value);
+          onChange(displayValue);
+        }}
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          width: 0,
+          height: 0,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+      />
+    </Box>
+  );
 }
 
 export default function ManualExpenseModal({
@@ -82,6 +195,18 @@ export default function ManualExpenseModal({
   async function onSubmit() {
     setSaving(true);
     try {
+      const singleDateIso =
+        entryType === "single" ? normalizeDateToIso(date) : null;
+      const standingStartDateIso =
+        entryType !== "single" ? normalizeDateToIso(standingStartDate) : null;
+
+      if (entryType === "single" && !singleDateIso) {
+        throw new Error("Date must be in dd/MM/yyyy format");
+      }
+      if (entryType !== "single" && !standingStartDateIso) {
+        throw new Error("Starting date must be in dd/MM/yyyy format");
+      }
+
       const payload =
         entryType === "single"
           ? {
@@ -91,7 +216,7 @@ export default function ManualExpenseModal({
               description,
               category,
               amount: singleAmount,
-              date: formatDateInput(date),
+              date: formatDateInput(singleDateIso),
             }
           : {
               entryType,
@@ -101,7 +226,7 @@ export default function ManualExpenseModal({
               category,
               amount: standingAmount,
               amountMode: standingAmountMode,
-              startDate: formatDateInput(standingStartDate),
+              startDate: formatDateInput(standingStartDateIso),
               numberOfPayments: entryType === "payments" ? standingPayments : 1,
             };
       await createManualExpense(payload);
@@ -168,23 +293,12 @@ export default function ManualExpenseModal({
                 </MenuItem>
               ))}
             </Dropdown>
-            <TextField
-              fullWidth
-              type="date"
-              label={t("manualExpenseDate")}
+            <DateInputWithPicker
+              label={`${t("manualExpenseDate")} (dd/MM/yyyy)`}
               value={date}
-              onChange={(event) => setDate(event.target.value)}
-              InputLabelProps={{ shrink: true, sx: labelSx }}
+              onChange={setDate}
+              inputLabelSx={labelSx}
             />
-            {date && (
-              <TextField
-                fullWidth
-                value={formatDateDisplay(date)}
-                label={`${t("manualExpenseDate")} (dd/MM/yyyy)`}
-                InputProps={{ readOnly: true }}
-                InputLabelProps={{ shrink: true, sx: labelSx }}
-              />
-            )}
           </>
         ) : (
           <>
@@ -245,13 +359,7 @@ export default function ManualExpenseModal({
                 alignItems: "start",
               }}
             >
-              <TextField
-                fullWidth
-                type="date"
-                label={t("manualStandingOrderStartDate")}
-                value={standingStartDate}
-                onChange={(event) => setStandingStartDate(event.target.value)}
-                InputLabelProps={{ shrink: true, sx: labelSx }}
+              <Box
                 sx={{
                   minWidth: 0,
                   "& .MuiInputLabel-root": {
@@ -260,17 +368,14 @@ export default function ManualExpenseModal({
                     transformOrigin: isRtl ? "top right" : "top left",
                   },
                 }}
-              />
-              {standingStartDate && (
-                <TextField
-                  fullWidth
-                  value={formatDateDisplay(standingStartDate)}
+              >
+                <DateInputWithPicker
                   label={`${t("manualStandingOrderStartDate")} (dd/MM/yyyy)`}
-                  InputProps={{ readOnly: true }}
-                  InputLabelProps={{ shrink: true, sx: labelSx }}
-                  sx={{ minWidth: 0 }}
+                  value={standingStartDate}
+                  onChange={setStandingStartDate}
+                  inputLabelSx={labelSx}
                 />
-              )}
+              </Box>
               {entryType === "payments" && (
                 <TextField
                   fullWidth

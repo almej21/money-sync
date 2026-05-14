@@ -16,6 +16,7 @@ import {
   CircularProgress,
   Collapse,
   IconButton,
+  MenuItem,
   ListItem,
   Stack,
   TextField,
@@ -118,6 +119,7 @@ function getCategoryIcon(category) {
 
 function ExpenseItem({
   exp,
+  categoryOptions = [],
   showSourceAccountIdAfterCategory = false,
   isExpanded,
   onToggleExpanded,
@@ -139,6 +141,17 @@ function ExpenseItem({
     setDraftDescription(exp.description || "");
     setDraftCategory(exp.category || "");
   }, [exp.category, exp.description, exp._id]);
+
+  const editCategoryOptions = Array.from(
+    new Set(
+      (Array.isArray(categoryOptions) ? categoryOptions : [])
+        .map((value) => String(value || "").trim())
+        .filter(Boolean),
+    ),
+  );
+  const hasDraftCategoryOption = editCategoryOptions.includes(
+    String(draftCategory || "").trim(),
+  );
 
   const CategoryIcon = getCategoryIcon(exp.category);
   const amountValue = Number(exp.amount || 0);
@@ -350,6 +363,7 @@ function ExpenseItem({
                     }}
                   />
                   <TextField
+                    select
                     variant="outlined"
                     size="small"
                     fullWidth
@@ -365,7 +379,18 @@ function ExpenseItem({
                         paddingBottom: 1,
                       },
                     }}
-                  />
+                  >
+                    {hasDraftCategoryOption ? null : (
+                      <MenuItem value={draftCategory}>
+                        {draftCategory || "Uncategorized"}
+                      </MenuItem>
+                    )}
+                    {editCategoryOptions.map((optionValue) => (
+                      <MenuItem key={optionValue} value={optionValue}>
+                        {optionValue}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                 </Stack>
               ) : (
                 <>

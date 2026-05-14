@@ -44,6 +44,29 @@ function addMonths(date, monthsToAdd) {
   return d;
 }
 
+function buildMonthlyOccurrencesThroughCurrentMonth(firstDate, now = new Date()) {
+  const start = normalizeDateOnly(firstDate);
+  const current = normalizeDateOnly(now);
+  const startMonthIndex = start.getFullYear() * 12 + start.getMonth();
+  const currentMonthIndex = current.getFullYear() * 12 + current.getMonth();
+
+  if (startMonthIndex > currentMonthIndex) {
+    return [start];
+  }
+
+  const totalMonths = currentMonthIndex - startMonthIndex;
+  const startDay = start.getDate();
+
+  return Array.from({ length: totalMonths + 1 }, (_, index) => {
+    const monthIndex = startMonthIndex + index;
+    const year = Math.floor(monthIndex / 12);
+    const month = monthIndex % 12;
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    const day = Math.min(startDay, lastDayOfMonth);
+    return new Date(year, month, day);
+  });
+}
+
 function normalizeEntryType(value) {
   const normalized = normalizeText(value).toLowerCase();
   return ALLOWED_ENTRY_TYPES.has(normalized) ? normalized : "";
@@ -218,26 +241,32 @@ export async function createManualExpensesForUser(user, payload = {}) {
   }
 
   if (entryType === ENTRY_TYPE_STANDING) {
-    const status = getEntryStatus(entryDate);
-    const created = await Expense.create({
-      ...base,
-      date: entryDate,
-      amount,
-      status,
-      sourceTransactionType: "standing_order",
-      processedDate: status === "posted" ? entryDate : null,
-      installmentNumber: null,
-      installmentTotal: null,
-      isInstallmentCharged: null,
-      notes: [base.notes, `standingAmountMode=${amountMode}`]
-        .filter(Boolean)
-        .join(" | "),
+    const standingDates = buildMonthlyOccurrencesThroughCurrentMonth(entryDate);
+    const standingNotes = [base.notes, `standingAmountMode=${amountMode}`]
+      .filter(Boolean)
+      .join(" | ");
+
+    const docs = standingDates.map((standingDate) => {
+      const status = getEntryStatus(standingDate);
+      return {
+        ...base,
+        date: standingDate,
+        amount,
+        status,
+        sourceTransactionType: "standing_order",
+        processedDate: status === "posted" ? standingDate : null,
+        installmentNumber: null,
+        installmentTotal: null,
+        isInstallmentCharged: null,
+        notes: standingNotes,
+      };
     });
+    const createdExpenses = await Expense.insertMany(docs, { ordered: true });
 
     return {
       entryType,
-      createdCount: 1,
-      expenses: [created],
+      createdCount: createdExpenses.length,
+      expenses: createdExpenses,
     };
   }
 

@@ -1352,6 +1352,7 @@ export default function DashboardPage() {
                   <ExpenseItem
                     key={exp._id}
                     exp={exp}
+                    categoryOptions={categoryOptions}
                     showSourceAccountIdAfterCategory={
                       hasMultipleSelectedAccounts
                     }

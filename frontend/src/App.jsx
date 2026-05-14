@@ -27,7 +27,7 @@ import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
 import DashboardChartsPage from "./pages/DashboardChartsPage";
 import DashboardPage from "./pages/DashboardPage";
-import DashboardDonutsPage from "./pages/DashboardDonutsPage";
+import DashboardPieChartPage from "./pages/DashboardPieChartPage";
 import LoginPage from "./pages/LoginPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
 
@@ -110,7 +110,7 @@ function ProtectedRoutes() {
             <Route path="/dashboard/charts" element={<DashboardChartsPage />} />
             <Route
               path="/dashboard/targets"
-              element={<DashboardDonutsPage />}
+              element={<DashboardPieChartPage />}
             />
           </Route>
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
@@ -129,6 +129,11 @@ function AppContent() {
   const theme = useMemo(
     () =>
       createTheme({
+        zIndex: {
+          modal: 1300,
+          snackbar: 100000,
+          tooltip: 100100,
+        },
         palette: {
           primary: themeColors.primary,
           secondary: themeColors.secondary,

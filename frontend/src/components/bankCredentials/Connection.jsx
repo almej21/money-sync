@@ -59,6 +59,7 @@ function AccountSettingsRow({
   theme,
 }) {
   const [isManualExpensesOpen, setIsManualExpensesOpen] = useState(false);
+  const [expandedStandingGroups, setExpandedStandingGroups] = useState({});
   const sourceAccountId = String(account?.sourceAccountId || "").trim();
   const requestKey = `${connectionId}:${sourceAccountId}`;
   const accountVisibility =
@@ -74,6 +75,53 @@ function AccountSettingsRow({
     : [];
   const manualExpenseDisplayItems = manualExpensesForAccount.reduce(
     (acc, expense) => {
+      if (expense?.sourceTransactionType === "standing_order") {
+        const groupKey = [
+          String(expense?.description || "").trim(),
+          String(expense?.category || "").trim(),
+          String(expense?.sourceAccountId || "").trim(),
+          String(expense?.currency || "").trim(),
+          String(expense?.amount || "").trim(),
+          String(expense?.notes || "").trim(),
+        ].join("|");
+
+        const existing = acc.find((item) => item?._groupKey === groupKey);
+        if (!existing) {
+          acc.push({
+            ...expense,
+            _isGroupedStanding: true,
+            _groupKey: groupKey,
+            _groupCount: 1,
+            _groupFirstDate: expense?.date || null,
+            _groupLastDate: expense?.date || null,
+            _groupAmountEach: Number(expense?.amount || 0),
+            _standingOccurrences: [expense],
+          });
+          return acc;
+        }
+
+        existing._groupCount += 1;
+        existing._standingOccurrences.push(expense);
+        const existingFirstDateValue = new Date(existing?._groupFirstDate || 0);
+        const existingLastDateValue = new Date(existing?._groupLastDate || 0);
+        const currentDateValue = new Date(expense?.date || 0);
+        if (
+          !Number.isNaN(currentDateValue.getTime()) &&
+          (Number.isNaN(existingFirstDateValue.getTime()) ||
+            currentDateValue < existingFirstDateValue)
+        ) {
+          existing._groupFirstDate = expense?.date || existing._groupFirstDate;
+        }
+        if (
+          !Number.isNaN(currentDateValue.getTime()) &&
+          (Number.isNaN(existingLastDateValue.getTime()) ||
+            currentDateValue > existingLastDateValue)
+        ) {
+          existing._groupLastDate = expense?.date || existing._groupLastDate;
+        }
+        return acc;
+      }
+
       if (expense?.sourceTransactionType !== "installments") {
         acc.push({ ...expense, _isGroupedPayments: false });
         return acc;
@@ -136,6 +184,7 @@ function AccountSettingsRow({
   }
 
   function getManualExpenseTypeLabel(expense) {
+    if (expense?._isGroupedStanding) return t("manualExpenseStandingOrder");
     if (expense?._isGroupedPayments) return t("manualExpensePayments");
     const sourceType = String(expense?.sourceTransactionType || "").trim();
     if (sourceType === "standing_order") return t("manualExpenseStandingOrder");
@@ -378,15 +427,29 @@ function AccountSettingsRow({
                   const manualExpenseId = String(expense?._id || "");
                   const isDeleting =
                     deletingManualExpenseId === manualExpenseId;
+                  const isGroupedStanding = Boolean(
+                    expense?._isGroupedStanding,
+                  );
                   const isGroupedPayments = Boolean(
                     expense?._isGroupedPayments,
                   );
+                  const standingGroupKey = String(expense?._groupKey || "");
+                  const isStandingGroupExpanded =
+                    expandedStandingGroups?.[standingGroupKey] !== false;
+                  const standingOccurrences = isGroupedStanding
+                    ? [...(expense?._standingOccurrences || [])].sort(
+                        (a, b) => new Date(b?.date || 0) - new Date(a?.date || 0),
+                      )
+                    : [];
                   const typeLabel = getManualExpenseTypeLabel(expense);
                   const isStandingOrder =
+                    isGroupedStanding ||
                     String(expense?.sourceTransactionType || "").trim() ===
-                    "standing_order";
+                      "standing_order";
                   const displayedAmount = isGroupedPayments
                     ? Number(expense?._groupAmountTotal || 0)
+                    : isGroupedStanding
+                      ? Number(expense?._groupAmountEach || expense?.amount || 0)
                     : Number(expense?.amount || 0);
                   const paymentsCount = Number(expense?._groupCount || 0);
                   const perPaymentAmount = Number(
@@ -409,8 +472,8 @@ function AccountSettingsRow({
                         border: `2px solid ${theme.palette.primary.main}`,
                         px: 2,
                         pt: 0.5,
-                        pb: 6,
-                        minHeight: 122,
+                        pb: isGroupedStanding ? 1.5 : 6,
+                        minHeight: isGroupedStanding ? 0 : 122,
                         backgroundColor: "rgba(255,255,255,0.3)",
                       }}
                     >
@@ -441,6 +504,8 @@ function AccountSettingsRow({
                       >
                         {isGroupedPayments
                           ? `${paymentsCount} ${t("manualExpensePayments")}`
+                          : isGroupedStanding
+                            ? `${paymentsCount} • ${t("manualExpenseStandingOrder")}`
                           : isStandingOrder
                             ? ""
                             : formatManualDate(expense?.date)}
@@ -467,7 +532,7 @@ function AccountSettingsRow({
                           }}
                         >
                           {`${t("manualExpenseFirstPayment")}: ${formatManualDate(
-                            expense?.date,
+                            isGroupedStanding ? expense?._groupFirstDate : expense?.date,
                           )}`}
                         </Typography>
                       )}
@@ -500,6 +565,21 @@ function AccountSettingsRow({
                             "{day}",
                             chargeDay,
                           )}
+                        </Typography>
+                      )}
+                      {isGroupedStanding && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: theme.palette.text.contrastText,
+                            opacity: 0.9,
+                            display: "block",
+                            mt: 0.05,
+                          }}
+                        >
+                          {`${t("manualExpenseLastPayment")}: ${formatManualDate(
+                            expense?._groupLastDate,
+                          )}`}
                         </Typography>
                       )}
                       {isGroupedPayments && (
@@ -548,6 +628,142 @@ function AccountSettingsRow({
                           ? `${t("manualExpenseTotal")}: ${formatIlsAmount(displayedAmount)}`
                           : formatIlsAmount(displayedAmount)}
                       </Typography>
+                      {isGroupedStanding && (
+                        <Stack sx={{ mt: 0.8, pt: 0.5 }}>
+                          <Button
+                            type="button"
+                            variant="text"
+                            onClick={() =>
+                              setExpandedStandingGroups((prev) => ({
+                                ...prev,
+                                [standingGroupKey]: !(
+                                  prev?.[standingGroupKey] !== false
+                                ),
+                              }))
+                            }
+                            sx={{
+                              p: 0,
+                              minWidth: 0,
+                              textTransform: "none",
+                              color: theme.palette.text.contrastText,
+                              fontWeight: 700,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: theme.palette.text.contrastText,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {t("manualExpensePayments")}
+                            </Typography>
+                            {isStandingGroupExpanded ? (
+                              <ExpandLessIcon fontSize="small" />
+                            ) : (
+                              <ExpandMoreIcon fontSize="small" />
+                            )}
+                          </Button>
+                          <Collapse in={isStandingGroupExpanded}>
+                            <Stack spacing={0.45} sx={{ mt: 0.4 }}>
+                              {standingOccurrences.map((occurrence) => {
+                                const occurrenceId = String(
+                                  occurrence?._id || "",
+                                );
+                                const isDeletingOccurrence =
+                                  deletingManualExpenseId === occurrenceId;
+                                return (
+                                  <Stack
+                                    key={occurrenceId}
+                                    direction="row"
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    sx={{
+                                      borderRadius: 0.7,
+                                      px: 0.8,
+                                      py: 0.35,
+                                      backgroundColor: "rgba(255,255,255,0.35)",
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="caption"
+                                      sx={{ color: theme.palette.text.contrastText }}
+                                    >
+                                      {`${formatManualDate(occurrence?.date)} • ${formatIlsAmount(occurrence?.amount)}`}
+                                    </Typography>
+                                    <Stack direction="row" spacing={0.4}>
+                                      <Button
+                                        type="button"
+                                        variant="outlined"
+                                        size="small"
+                                        aria-label={t("edit")}
+                                        onClick={() => onEditManualExpense(occurrence)}
+                                        disabled={
+                                          saving ||
+                                          loading ||
+                                          !canManageBankConnections
+                                        }
+                                        sx={{
+                                          minWidth: 0,
+                                          width: 24,
+                                          height: 24,
+                                          p: 0,
+                                          borderRadius: 0.6,
+                                          borderColor: theme.palette.primary.main,
+                                          border: "2px solid",
+                                          color: theme.palette.primary.main,
+                                        }}
+                                      >
+                                        <EditOutlinedIcon sx={{ fontSize: 14 }} />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outlined"
+                                        color="error"
+                                        size="small"
+                                        aria-label={t("manualExpenseDelete")}
+                                        onClick={() =>
+                                          onDeleteManualExpense(occurrence)
+                                        }
+                                        disabled={
+                                          saving ||
+                                          loading ||
+                                          !canManageBankConnections ||
+                                          isDeletingOccurrence
+                                        }
+                                        sx={{
+                                          minWidth: 0,
+                                          width: 24,
+                                          height: 24,
+                                          p: 0,
+                                          borderRadius: 0.6,
+                                          borderColor: "error.main",
+                                          border: "2px solid",
+                                          color: "error.main",
+                                        }}
+                                      >
+                                        {isDeletingOccurrence ? (
+                                          <CircularProgress
+                                            size={12}
+                                            color="inherit"
+                                          />
+                                        ) : (
+                                          <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                                        )}
+                                      </Button>
+                                    </Stack>
+                                  </Stack>
+                                );
+                              })}
+                            </Stack>
+                          </Collapse>
+                        </Stack>
+                      )}
+                      {!isGroupedStanding && (
                       <Stack
                         direction="row"
                         spacing={0}
@@ -622,6 +838,7 @@ function AccountSettingsRow({
                           )}
                         </Button>
                       </Stack>
+                      )}
                     </Box>
                   );
                 })}

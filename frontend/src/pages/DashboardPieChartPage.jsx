@@ -1,9 +1,14 @@
 import DonutLargeRoundedIcon from "@mui/icons-material/DonutLargeRounded";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Box,
+  Button,
   Card,
   CardContent,
+  Collapse,
   CircularProgress,
+  List,
   Stack,
   Typography,
   useMediaQuery,
@@ -12,6 +17,7 @@ import {
 import { ArcElement, Chart, Legend, PieController, Tooltip } from "chart.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardFilters from "../components/DashboardFilters";
+import MinimalExpenseItem from "../components/MinimalExpenseItem";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -166,7 +172,7 @@ const alwaysVisiblePieLabelsPlugin = {
   },
 };
 
-export default function DashboardDonutsPage() {
+export default function DashboardPieChartPage() {
   const { t, locale, direction } = useLanguage();
   const { user } = useAuth();
   const theme = useTheme();
@@ -180,6 +186,7 @@ export default function DashboardDonutsPage() {
   const [expenses, setExpenses] = useState([]);
   const [bankConnections, setBankConnections] = useState([]);
   const [providerLabels, setProviderLabels] = useState({});
+  const [expandedLegendCategories, setExpandedLegendCategories] = useState({});
   const { filters, setFilters } = useDashboardFilters();
   const {
     selectedCategories,
@@ -204,7 +211,9 @@ export default function DashboardDonutsPage() {
       setFilters((prev) => ({
         ...prev,
         selectedConnectionIds:
-          typeof value === "function" ? value(prev.selectedConnectionIds) : value,
+          typeof value === "function"
+            ? value(prev.selectedConnectionIds)
+            : value,
       })),
     [setFilters],
   );
@@ -249,7 +258,8 @@ export default function DashboardDonutsPage() {
         const [, yearPart, monthPart] = selectedRange.split("_");
         const year = Number(yearPart);
         const monthIndex = Number(monthPart) - 1;
-        if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) return false;
+        if (!Number.isFinite(year) || !Number.isFinite(monthIndex))
+          return false;
         const { start, end } = getMonthRange(year, monthIndex);
         return expenseDate >= start && expenseDate <= end;
       }
@@ -415,6 +425,7 @@ export default function DashboardDonutsPage() {
     shouldShowAccountFilter &&
     selectedConnectionIds.length > 0 &&
     selectedConnectionIds.length < accountFilterOptions.length;
+  const hasMultipleSelectedAccounts = selectedConnectionIds.length > 1;
 
   const dropdownFiltersSignature = useMemo(() => {
     const accountSignature = shouldApplyAccountFilter
@@ -483,7 +494,12 @@ export default function DashboardDonutsPage() {
     }
     previousDropdownFiltersSignatureRef.current = dropdownFiltersSignature;
     setSelectedAmountRange([minExpenseAmount, maxExpenseAmount]);
-  }, [dropdownFiltersSignature, maxExpenseAmount, minExpenseAmount, setSelectedAmountRange]);
+  }, [
+    dropdownFiltersSignature,
+    maxExpenseAmount,
+    minExpenseAmount,
+    setSelectedAmountRange,
+  ]);
 
   useEffect(() => {
     const safeMin = Math.max(0, Number(minExpenseAmount || 0));
@@ -522,13 +538,19 @@ export default function DashboardDonutsPage() {
       const retained = prevSelected.filter((id) => allAccountIds.includes(id));
       return retained.length ? retained : allAccountIds;
     });
-  }, [accountFilterOptions, setSelectedConnectionIds, user?.defaultSelectedBankConnectionIds]);
+  }, [
+    accountFilterOptions,
+    setSelectedConnectionIds,
+    user?.defaultSelectedBankConnectionIds,
+  ]);
 
   const displayedExpenses = useMemo(
     () =>
       expensesMatchingBaseFilters.filter((exp) => {
         const amount = Math.abs(Number(exp.amount || 0));
-        return amount >= selectedAmountRange[0] && amount <= selectedAmountRange[1];
+        return (
+          amount >= selectedAmountRange[0] && amount <= selectedAmountRange[1]
+        );
       }),
     [expensesMatchingBaseFilters, selectedAmountRange],
   );
@@ -579,7 +601,10 @@ export default function DashboardDonutsPage() {
       const amount = Math.abs(Number(expense?.amount || 0));
       if (!Number.isFinite(amount) || amount <= 0) return;
       const category = String(expense?.category || "").trim() || "-";
-      totalsByCategory.set(category, (totalsByCategory.get(category) || 0) + amount);
+      totalsByCategory.set(
+        category,
+        (totalsByCategory.get(category) || 0) + amount,
+      );
     });
 
     return Array.from(totalsByCategory.entries())
@@ -598,6 +623,33 @@ export default function DashboardDonutsPage() {
       percentage: (item.value / total) * 100,
     }));
   }, [pieSeries]);
+  const expensesByCategory = useMemo(() => {
+    const grouped = new Map();
+    displayedExpenses.forEach((expense) => {
+      const category = String(expense?.category || "").trim() || "-";
+      if (!grouped.has(category)) grouped.set(category, []);
+      grouped.get(category).push(expense);
+    });
+
+    for (const [category, items] of grouped.entries()) {
+      grouped.set(
+        category,
+        [...items].sort(
+          (a, b) => new Date(b?.date || 0).getTime() - new Date(a?.date || 0).getTime(),
+        ),
+      );
+    }
+
+    return grouped;
+  }, [displayedExpenses]);
+  const legendItems = useMemo(
+    () =>
+      pieDetails.map((item) => ({
+        ...item,
+        expenses: expensesByCategory.get(item.label) || [],
+      })),
+    [expensesByCategory, pieDetails],
+  );
   const chartCurrency = displayedExpenses[0]?.currency || "₪";
 
   useEffect(() => {
@@ -630,7 +682,7 @@ export default function DashboardDonutsPage() {
         maintainAspectRatio: true,
         plugins: {
           legend: {
-            display: !isMobile,
+            display: false,
             position: "bottom",
           },
           alwaysVisiblePieLabels: {
@@ -705,6 +757,15 @@ export default function DashboardDonutsPage() {
     [allCategoriesSelected, returnsLabel, t],
   );
 
+  function toggleLegendCategory(categoryLabel) {
+    const categoryKey = String(categoryLabel || "").trim();
+    if (!categoryKey) return;
+    setExpandedLegendCategories((prev) => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey],
+    }));
+  }
+
   return (
     <Card sx={{ border: "none !important", borderRadius: "16px" }}>
       <CardContent sx={{ px: { xs: 1, sm: 3 }, py: { xs: 2.5, sm: 3 } }}>
@@ -756,7 +817,7 @@ export default function DashboardDonutsPage() {
           <Stack direction="row" alignItems="center" spacing={1}>
             <DonutLargeRoundedIcon fontSize="small" />
             <Typography variant="subtitle1" dir={direction}>
-              {t("dashboardTargets")}: {displayedDateRange}
+              {t("summaryDates")}: {displayedDateRange}
             </Typography>
           </Stack>
         </Box>
@@ -776,46 +837,82 @@ export default function DashboardDonutsPage() {
                 <canvas ref={chartCanvasRef} />
               </Box>
             </Box>
-            {isMobile && (
-              <Box sx={{ mt: 1.5 }}>
-                {pieDetails.map((item) => (
+            <Box sx={{ mt: 1.5 }}>
+                {legendItems.map((item) => {
+                  const categoryKey = String(item?.label || "").trim();
+                  const categoryExpenses = Array.isArray(item?.expenses)
+                    ? item.expenses
+                    : [];
+                  const isExpanded = Boolean(expandedLegendCategories[categoryKey]);
+                  return (
                   <Stack
                     key={item.label}
-                    direction="row"
-                    alignItems="center"
-                    spacing={1}
-                    sx={{ py: 0.5 }}
+                    spacing={0.7}
+                    sx={{
+                      py: 0.5,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    }}
                   >
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        flex: "0 0 auto",
-                        bgcolor: item.color,
-                      }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}
-                      dir={direction}
-                    >
-                      {item.label}
-                    </Typography>
-                    <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-                      {item.percentage.toFixed(1)}%
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ whiteSpace: "nowrap", fontWeight: 700 }}
-                    >
-                      {chartCurrency}
-                      {Math.round(item.value)}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Box
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          flex: "0 0 auto",
+                          bgcolor: item.color,
+                        }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}
+                        dir={direction}
+                      >
+                        {item.label}
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                        {item.percentage.toFixed(1)}%
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: "nowrap", fontWeight: 700 }}
+                      >
+                        {chartCurrency}
+                        {Math.round(item.value)}
+                      </Typography>
+                    </Stack>
+                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => toggleLegendCategory(categoryKey)}
+                        endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      >
+                        {isExpanded ? t("hideDetails") : t("showDetails")}
+                      </Button>
+                    </Box>
+                    <Collapse in={isExpanded}>
+                      <List disablePadding>
+                        {categoryExpenses.map((expense) => {
+                          return (
+                            <MinimalExpenseItem
+                              key={`${categoryKey}:${String(expense?._id || "")}`}
+                              exp={expense}
+                              showSourceAccountIdAfterCategory={
+                                hasMultipleSelectedAccounts
+                              }
+                              direction={direction}
+                              t={t}
+                            />
+                          );
+                        })}
+                      </List>
+                    </Collapse>
                   </Stack>
-                ))}
-              </Box>
-            )}
+                  );
+                })}
+            </Box>
           </>
         )}
       </CardContent>
