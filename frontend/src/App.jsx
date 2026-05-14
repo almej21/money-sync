@@ -20,13 +20,14 @@ import {
 import DashboardBottomNav from "./components/DashboardBottomNav";
 import NavBar from "./components/NavBar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { DashboardFiltersProvider } from "./context/DashboardFiltersContext";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import { AppThemeProvider, useAppTheme } from "./context/ThemeContext";
 import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
 import DashboardChartsPage from "./pages/DashboardChartsPage";
 import DashboardPage from "./pages/DashboardPage";
-import DashboardTargetsPage from "./pages/DashboardTargetsPage";
+import DashboardDonutsPage from "./pages/DashboardDonutsPage";
 import LoginPage from "./pages/LoginPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
 
@@ -109,7 +110,7 @@ function ProtectedRoutes() {
             <Route path="/dashboard/charts" element={<DashboardChartsPage />} />
             <Route
               path="/dashboard/targets"
-              element={<DashboardTargetsPage />}
+              element={<DashboardDonutsPage />}
             />
           </Route>
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
@@ -276,20 +277,22 @@ function AppContent() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <BrowserRouter>
-          <Box
-            sx={{
-              minHeight: "100vh",
-              bgcolor: "background.default",
-              width: "100%",
-              overflowX: "hidden",
-            }}
-            dir={direction}
-          >
-            <ProtectedRoutes />
-            {debugScreenSizeEnabled && <ScreenSizeDebugBadge />}
-          </Box>
-        </BrowserRouter>
+        <DashboardFiltersProvider>
+          <BrowserRouter>
+            <Box
+              sx={{
+                minHeight: "100vh",
+                bgcolor: "background.default",
+                width: "100%",
+                overflowX: "hidden",
+              }}
+              dir={direction}
+            >
+              <ProtectedRoutes />
+              {debugScreenSizeEnabled && <ScreenSizeDebugBadge />}
+            </Box>
+          </BrowserRouter>
+        </DashboardFiltersProvider>
       </AuthProvider>
     </ThemeProvider>
   );

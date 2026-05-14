@@ -20,6 +20,7 @@ import AppSnackbar from "../components/AppSnackbar";
 import DashboardFilters from "../components/DashboardFilters";
 import ExpenseItem from "../components/ExpenseItem";
 import { useAuth } from "../context/AuthContext";
+import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useExpenseBackgroundRefresh } from "../hooks/useExpenseBackgroundRefresh";
 import {
@@ -241,17 +242,10 @@ export default function DashboardPage() {
   const [isSyncingExpenses, setIsSyncingExpenses] = useState(false);
   const [lastExpensesFetchAtMs, setLastExpensesFetchAtMs] = useState(0);
   const [expandedIds, setExpandedIds] = useState({});
-  const [selectedCategories, setSelectedCategories] = useState([]);
   const [bankConnections, setBankConnections] = useState([]);
   const [providerLabels, setProviderLabels] = useState({});
-  const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
   const didInitializeAccountFilterSelectionRef = useRef(false);
   const previousDropdownFiltersSignatureRef = useRef("");
-  const [timeRange, setTimeRange] = useState("this_month");
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
-  const [sortBy, setSortBy] = useState("date_desc");
-  const [selectedAmountRange, setSelectedAmountRange] = useState([0, 0]);
   const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
   const [isTotalCalculating, setIsTotalCalculating] = useState(true);
   const isExpenseBootstrappedRef = useRef(false);
@@ -259,6 +253,64 @@ export default function DashboardPage() {
   const listContainerRef = useRef(null);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
   const { t, locale, direction } = useLanguage();
+  const { filters, setFilters } = useDashboardFilters();
+  const {
+    selectedCategories,
+    selectedConnectionIds,
+    timeRange,
+    customStartDate,
+    customEndDate,
+    sortBy,
+    selectedAmountRange,
+  } = filters;
+
+  const setSelectedCategories = useCallback(
+    (value) =>
+      setFilters((prev) => ({
+        ...prev,
+        selectedCategories:
+          typeof value === "function" ? value(prev.selectedCategories) : value,
+      })),
+    [setFilters],
+  );
+  const setSelectedConnectionIds = useCallback(
+    (value) =>
+      setFilters((prev) => ({
+        ...prev,
+        selectedConnectionIds:
+          typeof value === "function" ? value(prev.selectedConnectionIds) : value,
+      })),
+    [setFilters],
+  );
+  const setTimeRange = useCallback(
+    (value) => setFilters((prev) => ({ ...prev, timeRange: value })),
+    [setFilters],
+  );
+  const setCustomStartDate = useCallback(
+    (value) => setFilters((prev) => ({ ...prev, customStartDate: value })),
+    [setFilters],
+  );
+  const setCustomEndDate = useCallback(
+    (value) => setFilters((prev) => ({ ...prev, customEndDate: value })),
+    [setFilters],
+  );
+  const setSortBy = useCallback(
+    (value) =>
+      setFilters((prev) => ({
+        ...prev,
+        sortBy: typeof value === "function" ? value(prev.sortBy) : value,
+      })),
+    [setFilters],
+  );
+  const setSelectedAmountRange = useCallback(
+    (value) =>
+      setFilters((prev) => ({
+        ...prev,
+        selectedAmountRange:
+          typeof value === "function" ? value(prev.selectedAmountRange) : value,
+      })),
+    [setFilters],
+  );
   const cacheScope = useMemo(
     () => getCacheScopeFromUser(user),
     [user?.householdId, user?.id],

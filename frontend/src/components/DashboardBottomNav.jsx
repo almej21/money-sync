@@ -1,7 +1,7 @@
 import { keyframes } from "@emotion/react";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
-import TrackChangesRoundedIcon from "@mui/icons-material/TrackChangesRounded";
+import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
 import { alpha, Box, Button, useTheme } from "@mui/material";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -10,7 +10,7 @@ import { useLanguage } from "../context/LanguageContext";
 
 const toggleStretchEdgeA = keyframes`
   0% { transform: scaleX(1); }
-  50% { transform: scaleX(1.1); }
+  50% { transform: scaleX(1.1); }r
   100% { transform: scaleX(1); }
 `;
 const toggleStretchEdgeB = keyframes`
@@ -46,18 +46,21 @@ export default function DashboardBottomNav() {
         path: "/dashboard/charts",
         label: t("dashboardCharts"),
         icon: BarChartRoundedIcon,
+        iconOffsetX: 0.75,
       },
       {
         key: "dashboard-expenses",
         path: "/",
         label: t("dashboard"),
         icon: FormatListBulletedIcon,
+        iconOffsetX: 0,
       },
       {
         key: "dashboard-targets",
         path: "/dashboard/targets",
         label: t("dashboardTargets"),
-        icon: TrackChangesRoundedIcon,
+        icon: PieChartRoundedIcon,
+        iconOffsetX: -0.75,
       },
     ],
     [t],
@@ -100,7 +103,6 @@ export default function DashboardBottomNav() {
       : activeIndex > previousIndex
         ? "left center"
         : "right center";
-  const tabWidthPercent = 100 / dashboardBottomTabs.length;
 
   return (
     <>
@@ -152,8 +154,8 @@ export default function DashboardBottomNav() {
             pointerEvents: "none",
             position: "absolute",
             top: 4,
-            left: `calc(4px + (${activeIndex} * ${tabWidthPercent}%))`,
-            width: `calc(${tabWidthPercent}% - 8px)`,
+            left: `calc(6px + (${activeIndex} * ((100% - 12px) / 3)))`,
+            width: "calc((100% - 12px) / 3)",
             height: "calc(100% - 10px)",
             zIndex: 1,
             borderRadius: "22px",
@@ -164,6 +166,7 @@ export default function DashboardBottomNav() {
               inset -1px -1px 0 ${alpha(theme.palette.common.black, 0.12)},
               0 3px 6px ${alpha(theme.palette.common.black, 0.1)}
             `,
+            transform: "scaleX(1)",
             transformOrigin: toggleTransformOrigin,
             transition:
               "left 240ms cubic-bezier(1, 0, 0.4, 1), background-color 240ms cubic-bezier(1, 0, 0.4, 1), box-shadow 240ms cubic-bezier(1, 0, 0.4, 1)",
@@ -175,6 +178,7 @@ export default function DashboardBottomNav() {
         />
         {dashboardBottomTabs.map((tab) => {
           const Icon = tab.icon;
+          const iconOffsetX = Number(tab.iconOffsetX || 0);
           const isActive =
             tab.path === "/"
               ? location.pathname === "/"
@@ -192,8 +196,12 @@ export default function DashboardBottomNav() {
                 position: "relative",
                 zIndex: 2,
                 minWidth: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 alignSelf: "center",
                 height: "calc(100% - 10px)",
+                lineHeight: 0,
                 px: 0,
                 mx: "4px",
                 borderRadius: "22px",
@@ -222,7 +230,8 @@ export default function DashboardBottomNav() {
                 className="dashboard-bottom-nav-icon"
                 sx={{
                   fontSize: 24,
-                  transform: "scale(1)",
+                  display: "block",
+                  transform: `translateX(${iconOffsetX}px) scale(1)`,
                   transition: "transform 120ms cubic-bezier(0.5, 0, 0, 1)",
                   animation: isActive
                     ? `${iconPressPop} 156ms cubic-bezier(0.5, 0, 0, 1)`

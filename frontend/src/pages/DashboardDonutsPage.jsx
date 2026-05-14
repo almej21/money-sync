@@ -1,22 +1,15 @@
-import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
+import DonutLargeRoundedIcon from "@mui/icons-material/DonutLargeRounded";
 import {
   Box,
-  Button,
   Card,
   CardContent,
   CircularProgress,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import {
-  BarController,
-  BarElement,
-  CategoryScale,
-  Chart,
-  Legend,
-  LinearScale,
-  Tooltip,
-} from "chart.js";
+import { ArcElement, Chart, Legend, PieController, Tooltip } from "chart.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardFilters from "../components/DashboardFilters";
 import { useAuth } from "../context/AuthContext";
@@ -28,14 +21,7 @@ import {
 } from "../services/bankService";
 import { getExpenses } from "../services/expenseService";
 
-Chart.register(
-  BarController,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-);
+Chart.register(PieController, ArcElement, Tooltip, Legend);
 
 const CATEGORY_ALL_VALUE = "__all_categories__";
 const CATEGORY_RETURNS_VALUE = "__returns_only__";
@@ -114,209 +100,77 @@ function formatDisplayedRange(start, end) {
   return `${formatDate(startDate)}-${formatDate(endDate)}`;
 }
 
-function toLocalDateKey(dateValue) {
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return null;
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function getPieColor(index) {
+  const hue = (index * 67) % 360;
+  return `hsl(${hue}, 70%, 55%)`;
 }
 
-function makeBucketKey(date, grouping) {
-  const safeDate = new Date(date);
-  if (Number.isNaN(safeDate.getTime())) return null;
-
-  if (grouping === "weeks") {
-    const weekStart = new Date(safeDate);
-    const day = weekStart.getDay();
-    weekStart.setDate(weekStart.getDate() - day);
-    weekStart.setHours(0, 0, 0, 0);
-    const localKey = toLocalDateKey(weekStart);
-    return localKey ? `w_${localKey}` : null;
-  }
-
-  if (grouping === "months") {
-    const year = safeDate.getFullYear();
-    const month = String(safeDate.getMonth() + 1).padStart(2, "0");
-    return `m_${year}-${month}`;
-  }
-
-  const localKey = toLocalDateKey(safeDate);
-  return localKey ? `d_${localKey}` : null;
-}
-
-function formatBucketLabel(bucketKey, grouping, locale, rangeEndDate) {
-  if (!bucketKey) return "";
-  const raw = bucketKey.slice(2);
-
-  if (grouping === "weeks") {
-    const start = new Date(`${raw}T00:00:00`);
-    if (Number.isNaN(start.getTime())) return raw;
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    const safeRangeEnd = new Date(rangeEndDate || "");
-    if (!Number.isNaN(safeRangeEnd.getTime()) && safeRangeEnd < end) {
-      end.setTime(safeRangeEnd.getTime());
-    }
-    const formatter = new Intl.DateTimeFormat(locale, {
-      month: "short",
-      day: "numeric",
-    });
-    return `${formatter.format(start)} - ${formatter.format(end)}`;
-  }
-
-  if (grouping === "months") {
-    const [year, month] = raw.split("-");
-    const date = new Date(Number(year), Number(month) - 1, 1);
-    if (Number.isNaN(date.getTime())) return raw;
-    return new Intl.DateTimeFormat(locale, {
-      month: "short",
-      year: "numeric",
-    }).format(date);
-  }
-
-  const date = new Date(`${raw}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return raw;
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
-
-function getSelectedRangeBounds({
-  timeRange,
-  customStartDate,
-  customEndDate,
-  referenceExpenses,
-}) {
-  const now = new Date();
-
-  if (timeRange === "custom_range") {
-    if (!customStartDate || !customEndDate) return null;
-    const start = new Date(`${customStartDate}T00:00:00`);
-    const end = new Date(`${customEndDate}T23:59:59.999`);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-    return { start, end };
-  }
-
-  if (timeRange.startsWith("month_")) {
-    const [, yearPart, monthPart] = timeRange.split("_");
-    const year = Number(yearPart);
-    const monthIndex = Number(monthPart) - 1;
-    if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) return null;
-    return getMonthRange(year, monthIndex);
-  }
-
-  if (timeRange === "this_month") {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-    return { start, end };
-  }
-
-  if (timeRange === "all_time") {
-    const timestamps = (Array.isArray(referenceExpenses) ? referenceExpenses : [])
-      .map((expense) => new Date(expense?.date).getTime())
-      .filter((value) => Number.isFinite(value));
-    if (!timestamps.length) return null;
-    const minDate = new Date(Math.min(...timestamps));
-    const maxDate = new Date(Math.max(...timestamps));
-    minDate.setHours(0, 0, 0, 0);
-    maxDate.setHours(23, 59, 59, 999);
-    return { start: minDate, end: maxDate };
-  }
-
-  return null;
-}
-
-function getDayKeysBetween(start, end) {
-  if (!start || !end) return [];
-  const startMs = start.getTime();
-  const endMs = end.getTime();
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs > endMs) {
-    return [];
-  }
-
-  const cursor = new Date(start);
-  cursor.setHours(0, 0, 0, 0);
-  const endDay = new Date(end);
-  endDay.setHours(0, 0, 0, 0);
-
-  const keys = [];
-  while (cursor <= endDay) {
-    const localKey = toLocalDateKey(cursor);
-    if (localKey) keys.push(`d_${localKey}`);
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return keys;
-}
-
-function getWeekKeysBetween(start, end) {
-  if (!start || !end) return [];
-  const safeStart = new Date(start);
-  const safeEnd = new Date(end);
-  if (
-    Number.isNaN(safeStart.getTime()) ||
-    Number.isNaN(safeEnd.getTime()) ||
-    safeStart > safeEnd
-  ) {
-    return [];
-  }
-
-  const weekStart = new Date(safeStart);
-  const day = weekStart.getDay();
-  weekStart.setDate(weekStart.getDate() - day);
-  weekStart.setHours(0, 0, 0, 0);
-
-  const keys = [];
-  while (weekStart <= safeEnd) {
-    const localKey = toLocalDateKey(weekStart);
-    if (localKey) keys.push(`w_${localKey}`);
-    weekStart.setDate(weekStart.getDate() + 7);
-  }
-  return keys;
-}
-
-const alwaysVisibleLabelsPlugin = {
-  id: "alwaysVisibleLabels",
-  afterDatasetsDraw(chart) {
-    const {
-      ctx,
-      data,
-      chartArea: { top },
-    } = chart;
+const alwaysVisiblePieLabelsPlugin = {
+  id: "alwaysVisiblePieLabels",
+  afterDatasetsDraw(chart, _args, pluginOptions) {
+    if (!pluginOptions?.enabled) return;
+    const dataset = chart.data?.datasets?.[0];
+    const labels = chart.data?.labels || [];
     const meta = chart.getDatasetMeta(0);
-    const dataset = data.datasets?.[0];
-    if (!meta || !dataset) return;
+    if (!dataset || !meta?.data?.length) return;
 
+    const values = Array.isArray(dataset.data) ? dataset.data : [];
+    const total = values.reduce(
+      (sum, value) => sum + Math.max(0, Number(value || 0)),
+      0,
+    );
+    if (!total) return;
+
+    const ctx = chart.ctx;
     ctx.save();
-    ctx.fillStyle = "#1f2937";
     ctx.font = "600 11px Inter, Segoe UI, Roboto, sans-serif";
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
+    ctx.textBaseline = "middle";
 
-    meta.data.forEach((bar, index) => {
-      const value = Number(dataset.data[index] || 0);
-      if (value === 0) return;
-      const y = Math.max(bar.y - 6, top + 12);
-      ctx.fillText(`₪${Math.round(value)}`, bar.x, y);
+    meta.data.forEach((arc, index) => {
+      const rawValue = Number(values[index] || 0);
+      if (!Number.isFinite(rawValue) || rawValue <= 0) return;
+      const ratio = rawValue / total;
+      if (ratio < 0.025) return;
+
+      const angle = (arc.startAngle + arc.endAngle) / 2;
+      const angleSpan = Math.max(0, arc.endAngle - arc.startAngle);
+      const radius = arc.outerRadius * 0.66;
+      const category = String(labels[index] || "").trim() || "-";
+      const percentage = `${Math.round(ratio * 100)}%`;
+      let categoryText = category;
+      const maxCategoryChars = 24;
+      if (categoryText.length > maxCategoryChars) {
+        categoryText = `${categoryText.slice(0, maxCategoryChars)}…`;
+      }
+
+      const percentageWidth = ctx.measureText(percentage).width;
+      const categoryWidth = ctx.measureText(categoryText).width;
+      const textWidth = Math.max(percentageWidth, categoryWidth);
+      const availableArcLength = angleSpan * radius;
+      if (availableArcLength < textWidth + 8) return;
+
+      const x = arc.x + Math.cos(angle) * radius;
+      const y = arc.y + Math.sin(angle) * radius;
+
+      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.lineWidth = 3;
+      ctx.strokeText(categoryText, x, y - 7);
+      ctx.strokeText(percentage, x, y + 7);
+      ctx.fillStyle = "rgba(255,255,255,0.98)";
+      ctx.fillText(categoryText, x, y - 7);
+      ctx.fillText(percentage, x, y + 7);
     });
 
     ctx.restore();
   },
 };
 
-export default function DashboardChartsPage() {
+export default function DashboardDonutsPage() {
   const { t, locale, direction } = useLanguage();
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const chartCanvasRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const previousDropdownFiltersSignatureRef = useRef("");
@@ -326,7 +180,6 @@ export default function DashboardChartsPage() {
   const [expenses, setExpenses] = useState([]);
   const [bankConnections, setBankConnections] = useState([]);
   const [providerLabels, setProviderLabels] = useState({});
-  const [chartGrouping, setChartGrouping] = useState("days");
   const { filters, setFilters } = useDashboardFilters();
   const {
     selectedCategories,
@@ -630,7 +483,7 @@ export default function DashboardChartsPage() {
     }
     previousDropdownFiltersSignatureRef.current = dropdownFiltersSignature;
     setSelectedAmountRange([minExpenseAmount, maxExpenseAmount]);
-  }, [dropdownFiltersSignature, maxExpenseAmount, minExpenseAmount]);
+  }, [dropdownFiltersSignature, maxExpenseAmount, minExpenseAmount, setSelectedAmountRange]);
 
   useEffect(() => {
     const safeMin = Math.max(0, Number(minExpenseAmount || 0));
@@ -646,7 +499,7 @@ export default function DashboardChartsPage() {
       if (nextMin === prevMin && nextMax === prevMax) return prev;
       return [nextMin, nextMax];
     });
-  }, [maxExpenseAmount, minExpenseAmount]);
+  }, [maxExpenseAmount, minExpenseAmount, setSelectedAmountRange]);
 
   useEffect(() => {
     const allAccountIds = accountFilterOptions.map((option) => option.id);
@@ -669,7 +522,7 @@ export default function DashboardChartsPage() {
       const retained = prevSelected.filter((id) => allAccountIds.includes(id));
       return retained.length ? retained : allAccountIds;
     });
-  }, [accountFilterOptions, user?.defaultSelectedBankConnectionIds]);
+  }, [accountFilterOptions, setSelectedConnectionIds, user?.defaultSelectedBankConnectionIds]);
 
   const displayedExpenses = useMemo(
     () =>
@@ -719,65 +572,33 @@ export default function DashboardChartsPage() {
     const maxDate = new Date(Math.max(...timestamps));
     return formatDisplayedRange(minDate, maxDate);
   }, [customEndDate, customStartDate, displayedExpenses, timeRange]);
-
-  const chartSeries = useMemo(() => {
-    const buckets = new Map();
+  const pieSeries = useMemo(() => {
+    const totalsByCategory = new Map();
 
     displayedExpenses.forEach((expense) => {
-      const key = makeBucketKey(expense.date, chartGrouping);
-      if (!key) return;
-      const absoluteAmount = Math.abs(Number(expense.amount || 0));
-      if (!Number.isFinite(absoluteAmount)) return;
-      const signedAmount = isReturnExpense(expense) ? -absoluteAmount : absoluteAmount;
-      buckets.set(key, (buckets.get(key) || 0) + signedAmount);
+      const amount = Math.abs(Number(expense?.amount || 0));
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      const category = String(expense?.category || "").trim() || "-";
+      totalsByCategory.set(category, (totalsByCategory.get(category) || 0) + amount);
     });
 
-    const orderedEntries = Array.from(buckets.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => ({
-        key,
-        label: formatBucketLabel(key, chartGrouping, locale),
-        value: Number(value.toFixed(2)),
-      }));
-
-    const bounds = getSelectedRangeBounds({
-      timeRange,
-      customStartDate,
-      customEndDate,
-      referenceExpenses: expensesMatchingBaseFilters,
-    });
-    if (!bounds) return orderedEntries;
-
-    const valuesByKey = new Map(orderedEntries.map((item) => [item.key, item.value]));
-
-    if (chartGrouping === "days") {
-      const dayKeys = getDayKeysBetween(bounds.start, bounds.end);
-      return dayKeys.map((key) => ({
-        key,
-        label: formatBucketLabel(key, "days", locale),
-        value: Number((valuesByKey.get(key) || 0).toFixed(2)),
-      }));
-    }
-
-    if (chartGrouping === "weeks") {
-      const weekKeys = getWeekKeysBetween(bounds.start, bounds.end);
-      return weekKeys.map((key) => ({
-        key,
-        label: formatBucketLabel(key, "weeks", locale, bounds.end),
-        value: Number((valuesByKey.get(key) || 0).toFixed(2)),
-      }));
-    }
-
-    return orderedEntries;
-  }, [
-    chartGrouping,
-    customEndDate,
-    customStartDate,
-    displayedExpenses,
-    expensesMatchingBaseFilters,
-    locale,
-    timeRange,
-  ]);
+    return Array.from(totalsByCategory.entries())
+      .map(([label, value]) => ({ label, value: Number(value.toFixed(2)) }))
+      .sort((a, b) => b.value - a.value);
+  }, [displayedExpenses]);
+  const pieDetails = useMemo(() => {
+    const total = pieSeries.reduce(
+      (sum, item) => sum + Math.max(0, Number(item.value || 0)),
+      0,
+    );
+    if (!total) return [];
+    return pieSeries.map((item, index) => ({
+      ...item,
+      color: getPieColor(index),
+      percentage: (item.value / total) * 100,
+    }));
+  }, [pieSeries]);
+  const chartCurrency = displayedExpenses[0]?.currency || "₪";
 
   useEffect(() => {
     const canvas = chartCanvasRef.current;
@@ -788,29 +609,40 @@ export default function DashboardChartsPage() {
       chartInstanceRef.current = null;
     }
 
-    if (!chartSeries.length) return;
+    if (!pieSeries.length) return;
 
     chartInstanceRef.current = new Chart(canvas, {
-      type: "bar",
-      plugins: [alwaysVisibleLabelsPlugin],
+      type: "pie",
+      plugins: [alwaysVisiblePieLabelsPlugin],
       data: {
-        labels: chartSeries.map((item) => item.label),
+        labels: pieSeries.map((item) => item.label),
         datasets: [
           {
-            label: t("amount"),
-            data: chartSeries.map((item) => item.value),
-            backgroundColor: "rgba(25, 118, 210, 0.65)",
-            borderColor: "rgba(25, 118, 210, 1)",
-            borderWidth: 1,
+            data: pieSeries.map((item) => item.value),
+            backgroundColor: pieSeries.map((_, index) => getPieColor(index)),
+            borderColor: "rgba(255, 255, 255, 0.9)",
+            borderWidth: 2,
           },
         ],
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         plugins: {
-          legend: { display: false },
-          tooltip: { enabled: false },
+          legend: {
+            display: !isMobile,
+            position: "bottom",
+          },
+          alwaysVisiblePieLabels: {
+            enabled: isMobile,
+          },
+          tooltip: {
+            enabled: !isMobile,
+            callbacks: {
+              label: (context) =>
+                `${context.label}: ${chartCurrency}${Number(context.raw || 0).toFixed(2)}`,
+            },
+          },
         },
       },
     });
@@ -821,7 +653,7 @@ export default function DashboardChartsPage() {
         chartInstanceRef.current = null;
       }
     };
-  }, [chartSeries, t]);
+  }, [chartCurrency, isMobile, pieSeries]);
 
   function onAccountFilterChange(nextValues) {
     const values = Array.isArray(nextValues) ? nextValues : [];
@@ -908,25 +740,7 @@ export default function DashboardChartsPage() {
           maxExpenseAmount={maxExpenseAmount}
           onAmountRangeChange={setSelectedAmountRange}
         />
-        <Box sx={{ mb: 2 }}>
-          <Stack
-            direction="row"
-            justifyContent="center"
-            flexWrap="nowrap"
-            sx={{ gap: "8px" }}
-          >
-            {["days", "weeks", "months"].map((value) => (
-              <Button
-                key={value}
-                size="small"
-                variant={chartGrouping === value ? "contained" : "outlined"}
-                onClick={() => setChartGrouping(value)}
-              >
-                {t(value)}
-              </Button>
-            ))}
-          </Stack>
-        </Box>
+
         {timeRange === "custom_range" &&
           customStartDate &&
           customEndDate &&
@@ -940,9 +754,9 @@ export default function DashboardChartsPage() {
 
         <Box sx={{ mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <BarChartRoundedIcon fontSize="small" />
+            <DonutLargeRoundedIcon fontSize="small" />
             <Typography variant="subtitle1" dir={direction}>
-              {t("dashboardCharts")}: {displayedDateRange}
+              {t("dashboardTargets")}: {displayedDateRange}
             </Typography>
           </Stack>
         </Box>
@@ -951,14 +765,58 @@ export default function DashboardChartsPage() {
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
             <CircularProgress size={26} thickness={5} />
           </Box>
-        ) : chartSeries.length === 0 ? (
+        ) : pieSeries.length === 0 ? (
           <Typography variant="body2" color="text.secondary" dir={direction}>
             {t("allExpenses")}: 0
           </Typography>
         ) : (
-          <Box sx={{ height: 380 }}>
-            <canvas ref={chartCanvasRef} />
-          </Box>
+          <>
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Box sx={{ width: "70%", minWidth: 280, maxWidth: 280 }}>
+                <canvas ref={chartCanvasRef} />
+              </Box>
+            </Box>
+            {isMobile && (
+              <Box sx={{ mt: 1.5 }}>
+                {pieDetails.map((item) => (
+                  <Stack
+                    key={item.label}
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ py: 0.5 }}
+                  >
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        flex: "0 0 auto",
+                        bgcolor: item.color,
+                      }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}
+                      dir={direction}
+                    >
+                      {item.label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                      {item.percentage.toFixed(1)}%
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ whiteSpace: "nowrap", fontWeight: 700 }}
+                    >
+                      {chartCurrency}
+                      {Math.round(item.value)}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Box>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
