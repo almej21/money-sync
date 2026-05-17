@@ -5,8 +5,8 @@ import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
 import { alpha, Box, Button, useTheme } from "@mui/material";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import LiquidGlassContainer from "./LiquidGlassContainer";
 import { useLanguage } from "../context/LanguageContext";
+import LiquidGlassContainer from "./LiquidGlassContainer";
 
 const toggleStretchEdgeA = keyframes`
   0% { transform: scaleX(1); }
@@ -159,7 +159,7 @@ export default function DashboardBottomNav() {
             height: "calc(100% - 10px)",
             zIndex: 1,
             borderRadius: "22px",
-            backgroundColor: alpha(theme.palette.primary.main, 0.4),
+            backgroundColor: alpha(theme.palette.primary.main, 0.75),
             boxShadow: `
               inset 0 0 0 1px ${alpha(theme.palette.common.white, 0.2)},
               inset 1px 1px 0 ${alpha(theme.palette.common.white, 0.24)},

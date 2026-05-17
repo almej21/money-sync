@@ -6,6 +6,12 @@ export default function LiquidGlassContainer({
   sx,
   cardSx,
   contentSx,
+  specularOpacity = 1,
+  specularSaturation = 3,
+  refractionLevel = 50,
+  blurLevel = 0.4,
+  progressiveBlurStrength = 1,
+  glassBackgroundOpacity = 0,
   ...boxProps
 }) {
   const theme = useTheme();
@@ -13,6 +19,29 @@ export default function LiquidGlassContainer({
     () => `liquid-glass-filter-${Math.random().toString(36).slice(2, 10)}`,
     [],
   );
+  const safeSpecularOpacity = Number.isFinite(specularOpacity)
+    ? Math.max(0, specularOpacity)
+    : 0.4;
+  const safeSpecularSaturation = Number.isFinite(specularSaturation)
+    ? Math.max(0, specularSaturation)
+    : 6;
+  const safeRefractionLevel = Number.isFinite(refractionLevel)
+    ? Math.max(0, refractionLevel)
+    : 74.65216865752852;
+  const safeBlurLevel = Number.isFinite(blurLevel)
+    ? Math.max(0, blurLevel)
+    : 0.8;
+  const safeProgressiveBlurStrength = Number.isFinite(progressiveBlurStrength)
+    ? Math.max(0, progressiveBlurStrength)
+    : 1;
+  const safeGlassBackgroundOpacity = Number.isFinite(glassBackgroundOpacity)
+    ? Math.max(0, Math.min(1, glassBackgroundOpacity))
+    : 0.4;
+  const sourceBlurStdDeviation = safeBlurLevel * 0.875;
+  const progressiveBlurSmall = safeBlurLevel * safeProgressiveBlurStrength;
+  const progressiveBlurMedium =
+    safeBlurLevel * 2.5 * safeProgressiveBlurStrength;
+  const progressiveBlurLarge = safeBlurLevel * 5 * safeProgressiveBlurStrength;
 
   return (
     <Box
@@ -46,7 +75,7 @@ export default function LiquidGlassContainer({
           >
             <feGaussianBlur
               in="SourceGraphic"
-              stdDeviation=".7"
+              stdDeviation={sourceBlurStdDeviation}
               result="blurred_source"
             />
             <feImage
@@ -60,7 +89,7 @@ export default function LiquidGlassContainer({
             <feDisplacementMap
               in="blurred_source"
               in2="displacement_map"
-              scale="74.65216865752852"
+              scale={safeRefractionLevel}
               xChannelSelector="R"
               yChannelSelector="G"
               result="displaced"
@@ -69,7 +98,7 @@ export default function LiquidGlassContainer({
               in="displaced"
               type="saturate"
               result="displaced_saturated"
-              values="6"
+              values={safeSpecularSaturation}
             />
             <feImage
               href="/specular-map-ivknpp.png"
@@ -86,7 +115,7 @@ export default function LiquidGlassContainer({
               result="specular_saturated"
             />
             <feComponentTransfer in="specular_layer" result="specular_faded">
-              <feFuncA type="linear" slope="0.4" />
+              <feFuncA type="linear" slope={safeSpecularOpacity} />
             </feComponentTransfer>
             <feBlend
               in="specular_saturated"
@@ -107,7 +136,10 @@ export default function LiquidGlassContainer({
           inset: 0,
           zIndex: 0,
           borderRadius: "inherit",
-          backgroundColor: alpha(theme.palette.common.white, 0.4),
+          backgroundColor: alpha(
+            theme.palette.common.white,
+            safeGlassBackgroundOpacity,
+          ),
           backdropFilter: `url("#${filterId}")`,
           WebkitBackdropFilter: `url("#${filterId}")`,
           boxShadow: "0 4px 19px rgba(0, 0, 0, 0.16)",
@@ -123,8 +155,8 @@ export default function LiquidGlassContainer({
           right: 0,
           height: "100%",
           zIndex: 0,
-          backdropFilter: "blur(0.8px)",
-          WebkitBackdropFilter: "blur(0.8px)",
+          backdropFilter: `blur(${progressiveBlurSmall}px)`,
+          WebkitBackdropFilter: `blur(${progressiveBlurSmall}px)`,
           maskImage:
             "linear-gradient(to bottom, transparent 68%, rgba(0,0,0,1) 100%)",
           WebkitMaskImage:
@@ -141,8 +173,8 @@ export default function LiquidGlassContainer({
           right: 0,
           height: "100%",
           zIndex: 0,
-          backdropFilter: "blur(2px)",
-          WebkitBackdropFilter: "blur(2px)",
+          backdropFilter: `blur(${progressiveBlurMedium}px)`,
+          WebkitBackdropFilter: `blur(${progressiveBlurMedium}px)`,
           maskImage:
             "linear-gradient(to bottom, transparent 50%, rgba(0,0,0,1) 76%)",
           WebkitMaskImage:
@@ -159,8 +191,8 @@ export default function LiquidGlassContainer({
           right: 0,
           height: "100%",
           zIndex: 0,
-          backdropFilter: "blur(4px)",
-          WebkitBackdropFilter: "blur(4px)",
+          backdropFilter: `blur(${progressiveBlurLarge}px)`,
+          WebkitBackdropFilter: `blur(${progressiveBlurLarge}px)`,
           maskImage:
             "linear-gradient(to bottom, transparent 20%, rgba(0,0,0,1) 55%)",
           WebkitMaskImage:
@@ -177,8 +209,8 @@ export default function LiquidGlassContainer({
           right: 0,
           height: "100%",
           zIndex: 0,
-          backdropFilter: `url("#${filterId}") blur(0.8px)`,
-          WebkitBackdropFilter: `url("#${filterId}") blur(0.8px)`,
+          backdropFilter: `url("#${filterId}") blur(${progressiveBlurSmall}px)`,
+          WebkitBackdropFilter: `url("#${filterId}") blur(${progressiveBlurSmall}px)`,
           maskImage:
             "linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.35) 26%, transparent 48%)",
           WebkitMaskImage:
@@ -195,8 +227,8 @@ export default function LiquidGlassContainer({
           right: 0,
           height: "100%",
           zIndex: 0,
-          backdropFilter: `url("#${filterId}") blur(0.8px)`,
-          WebkitBackdropFilter: `url("#${filterId}") blur(0.8px)`,
+          backdropFilter: `url("#${filterId}") blur(${progressiveBlurSmall}px)`,
+          WebkitBackdropFilter: `url("#${filterId}") blur(${progressiveBlurSmall}px)`,
           maskImage:
             "linear-gradient(to bottom, transparent 52%, rgba(0,0,0,0.35) 74%, rgba(0,0,0,0.95) 100%)",
           WebkitMaskImage:

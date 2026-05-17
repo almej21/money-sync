@@ -847,7 +847,6 @@ export default function DashboardPieChartPage() {
                   return (
                   <Stack
                     key={item.label}
-                    spacing={0.7}
                     sx={{
                       py: 0.5,
                       borderBottom: "1px solid",

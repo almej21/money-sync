@@ -62,6 +62,15 @@ export default function MinimalExpenseItem({
   const sourceAccountIdText = String(exp?.sourceAccountId || "").trim();
   const shouldShowSourceAccountId =
     showSourceAccountIdAfterCategory && Boolean(sourceAccountIdText);
+  const formattedDate = formatDate(exp?.date);
+  const detailsText =
+    direction === "rtl"
+      ? shouldShowSourceAccountId
+        ? `(${sourceAccountIdText}) \u2022 ${formattedDate}`
+        : formattedDate
+      : `\u2022 ${formattedDate}${
+          shouldShowSourceAccountId ? ` \u2022 (${sourceAccountIdText})` : ""
+        }`;
   const statusBadgeSx = {
     display: "inline-flex",
     alignItems: "center",
@@ -173,6 +182,22 @@ export default function MinimalExpenseItem({
               >
                 {String(exp?.description || "-")}
               </Typography>
+              {direction === "rtl" && (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: ".72rem",
+                    fontFamily: "inherit",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                    direction: "ltr",
+                    unicodeBidi: "isolate",
+                  }}
+                >
+                  {"\u2022"}
+                </Typography>
+              )}
               <Typography
                 component="span"
                 sx={{
@@ -185,10 +210,7 @@ export default function MinimalExpenseItem({
                   unicodeBidi: "isolate",
                 }}
               >
-                {"\u2022"} {formatDate(exp?.date)}
-                {shouldShowSourceAccountId
-                  ? ` \u2022 (${sourceAccountIdText})`
-                  : ""}
+                {detailsText}
               </Typography>
             </Stack>
           </Box>
