@@ -1,5 +1,7 @@
 import Expense from "../models/Expense.js";
 import Household from "../models/Household.js";
+import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
+import { assertSupportedNodeVersion } from "../utils/nodeVersion.js";
 import { normalizeScrapedTransactions } from "./bankImporter.js";
 import { decryptValue } from "./credentialCrypto.js";
 import {
@@ -15,8 +17,6 @@ import {
   ensureHouseholdBankConnections,
   toStoredEncryptedFields,
 } from "./householdBankConnections.js";
-import { assertSupportedNodeVersion } from "../utils/nodeVersion.js";
-import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
   "email",
@@ -628,6 +628,12 @@ async function reconcilePendingWithPosted({
         };
       })
       .filter((item) => {
+        const pendingAmount = toMatchAmount(pending.amount);
+        const candidateAmount = toMatchAmount(item.candidate.amount);
+        if (pendingAmount !== candidateAmount) {
+          return false;
+        }
+
         const pendingExternalId = String(pending.externalId || "").trim();
         const candidateExternalId = String(item.candidate.externalId || "").trim();
         if (pendingExternalId && pendingExternalId === candidateExternalId) {
