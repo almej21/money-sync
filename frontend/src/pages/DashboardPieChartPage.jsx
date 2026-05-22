@@ -487,35 +487,48 @@ export default function DashboardPieChartPage() {
   const maxExpenseAmount = amountRangeBounds.max;
 
   useEffect(() => {
+    if (isLoading) return;
     if (
       previousDropdownFiltersSignatureRef.current === dropdownFiltersSignature
     ) {
       return;
     }
     previousDropdownFiltersSignatureRef.current = dropdownFiltersSignature;
-    setSelectedAmountRange([minExpenseAmount, maxExpenseAmount]);
+    setSelectedAmountRange((prev) => {
+      const prevMin = Number(prev?.[0] || 0);
+      const prevMax = Number(prev?.[1] || 0);
+      if (prevMin === minExpenseAmount && prevMax === maxExpenseAmount) {
+        return prev;
+      }
+      return [minExpenseAmount, maxExpenseAmount];
+    });
   }, [
     dropdownFiltersSignature,
+    isLoading,
     maxExpenseAmount,
     minExpenseAmount,
     setSelectedAmountRange,
   ]);
 
   useEffect(() => {
+    if (isLoading) return;
     const safeMin = Math.max(0, Number(minExpenseAmount || 0));
     const safeMax = Math.max(0, Number(maxExpenseAmount || 0));
     setSelectedAmountRange((prev) => {
       const prevMin = Number(prev?.[0] || 0);
       const prevMax = Number(prev?.[1] || 0);
 
-      if (prevMin === 0 && prevMax === 0) return [safeMin, safeMax];
+      if (prevMin === 0 && prevMax === 0) {
+        if (safeMin === prevMin && safeMax === prevMax) return prev;
+        return [safeMin, safeMax];
+      }
 
       const nextMin = Math.min(Math.max(safeMin, prevMin), safeMax);
       const nextMax = Math.min(Math.max(nextMin, prevMax), safeMax);
       if (nextMin === prevMin && nextMax === prevMax) return prev;
       return [nextMin, nextMax];
     });
-  }, [maxExpenseAmount, minExpenseAmount, setSelectedAmountRange]);
+  }, [isLoading, maxExpenseAmount, minExpenseAmount, setSelectedAmountRange]);
 
   useEffect(() => {
     const allAccountIds = accountFilterOptions.map((option) => option.id);
@@ -528,6 +541,7 @@ export default function DashboardPieChartPage() {
       : [];
 
     setSelectedConnectionIds((prevSelected) => {
+      if (allAccountIds.length === 0) return prevSelected;
       if (allAccountIds.length <= 1) return allAccountIds;
       if (!didInitializeAccountFilterSelectionRef.current) {
         didInitializeAccountFilterSelectionRef.current = true;

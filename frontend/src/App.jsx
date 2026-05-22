@@ -26,6 +26,7 @@ import { AppThemeProvider, useAppTheme } from "./context/ThemeContext";
 import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
 import DashboardChartsPage from "./pages/DashboardChartsPage";
+import DashboardListPage from "./pages/DashboardListPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardPieChartPage from "./pages/DashboardPieChartPage";
 import LoginPage from "./pages/LoginPage";
@@ -106,12 +107,13 @@ function ProtectedRoutes() {
       >
         <Routes>
           <Route element={<DashboardSectionLayout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="/dashboard/charts" element={<DashboardChartsPage />} />
-            <Route
-              path="/dashboard/targets"
-              element={<DashboardPieChartPage />}
-            />
+            <Route path="/" element={<Navigate to="/dashboard/list" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />}>
+              <Route index element={<Navigate to="/dashboard/list" replace />} />
+              <Route path="list" element={<DashboardListPage hideTotal />} />
+              <Route path="charts" element={<DashboardChartsPage />} />
+              <Route path="pie" element={<DashboardPieChartPage />} />
+            </Route>
           </Route>
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
           <Route path="/bank" element={<BankCredentialsPage />} />

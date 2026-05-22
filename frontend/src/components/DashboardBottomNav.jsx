@@ -2,7 +2,7 @@ import { keyframes } from "@emotion/react";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
-import { alpha, Box, Button, useTheme } from "@mui/material";
+import { alpha, Box, Button, useMediaQuery, useTheme } from "@mui/material";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
@@ -10,7 +10,7 @@ import LiquidGlassContainer from "./LiquidGlassContainer";
 
 const toggleStretchEdgeA = keyframes`
   0% { transform: scaleX(1); }
-  50% { transform: scaleX(1.1); }r
+  50% { transform: scaleX(1.1); }
   100% { transform: scaleX(1); }
 `;
 const toggleStretchEdgeB = keyframes`
@@ -29,13 +29,20 @@ const toggleStretchMiddleB = keyframes`
   100% { transform: scaleX(1); }
 `;
 const iconPressPop = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  0% {
+    transform: translateX(var(--dashboard-nav-icon-offset, 0px)) scale(1);
+  }
+  50% {
+    transform: translateX(var(--dashboard-nav-icon-offset, 0px)) scale(1.08);
+  }
+  100% {
+    transform: translateX(var(--dashboard-nav-icon-offset, 0px)) scale(1);
+  }
 `;
 
 export default function DashboardBottomNav() {
   const theme = useTheme();
+  const isXsScreen = useMediaQuery(theme.breakpoints.only("xs"));
   const location = useLocation();
   const { t } = useLanguage();
 
@@ -47,20 +54,23 @@ export default function DashboardBottomNav() {
         label: t("dashboardCharts"),
         icon: BarChartRoundedIcon,
         iconOffsetX: 0.75,
+        iconOffsetDesktopX: -12,
       },
       {
         key: "dashboard-expenses",
-        path: "/",
+        path: "/dashboard/list",
         label: t("dashboard"),
         icon: FormatListBulletedIcon,
         iconOffsetX: 0,
+        iconOffsetDesktopX: 0,
       },
       {
         key: "dashboard-targets",
-        path: "/dashboard/targets",
+        path: "/dashboard/pie",
         label: t("dashboardTargets"),
         icon: PieChartRoundedIcon,
         iconOffsetX: -0.75,
+        iconOffsetDesktopX: 12,
       },
     ],
     [t],
@@ -68,9 +78,7 @@ export default function DashboardBottomNav() {
 
   const activeIndex = useMemo(() => {
     const foundIndex = dashboardBottomTabs.findIndex((tab) =>
-      tab.path === "/"
-        ? location.pathname === "/"
-        : location.pathname.startsWith(tab.path),
+      location.pathname.startsWith(tab.path),
     );
     return foundIndex >= 0 ? foundIndex : 1;
   }, [dashboardBottomTabs, location.pathname]);
@@ -121,7 +129,7 @@ export default function DashboardBottomNav() {
           borderRadius: "34px",
         }}
         contentSx={{
-          px: 0,
+          px: "6px",
           py: 0,
           height: "100%",
           display: "grid",
@@ -178,11 +186,10 @@ export default function DashboardBottomNav() {
         />
         {dashboardBottomTabs.map((tab) => {
           const Icon = tab.icon;
-          const iconOffsetX = Number(tab.iconOffsetX || 0);
-          const isActive =
-            tab.path === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(tab.path);
+          const iconOffsetX = isXsScreen
+            ? Number(tab.iconOffsetX || 0)
+            : Number(tab.iconOffsetDesktopX || 0);
+          const isActive = location.pathname.startsWith(tab.path);
           return (
             <Button
               key={tab.key}
@@ -200,10 +207,12 @@ export default function DashboardBottomNav() {
                 alignItems: "center",
                 justifyContent: "center",
                 alignSelf: "center",
+                justifySelf: "stretch",
+                width: "100%",
                 height: "calc(100% - 10px)",
                 lineHeight: 0,
                 px: 0,
-                mx: "4px",
+                mx: 0,
                 borderRadius: "22px",
                 backgroundColor: "transparent",
                 color: isActive
@@ -222,16 +231,19 @@ export default function DashboardBottomNav() {
                   backgroundColor: "transparent",
                 },
                 "&:hover .dashboard-bottom-nav-icon": {
-                  transform: "scale(1.2)",
+                  transform:
+                    "translateX(var(--dashboard-nav-icon-offset, 0px)) scale(1.2)",
                 },
               }}
             >
               <Icon
                 className="dashboard-bottom-nav-icon"
                 sx={{
+                  "--dashboard-nav-icon-offset": `${iconOffsetX}px`,
                   fontSize: 24,
                   display: "block",
-                  transform: `translateX(${iconOffsetX}px) scale(1)`,
+                  transform:
+                    "translateX(var(--dashboard-nav-icon-offset, 0px)) scale(1)",
                   transition: "transform 120ms cubic-bezier(0.5, 0, 0, 1)",
                   animation: isActive
                     ? `${iconPressPop} 156ms cubic-bezier(0.5, 0, 0, 1)`

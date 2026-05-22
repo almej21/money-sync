@@ -1,8 +1,9 @@
-# Money Sync
+# Home Sync
 
 Shared household finance + shopping list app.
 
 ## Stack
+
 - Frontend: React + Vite
 - Backend: Express + serverless-http + AWS Lambda
 - DB: MongoDB Atlas
@@ -13,6 +14,7 @@ Shared household finance + shopping list app.
   - DB -> MongoDB Atlas
 
 ## Setup
+
 Node.js `22.12.0+` is required (`.nvmrc` is set to `22.17.1`).
 
 ```bash
@@ -22,6 +24,7 @@ npm install --workspaces
 ```
 
 ## Keep Frontend Prod API URL In Sync
+
 After backend deploys, run:
 
 ```bash
@@ -29,11 +32,13 @@ npm run sync:frontend:api-url
 ```
 
 This command:
+
 - Runs `npx serverless info --stage prod` in `backend/`
 - Extracts the current API Gateway invoke URL
 - Writes `VITE_API_URL=<invoke-url>/api` into `frontend/.env.production`
 
 ### Optional profile / extra Serverless args
+
 You can pass extra args directly to the script:
 
 ```bash

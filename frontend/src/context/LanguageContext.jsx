@@ -6,7 +6,7 @@ const SUPPORTED_LANGUAGES = new Set(["en", "he"]);
 
 const MESSAGES = {
   en: {
-    appTitle: "Money Sync",
+    appTitle: "Home Sync",
     dashboard: "Dashboard",
     dashboardCharts: "Charts",
     dashboardTargets: "Targets",
@@ -201,7 +201,8 @@ const MESSAGES = {
     manualExpenseLastPayment: "Last payment",
     manualExpenseEachPayment: "Each payment",
     manualExpenseTotal: "Total",
-    manualExpenseChargeDayOfMonth: "The charge date is on day {day} of each month",
+    manualExpenseChargeDayOfMonth:
+      "The charge date is on day {day} of each month",
     manualExpenseDescription: "Expense description",
     manualExpenseCategory: "Expense category",
     manualExpenseDate: "Date",
@@ -230,7 +231,7 @@ const MESSAGES = {
     manualExpensesSectionTitle: "Manual expenses",
   },
   he: {
-    appTitle: "Money Sync",
+    appTitle: "Home Sync",
     dashboard: "לוח בקרה",
     dashboardCharts: "גרפים",
     dashboardTargets: "יעדים",
@@ -421,7 +422,7 @@ const MESSAGES = {
     manualExpenseFirstPayment: "תשלום ראשון",
     manualExpenseLastPayment: "תשלום אחרון",
     manualExpenseEachPayment: "כל תשלום",
-    manualExpenseTotal: "סה\"כ",
+    manualExpenseTotal: 'סה"כ',
     manualExpenseChargeDayOfMonth: "מועד החיוב הוא ביום {day} בכל חודש",
     manualExpenseDescription: "תיאור הוצאה",
     manualExpenseCategory: "קטגוריית הוצאה",

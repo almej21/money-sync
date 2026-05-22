@@ -1,5 +1,16 @@
-const CACHE_NAME = "money-sync-v2";
-const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest"];
+const SW_VERSION =
+  new URL(self.location.href).searchParams.get("v") || "dev";
+const CACHE_NAME = `money-sync-${SW_VERSION}`;
+const APP_SHELL = ["/", "/index.html"];
+
+function isManifestOrIconRequest(pathname) {
+  return (
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/apple-touch-icon.png" ||
+    pathname === "/favicon-32x32.png" ||
+    pathname.startsWith("/icons/")
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -27,6 +38,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
+  if (isManifestOrIconRequest(url.pathname)) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).catch(() =>
+        caches.match(event.request),
+      ),
+    );
+    return;
+  }
 
   // SPA navigation fallback.
   if (event.request.mode === "navigate") {

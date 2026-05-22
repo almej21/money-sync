@@ -5,6 +5,7 @@ import SortOutlinedIcon from "@mui/icons-material/SortOutlined";
 import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
 import GroupIcon from "@mui/icons-material/Group";
 import PersonIcon from "@mui/icons-material/Person";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import TuneOutlinedIcon from "@mui/icons-material/TuneOutlined";
 import {
   Box,
@@ -55,6 +56,11 @@ export default function DashboardFilters({
   minExpenseAmount,
   maxExpenseAmount,
   onAmountRangeChange,
+  showSearch = false,
+  searchLabel = "Search",
+  searchPlaceholder = "",
+  searchQuery = "",
+  onSearchQueryChange,
   footerContent,
 }) {
   const theme = useTheme();
@@ -247,7 +253,7 @@ export default function DashboardFilters({
                   </Dropdown>
                 )}
 
-                  <Dropdown
+                <Dropdown
                     labelId="account-filter-label"
                     label={labelWithIcon(
                       t("accountFilter"),
@@ -296,6 +302,36 @@ export default function DashboardFilters({
                     ))
                   )}
                 </Dropdown>
+
+                {showSearch && (
+                  <TextField
+                    type="text"
+                    fullWidth
+                    value={searchQuery}
+                    onChange={(event) =>
+                      onSearchQueryChange?.(event.target.value)
+                    }
+                    label={labelWithIcon(searchLabel, SearchOutlinedIcon)}
+                    placeholder={searchPlaceholder}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      "& .MuiInputLabel-root": {
+                        fontSize: "1.1rem",
+                      },
+                      "& .MuiOutlinedInput-root": {
+                        minHeight: "45px",
+                      },
+                      "& .MuiOutlinedInput-input": {
+                        fontSize: ".9rem",
+                        minHeight: "20px",
+                        display: "flex",
+                        alignItems: "center",
+                        paddingTop: "7px",
+                        paddingBottom: "7px",
+                      },
+                    }}
+                  />
+                )}
               </Stack>
 
               <Box

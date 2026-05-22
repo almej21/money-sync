@@ -35,6 +35,17 @@ import {
   sendHouseholdInvitation,
 } from "../services/householdService";
 
+function formatVersionDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${hours}:${minutes}, ${day}/${month}/${year}`;
+}
+
 export default function AccountPage() {
   const { user, updatePreferences, refreshUser } = useAuth();
   const { t } = useLanguage();
@@ -50,6 +61,10 @@ export default function AccountPage() {
   const [joiningInvitationId, setJoiningInvitationId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const versionDateTime = useMemo(
+    () => formatVersionDateTime(__APP_COMMIT_DATE_ISO__),
+    [],
+  );
   const shadeKeys = [
     "primary",
     "secondary",
@@ -237,7 +252,7 @@ export default function AccountPage() {
   }
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} sx={{ minHeight: "100%" }}>
       <Card>
         <CardContent>
           <Typography variant="h5" gutterBottom>
@@ -514,6 +529,16 @@ export default function AccountPage() {
           </Stack>
         </CardContent>
       </Card>
+
+      <Box sx={{ mt: "auto", pt: 1 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "center" }}
+        >
+          Version: {versionDateTime}
+        </Typography>
+      </Box>
 
       <AppSnackbar
         open={Boolean(error)}
