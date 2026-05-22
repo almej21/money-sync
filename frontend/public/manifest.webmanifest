@@ -15,7 +15,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/android/playstore-icon.png",
+      "src": "/icons/appstore-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
