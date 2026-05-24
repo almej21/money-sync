@@ -128,6 +128,10 @@ function ProtectedRoutes() {
 function AppContent() {
   const { direction } = useLanguage();
   const { colors, themeColors } = useAppTheme();
+  const textFieldHeightScale = 0.75;
+  const defaultOutlinedInputHeight = 56;
+  const outlinedInputMinHeight = defaultOutlinedInputHeight * textFieldHeightScale;
+  const outlinedInputPaddingY = 10 * textFieldHeightScale;
   const theme = useMemo(
     () =>
       createTheme({
@@ -152,6 +156,7 @@ function AppContent() {
             styleOverrides: {
               html: {
                 backgroundColor: themeColors.background.default,
+                "--app-outlined-input-min-height": `${outlinedInputMinHeight}px`,
               },
               body: {
                 backgroundColor: themeColors.background.default,
@@ -215,7 +220,7 @@ function AppContent() {
             styleOverrides: {
               root: {
                 backgroundColor: themeColors.background.default,
-                minHeight: 39,
+                minHeight: "var(--app-outlined-input-min-height)",
                 "&.MuiInputBase-multiline": {
                   minHeight: "auto",
                 },
@@ -234,8 +239,8 @@ function AppContent() {
                 },
               },
               input: {
-                paddingTop: 10,
-                paddingBottom: 10,
+                paddingTop: outlinedInputPaddingY,
+                paddingBottom: outlinedInputPaddingY,
               },
             },
           },
@@ -274,7 +279,7 @@ function AppContent() {
         },
         direction,
       }),
-    [colors.text, direction, themeColors],
+    [colors.text, direction, outlinedInputMinHeight, outlinedInputPaddingY, themeColors],
   );
   const debugScreenSizeEnabled =
     String(import.meta.env.VITE_DEBUG_SCREEN_SIZE || "").toLowerCase() ===

@@ -822,7 +822,8 @@ export default function ShoppingListsPage() {
                       <Box
                         sx={{
                           width: 124,
-                          height: 56,
+                          height: "var(--app-outlined-input-min-height)",
+                          minHeight: "var(--app-outlined-input-min-height)",
                           boxSizing: "border-box",
                           bgcolor: "background.default",
                           border: "1px solid",
@@ -849,22 +850,42 @@ export default function ShoppingListsPage() {
                             Math.min(100, Number(itemValue.quantity || 1)),
                           )}
                         </Typography>
-                        <Stack spacing={0}>
+                        <Stack
+                          spacing={0}
+                          sx={{
+                            height: "100%",
+                            justifyContent: "space-between",
+                          }}
+                        >
                           <IconButton
                             size="small"
                             onClick={() => incrementItemQuantity(index)}
                             aria-label="Increase quantity"
                             tabIndex={-1}
+                            sx={{
+                              minWidth: 0,
+                              width: 16,
+                              height: 12,
+                              p: 0,
+                              borderRadius: 0.5,
+                            }}
                           >
-                            <KeyboardArrowUpIcon fontSize="small" />
+                            <KeyboardArrowUpIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                           <IconButton
                             size="small"
                             onClick={() => decrementItemQuantity(index)}
                             aria-label="Decrease quantity"
                             tabIndex={-1}
+                            sx={{
+                              minWidth: 0,
+                              width: 16,
+                              height: 12,
+                              p: 0,
+                              borderRadius: 0.5,
+                            }}
                           >
-                            <KeyboardArrowDownIcon fontSize="small" />
+                            <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Stack>
                       </Box>
@@ -964,8 +985,9 @@ export default function ShoppingListsPage() {
                     {isMobile ? (
                       <Box
                         sx={{
-                          width: 124,
-                          height: 43,
+                          width: 104,
+                          height: "var(--app-outlined-input-min-height)",
+                          minHeight: "var(--app-outlined-input-min-height)",
                           boxSizing: "border-box",
                           bgcolor: "background.default",
                           border: "1px solid",
@@ -992,22 +1014,42 @@ export default function ShoppingListsPage() {
                             Math.min(100, Number(item.quantity || 1)),
                           )}
                         </Typography>
-                        <Stack spacing={0}>
+                        <Stack
+                          spacing={0}
+                          sx={{
+                            height: "100%",
+                            justifyContent: "space-between",
+                          }}
+                        >
                           <IconButton
                             size="small"
                             onClick={() => incrementEditItemQuantity(index)}
                             aria-label="Increase quantity"
                             tabIndex={-1}
+                            sx={{
+                              minWidth: 0,
+                              width: 16,
+                              height: 12,
+                              p: 0,
+                              borderRadius: 0.5,
+                            }}
                           >
-                            <KeyboardArrowUpIcon fontSize="small" />
+                            <KeyboardArrowUpIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                           <IconButton
                             size="small"
                             onClick={() => decrementEditItemQuantity(index)}
                             aria-label="Decrease quantity"
                             tabIndex={-1}
+                            sx={{
+                              minWidth: 0,
+                              width: 16,
+                              height: 12,
+                              p: 0,
+                              borderRadius: 0.5,
+                            }}
                           >
-                            <KeyboardArrowDownIcon fontSize="small" />
+                            <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                         </Stack>
                       </Box>

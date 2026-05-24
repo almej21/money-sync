@@ -194,7 +194,11 @@ function AccountSettingsRow({
   }
 
   function formatIlsAmount(value) {
-    return `\u200E₪${Number(value || 0).toFixed(2)}\u200E`;
+    const numericValue = Number(value || 0);
+    const roundedValue = Number.isFinite(numericValue)
+      ? Math.round(numericValue)
+      : 0;
+    return `\u200E₪${roundedValue}\u200E`;
   }
 
   function getDayOfMonth(value) {
@@ -478,7 +482,7 @@ function AccountSettingsRow({
                       }}
                     >
                       <Typography
-                        variant="h6"
+                        variant="h8"
                         sx={{
                           fontWeight: 700,
                           color: theme.palette.text.contrastText,
@@ -695,66 +699,152 @@ function AccountSettingsRow({
                                     >
                                       {`${formatManualDate(occurrence?.date)} • ${formatIlsAmount(occurrence?.amount)}`}
                                     </Typography>
-                                    <Stack direction="row" spacing={0.4}>
-                                      <Button
-                                        type="button"
-                                        variant="outlined"
-                                        size="small"
-                                        aria-label={t("edit")}
-                                        onClick={() => onEditManualExpense(occurrence)}
-                                        disabled={
-                                          saving ||
-                                          loading ||
-                                          !canManageBankConnections
-                                        }
-                                        sx={{
-                                          minWidth: 0,
-                                          width: 24,
-                                          height: 24,
-                                          p: 0,
-                                          borderRadius: 0.6,
-                                          borderColor: theme.palette.primary.main,
-                                          border: "2px solid",
-                                          color: theme.palette.primary.main,
-                                        }}
-                                      >
-                                        <EditOutlinedIcon sx={{ fontSize: 14 }} />
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="outlined"
-                                        color="error"
-                                        size="small"
-                                        aria-label={t("manualExpenseDelete")}
-                                        onClick={() =>
-                                          onDeleteManualExpense(occurrence)
-                                        }
-                                        disabled={
-                                          saving ||
-                                          loading ||
-                                          !canManageBankConnections ||
-                                          isDeletingOccurrence
-                                        }
-                                        sx={{
-                                          minWidth: 0,
-                                          width: 24,
-                                          height: 24,
-                                          p: 0,
-                                          borderRadius: 0.6,
-                                          borderColor: "error.main",
-                                          border: "2px solid",
-                                          color: "error.main",
-                                        }}
-                                      >
-                                        {isDeletingOccurrence ? (
-                                          <CircularProgress
-                                            size={12}
-                                            color="inherit"
-                                          />
-                                        ) : (
-                                          <DeleteOutlineIcon sx={{ fontSize: 14 }} />
-                                        )}
-                                      </Button>
+                                    <Stack direction="row" spacing={0} sx={{ direction: "ltr", gap: "4px" }}>
+                                      {direction === "rtl" ? (
+                                        <>
+                                          <Button
+                                            type="button"
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            aria-label={t("manualExpenseDelete")}
+                                            onClick={() =>
+                                              onDeleteManualExpense(occurrence)
+                                            }
+                                            disabled={
+                                              saving ||
+                                              loading ||
+                                              !canManageBankConnections ||
+                                              isDeletingOccurrence
+                                            }
+                                            sx={{
+                                              minWidth: 0,
+                                              width: 24,
+                                              height: 24,
+                                              p: 0,
+                                              borderRadius: 0.6,
+                                              borderColor: "error.main",
+                                              border: "2px solid",
+                                              color: "error.main",
+                                              "&:hover": {
+                                                bgcolor: "error.main",
+                                                borderColor: "error.main",
+                                                color: "common.white",
+                                              },
+                                            }}
+                                          >
+                                            {isDeletingOccurrence ? (
+                                              <CircularProgress
+                                                size={12}
+                                                color="inherit"
+                                              />
+                                            ) : (
+                                              <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                                            )}
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            variant="outlined"
+                                            size="small"
+                                            aria-label={t("edit")}
+                                            onClick={() => onEditManualExpense(occurrence)}
+                                            disabled={
+                                              saving ||
+                                              loading ||
+                                              !canManageBankConnections
+                                            }
+                                            sx={{
+                                              minWidth: 0,
+                                              width: 24,
+                                              height: 24,
+                                              p: 0,
+                                              borderRadius: 0.6,
+                                              borderColor: theme.palette.primary.main,
+                                              border: "2px solid",
+                                              color: theme.palette.primary.main,
+                                              "&:hover": {
+                                                bgcolor: theme.palette.primary.main,
+                                                borderColor: theme.palette.primary.main,
+                                                color: "common.white",
+                                              },
+                                            }}
+                                          >
+                                            <EditOutlinedIcon sx={{ fontSize: 14 }} />
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Button
+                                            type="button"
+                                            variant="outlined"
+                                            size="small"
+                                            aria-label={t("edit")}
+                                            onClick={() => onEditManualExpense(occurrence)}
+                                            disabled={
+                                              saving ||
+                                              loading ||
+                                              !canManageBankConnections
+                                            }
+                                            sx={{
+                                              minWidth: 0,
+                                              width: 24,
+                                              height: 24,
+                                              p: 0,
+                                              borderRadius: 0.6,
+                                              borderColor: theme.palette.primary.main,
+                                              border: "2px solid",
+                                              color: theme.palette.primary.main,
+                                              "&:hover": {
+                                                bgcolor: theme.palette.primary.main,
+                                                borderColor: theme.palette.primary.main,
+                                                color: "common.white",
+                                              },
+                                            }}
+                                          >
+                                            <EditOutlinedIcon sx={{ fontSize: 14 }} />
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            aria-label={t("manualExpenseDelete")}
+                                            onClick={() =>
+                                              onDeleteManualExpense(occurrence)
+                                            }
+                                            disabled={
+                                              saving ||
+                                              loading ||
+                                              !canManageBankConnections ||
+                                              isDeletingOccurrence
+                                            }
+                                            sx={{
+                                              minWidth: 0,
+                                              width: 24,
+                                              height: 24,
+                                              p: 0,
+                                              borderRadius: 0.6,
+                                              borderColor: "error.main",
+                                              border: "2px solid",
+                                              color: "error.main",
+                                              "&:hover": {
+                                                bgcolor: "error.main",
+                                                borderColor: "error.main",
+                                                color: "common.white",
+                                              },
+                                            }}
+                                          >
+                                            {isDeletingOccurrence ? (
+                                              <CircularProgress
+                                                size={12}
+                                                color="inherit"
+                                              />
+                                            ) : (
+                                              <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                                            )}
+                                          </Button>
+                                        </>
+                                      )}
                                     </Stack>
                                   </Stack>
                                 );

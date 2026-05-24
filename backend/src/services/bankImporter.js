@@ -1,11 +1,11 @@
 import { createExpenseDedupKey } from "./expenseDedup.js";
 import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 
-const FUTURE_SUPERMARKET_SOURCE_CATEGORIES = new Set([
+const SUPERMARKET_SOURCE_CATEGORIES = new Set([
   "מזון ומשקאות",
   "מזון וצריכה",
 ]);
-const FUTURE_SUPERMARKET_TARGET_CATEGORY = "סופרמרקט";
+const SUPERMARKET_TARGET_CATEGORY = "סופרמרקט";
 
 function toNumber(value) {
   const parsed = Number(value);
@@ -48,36 +48,17 @@ function normalizeSourceTransactionType(typeValue) {
   return normalized || "normal";
 }
 
-function normalizeDateOnly(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function isFutureDated(dateValue, now = new Date()) {
-  const parsed = new Date(dateValue);
-  if (Number.isNaN(parsed.getTime())) return false;
-  const target = normalizeDateOnly(parsed);
-  const today = normalizeDateOnly(now);
-  return target.getTime() > today.getTime();
-}
-
 function resolveImportedCategory({
   rawCategory,
   normalizedCategory,
-  transactionType,
-  status,
-  date,
 }) {
-  const isExpense = transactionType === "expense";
-  const isFutureExpense = isExpense && (status === "pending" || isFutureDated(date));
-  if (!isFutureExpense) return normalizedCategory;
-
   const raw = String(rawCategory || "").trim();
   const normalized = String(normalizedCategory || "").trim();
   if (
-    FUTURE_SUPERMARKET_SOURCE_CATEGORIES.has(raw) ||
-    FUTURE_SUPERMARKET_SOURCE_CATEGORIES.has(normalized)
+    SUPERMARKET_SOURCE_CATEGORIES.has(raw) ||
+    SUPERMARKET_SOURCE_CATEGORIES.has(normalized)
   ) {
-    return FUTURE_SUPERMARKET_TARGET_CATEGORY;
+    return SUPERMARKET_TARGET_CATEGORY;
   }
 
   return normalizedCategory;
@@ -146,9 +127,6 @@ export function normalizeScrapedTransactions(scraped = []) {
       category: resolveImportedCategory({
         rawCategory: t.category,
         normalizedCategory,
-        transactionType,
-        status,
-        date: t.date,
       }),
       tags: [],
       dedupKey: createExpenseDedupKey({

@@ -1,4 +1,4 @@
-import { Alert, Snackbar } from "@mui/material";
+import { Alert, Portal, Snackbar } from "@mui/material";
 
 export default function AppSnackbar({
   open,
@@ -23,57 +23,62 @@ export default function AppSnackbar({
   const isBottomAnchored = true;
 
   return (
-    <Snackbar
-      open={Boolean(open && message)}
-      onClose={onClose}
-      autoHideDuration={autoHideDuration}
-      anchorOrigin={resolvedAnchorOrigin}
-      sx={[
-        {
-          zIndex: (theme) =>
-            Math.max(theme.zIndex.snackbar, theme.zIndex.modal + 1000),
-          left: { xs: 8, sm: "auto" },
-          right: { xs: 8, sm: "auto" },
-          maxWidth: { xs: "calc(100vw - 16px)", sm: "min(560px, calc(100vw - 32px))" },
-          ...(isBottomAnchored ? { bottom: bottomOffset } : {}),
-        },
-        ...(Array.isArray(snackbarSx)
-          ? snackbarSx
-          : snackbarSx
-            ? [snackbarSx]
-            : []),
-      ]}
-    >
-      <Alert
+    <Portal>
+      <Snackbar
+        open={Boolean(open && message)}
         onClose={onClose}
-        severity={severity}
-        variant={variant}
-        sx={{
-          width: "100%",
-          position: "relative",
-          ...(onClose
-            ? {
-                pl: 5,
-              }
-            : {}),
-          "& .MuiAlert-action": {
+        autoHideDuration={autoHideDuration}
+        anchorOrigin={resolvedAnchorOrigin}
+        sx={[
+          {
+            zIndex: (theme) =>
+              Math.max(theme.zIndex.snackbar, theme.zIndex.modal + 1000),
+            left: { xs: 8, sm: "auto" },
+            right: { xs: 8, sm: "auto" },
+            maxWidth: {
+              xs: "calc(100vw - 16px)",
+              sm: "min(560px, calc(100vw - 32px))",
+            },
+            ...(isBottomAnchored ? { bottom: bottomOffset } : {}),
+          },
+          ...(Array.isArray(snackbarSx)
+            ? snackbarSx
+            : snackbarSx
+              ? [snackbarSx]
+              : []),
+        ]}
+      >
+        <Alert
+          onClose={onClose}
+          severity={severity}
+          variant={variant}
+          sx={{
+            width: "100%",
+            position: "relative",
             ...(onClose
               ? {
-                  position: "absolute",
-                  left: 8,
-                  right: "auto",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  margin: 0,
-                  padding: 0,
+                  pl: 5,
                 }
               : {}),
-          },
-          ...alertSx,
-        }}
-      >
-        {message}
-      </Alert>
-    </Snackbar>
+            "& .MuiAlert-action": {
+              ...(onClose
+                ? {
+                    position: "absolute",
+                    left: 8,
+                    right: "auto",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    margin: 0,
+                    padding: 0,
+                  }
+                : {}),
+            },
+            ...alertSx,
+          }}
+        >
+          {message}
+        </Alert>
+      </Snackbar>
+    </Portal>
   );
 }
