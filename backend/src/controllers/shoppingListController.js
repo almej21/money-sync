@@ -1,32 +1,83 @@
 import ShoppingList from "../models/ShoppingList.js";
 
-function normalizeItems(items = []) {
+const CHECKED_ITEM_RETENTION_MS = 120 * 60 * 1000;
+
+function parseDate(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function removeExpiredCheckedItems(items = [], now = new Date()) {
+  const cutoffMs = now.getTime() - CHECKED_ITEM_RETENTION_MS;
+  return items.filter((item) => {
+    if (!item?.completed) return true;
+    const completedAt = parseDate(item.completedAt);
+    if (!completedAt) return true;
+    return completedAt.getTime() > cutoffMs;
+  });
+}
+
+function normalizeItems(items = [], options = {}) {
   const source = Array.isArray(items) ? items : [];
+  const existingItemsById = options.existingItemsById || new Map();
   return source.map((item) => {
     const description = String(
       item?.description ?? item?.text ?? "",
     ).trim();
+    const existingItemKey = String(item?._id || "").trim();
+    const existingItem = existingItemsById.get(existingItemKey) || null;
+    const completed = Boolean(item?.completed);
+    const completedAt = completed
+      ? parseDate(item?.completedAt) ||
+        parseDate(existingItem?.completedAt) ||
+        new Date()
+      : null;
     return {
       description,
       quantity: Number(item?.quantity || 1),
       note: String(item?.note || "").trim(),
-      completed: Boolean(item?.completed),
-      completedBy: item?.completedBy || null,
+      completed,
+      completedAt,
+      completedBy: completed
+        ? item?.completedBy || existingItem?.completedBy || null
+        : null,
     };
   });
 }
 
 export async function listShoppingLists(req, res) {
+  const now = new Date();
   const lists = await ShoppingList.find({
     householdId: req.user.householdId,
   }).sort({ updatedAt: -1 });
+
+  await Promise.all(
+    lists.map(async (list) => {
+      const nextItems = removeExpiredCheckedItems(list.items, now);
+      let changed = nextItems.length !== list.items.length;
+
+      if (!changed) {
+        for (const item of list.items) {
+          if (!item?.completed || item?.completedAt) continue;
+          item.completedAt = now;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        list.items = nextItems;
+        await list.save();
+      }
+    }),
+  );
 
   res.json(lists);
 }
 
 export async function createShoppingList(req, res) {
-  const normalizedItems = normalizeItems(req.body.items).filter(
-    (item) => item.description,
+  const normalizedItems = removeExpiredCheckedItems(
+    normalizeItems(req.body.items).filter((item) => item.description),
   );
   const list = await ShoppingList.create({
     householdId: req.user.householdId,
@@ -42,22 +93,33 @@ export async function createShoppingList(req, res) {
 }
 
 export async function updateShoppingList(req, res) {
-  const nextPayload = { ...req.body };
-  if (Object.hasOwn(req.body || {}, "items")) {
-    nextPayload.items = normalizeItems(req.body.items).filter(
-      (item) => item.description,
-    );
-  }
-
-  const list = await ShoppingList.findOneAndUpdate(
-    { _id: req.params.id, householdId: req.user.householdId },
-    nextPayload,
-    { new: true },
-  );
+  const list = await ShoppingList.findOne({
+    _id: req.params.id,
+    householdId: req.user.householdId,
+  });
 
   if (!list) {
     return res.status(404).json({ message: "Shopping list not found" });
   }
+
+  const nextPayload = { ...req.body };
+  if (Object.hasOwn(req.body || {}, "items")) {
+    const existingItemsById = new Map(
+      (Array.isArray(list.items) ? list.items : []).map((item) => [
+        String(item?._id || "").trim(),
+        item,
+      ]),
+    );
+
+    nextPayload.items = removeExpiredCheckedItems(
+      normalizeItems(req.body.items, { existingItemsById }).filter(
+        (item) => item.description,
+      ),
+    );
+  }
+
+  list.set(nextPayload);
+  await list.save();
 
   res.json(list);
 }
@@ -80,7 +142,14 @@ export async function toggleShoppingItem(req, res) {
   }
 
   item.completed = !item.completed;
+  item.completedAt = item.completed ? new Date() : null;
   item.completedBy = item.completed ? req.user._id : null;
+
+  const nextItems = removeExpiredCheckedItems(list.items);
+  if (nextItems.length !== list.items.length) {
+    list.items = nextItems;
+  }
+
   await list.save();
 
   res.json(list);

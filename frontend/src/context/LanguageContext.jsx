@@ -155,7 +155,7 @@ const MESSAGES = {
       "This will remove all configured bank connections.",
     defaultBankAccountsDescription:
       "Choose which bank accounts are selected by default in the dashboard filter.",
-    defaultBankAccountsSectionTitle: "Default dashboard accounts",
+    defaultBankAccountsSectionTitle: "Default dashboard connections",
     accountDefaultsSaved: "Default bank account selection saved.",
     failedSaveAccountDefaults: "Failed to save default bank account selection",
     failedLoadAccountDefaults: "Failed to load account defaults",

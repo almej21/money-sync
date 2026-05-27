@@ -256,7 +256,10 @@ export default function ShoppingListsPage() {
     );
 
     try {
-      await toggleShoppingListItem(listId, itemId);
+      const updated = await toggleShoppingListItem(listId, itemId);
+      setLists((prev) =>
+        prev.map((list) => (list._id === updated._id ? updated : list)),
+      );
     } catch (error) {
       setLists(previousLists);
       setErrorMessage(error?.message || "Failed to update item");

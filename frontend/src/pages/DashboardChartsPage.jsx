@@ -285,9 +285,18 @@ function getWeekKeysBetween(start, end) {
   return keys;
 }
 
-const alwaysVisibleLabelsPlugin = {
-  id: "alwaysVisibleLabels",
-  afterDatasetsDraw(chart) {
+function formatDayMonthFromBucketKey(bucketKey) {
+  if (!String(bucketKey || "").startsWith("d_")) return "";
+  const raw = String(bucketKey || "").slice(2);
+  const [year, month, day] = raw.split("-");
+  if (!year || !month || !day) return "";
+  return `(${Number(day)}/${Number(month)})`;
+}
+
+function createAlwaysVisibleLabelsPlugin({ chartGrouping, bucketKeys }) {
+  return {
+    id: "alwaysVisibleLabels",
+    afterDatasetsDraw(chart) {
     const {
       ctx,
       data,
@@ -301,18 +310,26 @@ const alwaysVisibleLabelsPlugin = {
     ctx.fillStyle = "#1f2937";
     ctx.font = "600 11px Inter, Segoe UI, Roboto, sans-serif";
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
+    ctx.textBaseline = "alphabetic";
 
     meta.data.forEach((bar, index) => {
       const value = Number(dataset.data[index] || 0);
       if (value === 0) return;
-      const y = Math.max(bar.y - 6, top + 12);
-      ctx.fillText(`₪${Math.round(value)}`, bar.x, y);
+      const shouldRenderDayMonth = chartGrouping === "days";
+      const dayMonth = shouldRenderDayMonth
+        ? formatDayMonthFromBucketKey(bucketKeys[index])
+        : "";
+      const amountY = Math.max(bar.y - (dayMonth ? 16 : 6), top + 12);
+      ctx.fillText(`₪${Math.round(value)}`, bar.x, amountY);
+      if (dayMonth) {
+        ctx.fillText(dayMonth, bar.x, amountY + 12);
+      }
     });
 
     ctx.restore();
-  },
-};
+    },
+  };
+}
 
 export default function DashboardChartsPage() {
   const { t, locale, direction } = useLanguage();
@@ -809,6 +826,11 @@ export default function DashboardChartsPage() {
 
     if (!chartSeries.length) return;
 
+    const alwaysVisibleLabelsPlugin = createAlwaysVisibleLabelsPlugin({
+      chartGrouping,
+      bucketKeys: chartSeries.map((item) => item.key),
+    });
+
     chartInstanceRef.current = new Chart(canvas, {
       type: "bar",
       plugins: [alwaysVisibleLabelsPlugin],
@@ -840,7 +862,7 @@ export default function DashboardChartsPage() {
         chartInstanceRef.current = null;
       }
     };
-  }, [chartSeries, t]);
+  }, [chartGrouping, chartSeries, t]);
 
   function onAccountFilterChange(nextValues) {
     const values = Array.isArray(nextValues) ? nextValues : [];

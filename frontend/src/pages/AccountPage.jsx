@@ -1,4 +1,5 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import {
   Accordion,
@@ -12,6 +13,7 @@ import {
   CircularProgress,
   Divider,
   FormControlLabel,
+  IconButton,
   MenuItem,
   Stack,
   TextField,
@@ -48,15 +50,18 @@ function formatVersionDateTime(value) {
 
 export default function AccountPage() {
   const { user, updatePreferences, refreshUser } = useAuth();
-  const { t } = useLanguage();
+  const { t, direction } = useLanguage();
   const { schemeKey, schemeKeys, setSchemeKey } = useAppTheme();
   const [sourceAccountOptions, setSourceAccountOptions] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [householdMembers, setHouseholdMembers] = useState([]);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [isEditingProfileName, setIsEditingProfileName] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingProfileName, setSavingProfileName] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [joiningInvitationId, setJoiningInvitationId] = useState("");
   const [error, setError] = useState("");
@@ -174,6 +179,11 @@ export default function AccountPage() {
     setSelectedIds(validDefaultIds.length ? validDefaultIds : allConnectionIds);
   }, [sourceAccountOptions, userDefaultIds]);
 
+  useEffect(() => {
+    setProfileName(String(user?.name || ""));
+    setIsEditingProfileName(false);
+  }, [user?.name]);
+
   function onToggleConnection(id) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
@@ -219,6 +229,36 @@ export default function AccountPage() {
     } finally {
       setInviting(false);
     }
+  }
+
+  async function saveProfileName() {
+    const nextName = String(profileName || "").trim();
+    if (!nextName) {
+      setError("Name is required");
+      return;
+    }
+
+    setSavingProfileName(true);
+    setError("");
+    setSuccess("");
+    try {
+      await updatePreferences({ name: nextName });
+      setSuccess(t("accountDefaultsSaved"));
+    } catch (err) {
+      setError(err.message || t("failedSaveAccountDefaults"));
+    } finally {
+      setSavingProfileName(false);
+    }
+  }
+
+  function startEditProfileName() {
+    setProfileName(String(user?.name || ""));
+    setIsEditingProfileName(true);
+  }
+
+  function cancelEditProfileName() {
+    setProfileName(String(user?.name || ""));
+    setIsEditingProfileName(false);
   }
 
   async function acceptInvite(invitationId) {
@@ -267,10 +307,57 @@ export default function AccountPage() {
                 <Typography variant="subtitle1">{t("myUserInfo")}</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Stack spacing={0.75}>
-                  <Typography>
-                    <strong>{t("name")}:</strong> {user?.name || "-"}
-                  </Typography>
+                <Stack spacing={1.25}>
+                  {isEditingProfileName ? (
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      useFlexGap
+                      sx={{ gap: 1, alignItems: { sm: "flex-end" } }}
+                    >
+                      <TextField
+                        label={t("name")}
+                        value={profileName}
+                        onChange={(event) => setProfileName(event.target.value)}
+                        fullWidth
+                      />
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="contained"
+                          onClick={saveProfileName}
+                          disabled={savingProfileName}
+                          sx={{ minWidth: 90, whiteSpace: "nowrap" }}
+                        >
+                          {t("save")}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          onClick={cancelEditProfileName}
+                          disabled={savingProfileName}
+                          sx={{ minWidth: 90, whiteSpace: "nowrap" }}
+                        >
+                          {t("cancel")}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  ) : (
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <Typography>
+                        <strong>{t("name")}:</strong> {user?.name || "-"}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={startEditProfileName}
+                        aria-label={t("edit")}
+                        sx={{ p: 0.5 }}
+                      >
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  )}
                   <Typography>
                     <strong>{t("email")}:</strong> {user?.email || "-"}
                   </Typography>
@@ -426,16 +513,79 @@ export default function AccountPage() {
                 ) : !householdMembers.length ? (
                   <Typography color="text.secondary">-</Typography>
                 ) : (
-                  <Stack spacing={0.5}>
+                  <Stack spacing={1}>
                     {householdMembers.map((member) => (
-                      <Typography key={member.id}>
-                        {member.name} ({member.email}) -{" "}
-                        {t(
-                          member.role === "manager"
-                            ? "managerRole"
-                            : "memberRole",
-                        )}
-                      </Typography>
+                      <Box
+                        key={member.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 1,
+                          px: 1.25,
+                          py: 1,
+                          borderRadius: 1.5,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          bgcolor: "background.paper",
+                        }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="body1"
+                            sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                            noWrap
+                          >
+                            {member.name || "-"}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              mt: 0.35,
+                              wordBreak: "break-word",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {member.email || "-"}
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            flexShrink: 0,
+                            px: 1,
+                            py: 0.35,
+                            borderRadius: 999,
+                            border: "1px solid",
+                            borderColor:
+                              member.role === "manager"
+                                ? "primary.main"
+                                : "divider",
+                            bgcolor:
+                              member.role === "manager"
+                                ? "action.hover"
+                                : "background.default",
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: "block",
+                              fontWeight: 700,
+                              color:
+                                member.role === "manager"
+                                  ? "primary.main"
+                                  : "text.secondary",
+                            }}
+                          >
+                            {t(
+                              member.role === "manager"
+                                ? "managerRole"
+                                : "memberRole",
+                            )}
+                          </Typography>
+                        </Box>
+                      </Box>
                     ))}
                   </Stack>
                 )}
@@ -457,6 +607,24 @@ export default function AccountPage() {
                           type="email"
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
+                          InputProps={{ notched: Boolean(inviteEmail) }}
+                          sx={{
+                            "& .MuiInputLabel-root.MuiInputLabel-outlined": {
+                              transform:
+                                direction === "rtl"
+                                  ? "translate(-14px, 10px) scale(1)"
+                                  : "translate(14px, 10px) scale(1)",
+                            },
+                            "& .MuiInputLabel-root.MuiInputLabel-shrink": {
+                              transform:
+                                direction === "rtl"
+                                  ? "translate(-14px, -9px) scale(0.75)"
+                                  : "translate(14px, -9px) scale(0.75)",
+                            },
+                            "& .MuiOutlinedInput-notchedOutline legend": {
+                              maxWidth: "100%",
+                            },
+                          }}
                           fullWidth
                         />
                       </Box>

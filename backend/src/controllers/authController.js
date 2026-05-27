@@ -89,6 +89,14 @@ export async function updatePreferences(req, res) {
   const user = await User.findById(req.user._id);
   if (!user) return res.status(404).json({ message: "User not found" });
 
+  if (Object.hasOwn(req.body || {}, "name")) {
+    const nextName = String(req.body?.name || "").trim();
+    if (!nextName) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    user.name = nextName.slice(0, 80);
+  }
+
   const nextDefaultIds = normalizeConnectionIds(
     req.body?.defaultSelectedBankConnectionIds,
   );
