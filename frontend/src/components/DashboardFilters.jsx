@@ -16,13 +16,13 @@ import {
   MenuItem,
   Slider,
   Stack,
-  TextField,
   ThemeProvider,
   Typography,
   createTheme,
   useTheme,
 } from "@mui/material";
 import { useMemo, useState } from "react";
+import AppTextField from "./AppTextField";
 import Dropdown from "./Dropdown";
 
 export default function DashboardFilters({
@@ -209,7 +209,7 @@ export default function DashboardFilters({
                     useFlexGap
                     sx={{ gap: 2 }}
                   >
-                    <TextField
+                    <AppTextField
                       id="custom-start-date"
                       type="date"
                       label={t("startDate")}
@@ -220,7 +220,7 @@ export default function DashboardFilters({
                       InputLabelProps={{ shrink: true }}
                       fullWidth
                     />
-                    <TextField
+                    <AppTextField
                       id="custom-end-date"
                       type="date"
                       label={t("endDate")}
@@ -304,7 +304,7 @@ export default function DashboardFilters({
                 </Dropdown>
 
                 {showSearch && (
-                  <TextField
+                  <AppTextField
                     type="text"
                     fullWidth
                     value={searchQuery}

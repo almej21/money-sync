@@ -19,12 +19,12 @@ import {
   MenuItem,
   ListItem,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
 import { memo, useEffect, useState } from "react";
+import AppTextField from "./AppTextField";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
 import PingPongTypography from "./PingPongTypography";
 
@@ -342,7 +342,7 @@ function ExpenseItem({
             <Box sx={{ flex: 1, minWidth: 0 }}>
               {isEditing ? (
                 <Stack sx={{ gap: 2.5, py: 1 }}>
-                  <TextField
+                  <AppTextField
                     variant="outlined"
                     size="small"
                     fullWidth
@@ -362,7 +362,7 @@ function ExpenseItem({
                       },
                     }}
                   />
-                  <TextField
+                  <AppTextField
                     select
                     variant="outlined"
                     size="small"
@@ -390,7 +390,7 @@ function ExpenseItem({
                         {optionValue}
                       </MenuItem>
                     ))}
-                  </TextField>
+                  </AppTextField>
                 </Stack>
               ) : (
                 <>

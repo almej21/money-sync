@@ -6,11 +6,11 @@ import {
   InputAdornment,
   MenuItem,
   Stack,
-  TextField,
 } from "@mui/material";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../../context/LanguageContext";
 import { createManualExpense } from "../../services/expenseService";
+import AppTextField from "../AppTextField";
 import Dropdown from "../Dropdown";
 import GenericModal from "../GenericModal";
 
@@ -96,7 +96,7 @@ function DateInputWithPicker({
 
   return (
     <Box sx={{ position: "relative" }}>
-      <TextField
+      <AppTextField
         fullWidth
         label={label}
         value={value}
@@ -263,14 +263,14 @@ export default function ManualExpenseModal({
 
         {entryType === "single" ? (
           <>
-            <TextField
+            <AppTextField
               fullWidth
               label={t("manualExpenseDescription")}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               InputLabelProps={{ shrink: true, sx: labelSx }}
             />
-            <TextField
+            <AppTextField
               fullWidth
               type="number"
               label={t("manualStandingOrderAmount")}
@@ -302,7 +302,7 @@ export default function ManualExpenseModal({
           </>
         ) : (
           <>
-            <TextField
+            <AppTextField
               fullWidth
               label={t("manualExpenseDescription")}
               value={description}
@@ -339,7 +339,7 @@ export default function ManualExpenseModal({
                 {t("manualStandingOrderAmountModeEach")}
               </MenuItem>
             </Dropdown>
-            <TextField
+            <AppTextField
               fullWidth
               type="number"
               label={t("manualStandingOrderAmount")}
@@ -377,7 +377,7 @@ export default function ManualExpenseModal({
                 />
               </Box>
               {entryType === "payments" && (
-                <TextField
+                <AppTextField
                   fullWidth
                   type="number"
                   label={t("manualStandingOrderPaymentsCount")}

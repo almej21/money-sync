@@ -9,6 +9,8 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import createCache from "@emotion/cache";
+import { CacheProvider } from "@emotion/react";
 import { useMemo } from "react";
 import {
   BrowserRouter,
@@ -17,6 +19,8 @@ import {
   Route,
   Routes,
 } from "react-router-dom";
+import { prefixer } from "stylis";
+import rtlPlugin from "@mui/stylis-plugin-rtl";
 import DashboardBottomNav from "./components/DashboardBottomNav";
 import NavBar from "./components/NavBar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -30,7 +34,14 @@ import DashboardListPage from "./pages/DashboardListPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardPieChartPage from "./pages/DashboardPieChartPage";
 import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ShoppingListsPage from "./pages/ShoppingListsPage";
+
+const ltrCache = createCache({ key: "mui" });
+const rtlCache = createCache({
+  key: "muirtl",
+  stylisPlugins: [prefixer, rtlPlugin],
+});
 
 function ScreenSizeDebugBadge() {
   const theme = useTheme();
@@ -94,7 +105,17 @@ function ProtectedRoutes() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<LoginPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <>
@@ -214,9 +235,6 @@ function AppContent() {
             },
           },
           MuiOutlinedInput: {
-            defaultProps: {
-              notched: false,
-            },
             styleOverrides: {
               root: {
                 backgroundColor: themeColors.background.default,
@@ -226,9 +244,6 @@ function AppContent() {
                 },
                 "& .MuiOutlinedInput-notchedOutline": {
                   borderColor: themeColors.primary.light,
-                },
-                "& .MuiOutlinedInput-notchedOutline legend": {
-                  maxWidth: "0.01px",
                 },
                 "&:hover .MuiOutlinedInput-notchedOutline": {
                   borderColor: themeColors.text.secondary,
@@ -249,27 +264,6 @@ function AppContent() {
               root: {
                 color: colors.text,
                 fontWeight: 700,
-                "&.MuiInputLabel-outlined": {
-                  transform:
-                    direction === "rtl"
-                      ? "translate(-18px, -11px) scale(1)"
-                      : "translate(14px, -11px) scale(1)",
-                },
-                ...(direction === "rtl"
-                  ? {
-                      right: 16,
-                      left: "auto",
-                      transformOrigin: "top right",
-                    }
-                  : {}),
-                "&.MuiInputLabel-shrink": {
-                  transformOrigin:
-                    direction === "rtl" ? "top right" : "top left",
-                  transform:
-                    direction === "rtl"
-                      ? "translate(-7px, -16px) scale(0.75)"
-                      : "translate(5px, -16px) scale(0.75)",
-                },
                 "&.Mui-focused": {
                   color: colors.text,
                 },
@@ -284,29 +278,32 @@ function AppContent() {
   const debugScreenSizeEnabled =
     String(import.meta.env.VITE_DEBUG_SCREEN_SIZE || "").toLowerCase() ===
       "true" || window.location.hostname === "localhost";
+  const emotionCache = direction === "rtl" ? rtlCache : ltrCache;
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <DashboardFiltersProvider>
-          <BrowserRouter>
-            <Box
-              sx={{
-                minHeight: "100vh",
-                bgcolor: "background.default",
-                width: "100%",
-                overflowX: "hidden",
-              }}
-              dir={direction}
-            >
-              <ProtectedRoutes />
-              {debugScreenSizeEnabled && <ScreenSizeDebugBadge />}
-            </Box>
-          </BrowserRouter>
-        </DashboardFiltersProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <CacheProvider value={emotionCache}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <DashboardFiltersProvider>
+            <BrowserRouter>
+              <Box
+                sx={{
+                  minHeight: "100vh",
+                  bgcolor: "background.default",
+                  width: "100%",
+                  overflowX: "hidden",
+                }}
+                dir={direction}
+              >
+                <ProtectedRoutes />
+                {debugScreenSizeEnabled && <ScreenSizeDebugBadge />}
+              </Box>
+            </BrowserRouter>
+          </DashboardFiltersProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </CacheProvider>
   );
 }
 

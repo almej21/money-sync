@@ -1,7 +1,8 @@
-import { Button, MenuItem, Stack, TextField } from "@mui/material";
+import { Button, MenuItem, Stack } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../../context/LanguageContext";
 import { updateManualExpense } from "../../services/expenseService";
+import AppTextField from "../AppTextField";
 import Dropdown from "../Dropdown";
 import GenericModal from "../GenericModal";
 
@@ -64,7 +65,7 @@ export default function ManualExpenseEditModal({
   return (
     <GenericModal open={open} onClose={onClose} headerText={modalTitle} width={620}>
       <Stack spacing={1.5} dir={direction}>
-        <TextField
+        <AppTextField
           fullWidth
           label={t("manualExpenseDescription")}
           value={description}
@@ -85,7 +86,7 @@ export default function ManualExpenseEditModal({
           ))}
         </Dropdown>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-          <TextField
+          <AppTextField
             fullWidth
             type="number"
             label={t("manualStandingOrderAmount")}
@@ -94,7 +95,7 @@ export default function ManualExpenseEditModal({
             inputProps={{ min: 0, step: "0.01" }}
             InputLabelProps={{ shrink: true }}
           />
-          <TextField
+          <AppTextField
             fullWidth
             type="date"
             label={t("manualExpenseDate")}

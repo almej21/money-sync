@@ -14,6 +14,20 @@ export async function registerUser({ email, password, name, householdName }) {
   });
 }
 
+export async function requestPasswordReset({ email }) {
+  return api("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword({ token, password, passwordConfirm }) {
+  return api(`/auth/reset-password/${encodeURIComponent(token)}`, {
+    method: "POST",
+    body: JSON.stringify({ password, passwordConfirm }),
+  });
+}
+
 export async function getCurrentUser() {
   return api("/auth/me");
 }

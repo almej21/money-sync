@@ -1,4 +1,5 @@
-import { Box, Button, Collapse, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Collapse, MenuItem, Stack, Typography } from "@mui/material";
+import AppTextField from "../AppTextField";
 import Dropdown from "../Dropdown";
 
 export default function AddConnectionForm({
@@ -54,7 +55,7 @@ export default function AddConnectionForm({
               ))}
             </Dropdown>
 
-            <TextField
+            <AppTextField
               label={t("connectionName")}
               value={form.connectionName}
               onChange={(e) => onConnectionNameChange(e.target.value)}
@@ -73,7 +74,7 @@ export default function AddConnectionForm({
             </Dropdown>
 
             {(selectedProvider?.fields || []).map((field) => (
-              <TextField
+              <AppTextField
                 key={field.name}
                 label={field.label || field.name}
                 type={field.type || "text"}

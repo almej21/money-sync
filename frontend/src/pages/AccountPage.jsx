@@ -16,10 +16,10 @@ import {
   IconButton,
   MenuItem,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
+import AppTextField from "../components/AppTextField";
 import AppSnackbar from "../components/AppSnackbar";
 import { COLOR_SCHEMES } from "../constants/colors";
 import { useAuth } from "../context/AuthContext";
@@ -314,7 +314,7 @@ export default function AccountPage() {
                       useFlexGap
                       sx={{ gap: 1, alignItems: { sm: "flex-end" } }}
                     >
-                      <TextField
+                      <AppTextField
                         label={t("name")}
                         value={profileName}
                         onChange={(event) => setProfileName(event.target.value)}
@@ -384,7 +384,7 @@ export default function AccountPage() {
                 <Typography color="text.secondary" sx={{ mb: 2 }}>
                   {t("themeSectionDescription")}
                 </Typography>
-                <TextField
+                <AppTextField
                   select
                   fullWidth
                   label={t("colorScheme")}
@@ -426,7 +426,7 @@ export default function AccountPage() {
                       </MenuItem>
                     );
                   })}
-                </TextField>
+                </AppTextField>
               </AccordionDetails>
             </Accordion>
 
@@ -602,7 +602,7 @@ export default function AccountPage() {
                       sx={{ gap: 1 }}
                     >
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <TextField
+                        <AppTextField
                           label={t("email")}
                           type="email"
                           value={inviteEmail}

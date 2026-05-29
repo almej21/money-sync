@@ -1,0 +1,1020 @@
+{
+  "generatedAt": "2026-05-29T07:40:58.284Z",
+  "startedAt": "2026-05-29T07:40:29.004Z",
+  "selectedProvider": {
+    "providerIndex": 8,
+    "companyId": "max",
+    "label": "MAX"
+  },
+  "config": {
+    "companyId": "max",
+    "startDate": "2026-04-29T07:40:46.633Z",
+    "verbose": true,
+    "showBrowser": false,
+    "credentialsFieldsProvided": [
+      "username",
+      "password"
+    ]
+  },
+  "scrapeMeta": {
+    "success": true,
+    "scrapeMode": "full",
+    "attemptsUsed": 1,
+    "totalDurationMs": 11643,
+    "error": null
+  },
+  "scrapeSummary": {
+    "accounts": 2,
+    "totalTransactions": 51,
+    "accountSummaries": [
+      {
+        "accountIndex": 0,
+        "accountLabel": "5021",
+        "transactions": 26
+      },
+      {
+        "accountIndex": 1,
+        "accountLabel": "5713",
+        "transactions": 25
+      }
+    ]
+  },
+  "fetchedItems": [
+    {
+      "itemIndex": 1,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-04-29T21:00:00.000Z",
+        "processedDate": "2026-05-02T21:00:00.000Z",
+        "originalAmount": -15.17,
+        "originalCurrency": "ILS",
+        "chargedAmount": -17.9,
+        "chargedCurrency": "ILS",
+        "description": "דמי כרטיס",
+        "memo": "",
+        "category": "העברת כספים",
+        "identifier": "74403036123033000484605",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 2,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-04-29T21:00:00.000Z",
+        "processedDate": "2026-05-02T21:00:00.000Z",
+        "originalAmount": -470,
+        "originalCurrency": "ILS",
+        "chargedAmount": -470,
+        "chargedCurrency": "ILS",
+        "description": "ד\"ר בלום - בלום פלוס",
+        "memo": "",
+        "category": "רפואה ובתי מרקחת",
+        "identifier": "04557436121005899846933",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 3,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-04-30T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -99,
+        "originalCurrency": "ILS",
+        "chargedAmount": -99,
+        "chargedCurrency": "ILS",
+        "description": "אייקון בת ים הו\"ק",
+        "memo": "הוראת קבע",
+        "category": "פנאי, בידור וספורט",
+        "identifier": "04557436123005951977889",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 4,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-02T21:00:00.000Z",
+        "processedDate": "2026-05-06T21:00:00.000Z",
+        "originalAmount": -159.29,
+        "originalCurrency": "ILS",
+        "chargedAmount": -159.29,
+        "chargedCurrency": "ILS",
+        "description": "PAYPAL *AISGECOMMER    4029357733    SG",
+        "memo": "חיוב עסקת חו\"ל בש\"ח ",
+        "category": "שונות",
+        "identifier": "74423436125617839869964",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 5,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-03T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -129.44,
+        "originalCurrency": "ILS",
+        "chargedAmount": -129.44,
+        "chargedCurrency": "ILS",
+        "description": "מנורה מבטחים-חיים/בריאות",
+        "memo": "הוראת קבע",
+        "category": "ביטוח",
+        "identifier": "74403036126021001357620",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 6,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-03T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -96.61,
+        "originalCurrency": "ILS",
+        "chargedAmount": -96.61,
+        "chargedCurrency": "ILS",
+        "description": "קרן מכבי",
+        "memo": "הוראת קבע",
+        "category": "רפואה ובתי מרקחת",
+        "identifier": "74580006125310387303244",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 7,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-05-06T21:00:00.000Z",
+        "originalAmount": -2600,
+        "originalCurrency": "ILS",
+        "chargedAmount": -2600,
+        "chargedCurrency": "ILS",
+        "description": "כספומט בנק 31   סניף 511",
+        "memo": "",
+        "category": "משיכת מזומן",
+        "identifier": "74403036127061000006835",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 8,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -100,
+        "originalCurrency": "ILS",
+        "chargedAmount": -100,
+        "chargedCurrency": "ILS",
+        "description": "תכשיטי שחיבר-צמרת",
+        "memo": "",
+        "category": "אופנה",
+        "identifier": "04557436126006080267496",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 9,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -900,
+        "originalCurrency": "ILS",
+        "chargedAmount": -900,
+        "chargedCurrency": "ILS",
+        "description": "סאנש",
+        "memo": "",
+        "category": "קוסמטיקה וטיפוח",
+        "identifier": "04557436131006264507546",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 10,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-09T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -161.5,
+        "originalCurrency": "ILS",
+        "chargedAmount": -161.5,
+        "chargedCurrency": "ILS",
+        "description": "רב קו אונליין",
+        "memo": "",
+        "category": "תחבורה ורכבים",
+        "identifier": "74403036132022002752100",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 11,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-12T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -38,
+        "originalCurrency": "ILS",
+        "chargedAmount": -38,
+        "chargedCurrency": "ILS",
+        "description": "הגחלים של סבא",
+        "memo": "",
+        "category": "מסעדות, קפה וברים",
+        "identifier": "74580006134311118689249",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 12,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-13T21:00:00.000Z",
+        "processedDate": "2026-05-18T21:00:00.000Z",
+        "originalAmount": -165.17,
+        "originalCurrency": "ILS",
+        "chargedAmount": -165.17,
+        "chargedCurrency": "ILS",
+        "description": "PAYPAL *EBAY US        4029357733    CA",
+        "memo": "חיוב עסקת חו\"ל בש\"ח ",
+        "category": "עיצוב הבית",
+        "identifier": "74897296137619355431345",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 13,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-16T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -129,
+        "originalCurrency": "ILS",
+        "chargedAmount": -129,
+        "chargedCurrency": "ILS",
+        "description": "KSP חולון",
+        "memo": "",
+        "category": "חשמל ומחשבים",
+        "identifier": "74580006138311419078064",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 14,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-19T21:00:00.000Z",
+        "processedDate": "2026-05-25T21:00:00.000Z",
+        "originalAmount": -44,
+        "originalCurrency": "ILS",
+        "chargedAmount": -44,
+        "chargedCurrency": "ILS",
+        "description": "PAYPAL *FABMANIA FABMA 35314369001   GB",
+        "memo": "חיוב עסקת חו\"ל בש\"ח ",
+        "category": "אופנה",
+        "identifier": "74004386142141053267238",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 15,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "installments",
+        "date": "2026-05-19T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -1563,
+        "originalCurrency": "ILS",
+        "chargedAmount": -156,
+        "chargedCurrency": "ILS",
+        "description": "הפניקס רכב חובה",
+        "memo": "תשלום 2 מתוך 10",
+        "category": "ביטוח",
+        "installments": {
+          "number": 2,
+          "total": 10
+        },
+        "identifier": "74580006111309183966390_2",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 16,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-22T21:00:00.000Z",
+        "processedDate": "2026-05-26T21:00:00.000Z",
+        "originalAmount": -124.89,
+        "originalCurrency": "ILS",
+        "chargedAmount": -124.89,
+        "chargedCurrency": "ILS",
+        "description": "PAYPAL *AISGECOMMER    4029357733    SG",
+        "memo": "חיוב עסקת חו\"ל בש\"ח ",
+        "category": "שונות",
+        "identifier": "74423436145620758343868",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 17,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-23T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -130.94,
+        "originalCurrency": "ILS",
+        "chargedAmount": -130.94,
+        "chargedCurrency": "ILS",
+        "description": "מנורה מבטחים-חיים/בריאות",
+        "memo": "הוראת קבע",
+        "category": "ביטוח",
+        "identifier": "74403036146026001725086",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 18,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-23T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -19.4,
+        "originalCurrency": "ILS",
+        "chargedAmount": -19.4,
+        "chargedCurrency": "ILS",
+        "description": "ב\"ב BOOOM",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74580006145311942486132",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 19,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-24T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -17.9,
+        "originalCurrency": "ILS",
+        "chargedAmount": 17.9,
+        "chargedCurrency": "ILS",
+        "description": "MAX",
+        "memo": "זיכוי בגין שימוש בכרטיס",
+        "category": "העברת כספים",
+        "identifier": "74403036146020000006093",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 20,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-25T21:00:00.000Z",
+        "processedDate": "2026-05-27T21:00:00.000Z",
+        "originalAmount": -77.21,
+        "originalCurrency": "ILS",
+        "chargedAmount": -77.21,
+        "chargedCurrency": "ILS",
+        "description": "PAYPAL *EBAY US        4029357733    US",
+        "memo": "חיוב עסקת חו\"ל בש\"ח ",
+        "category": "עיצוב הבית",
+        "identifier": "24027626146067581655037",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 21,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-25T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -35.93,
+        "originalCurrency": "ILS",
+        "chargedAmount": -35.93,
+        "chargedCurrency": "ILS",
+        "description": "טלזר 019 שירותי תקשורת בי",
+        "memo": "",
+        "category": "שירותי תקשורת",
+        "identifier": "74580006147312184053604",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 22,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-26T09:02:43.000Z",
+        "processedDate": "2026-05-26T09:02:43.000Z",
+        "originalAmount": -394.51,
+        "originalCurrency": "ILS",
+        "chargedAmount": 0,
+        "description": "Global-E /Fear of God",
+        "memo": "",
+        "category": "אופנה",
+        "identifier": null,
+        "status": "pending"
+      }
+    },
+    {
+      "itemIndex": 23,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-26T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -1.11,
+        "originalCurrency": "ILS",
+        "chargedAmount": -1.11,
+        "chargedCurrency": "ILS",
+        "description": "פנגו חשבונית חודשית",
+        "memo": "הוראת קבע",
+        "category": "תחבורה ורכבים",
+        "identifier": "04557436147006979250442",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 24,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-27T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -240,
+        "originalCurrency": "ILS",
+        "chargedAmount": -240,
+        "chargedCurrency": "ILS",
+        "description": "הפניקס ביטוח",
+        "memo": "הוראת קבע",
+        "category": "ביטוח",
+        "identifier": "74580006148312279248761",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 25,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-28T16:06:34.000Z",
+        "processedDate": "2026-05-28T16:06:34.000Z",
+        "originalAmount": -73,
+        "originalCurrency": "ILS",
+        "chargedAmount": 0,
+        "description": "הנכד של אברם",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": null,
+        "status": "pending"
+      }
+    },
+    {
+      "itemIndex": 26,
+      "accountIndex": 0,
+      "accountLabel": "5021",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-28T18:32:25.000Z",
+        "processedDate": "2026-05-28T18:32:25.000Z",
+        "originalAmount": -50,
+        "originalCurrency": "ILS",
+        "chargedAmount": 0,
+        "description": "פטריקס מזרח",
+        "memo": "",
+        "category": "פנאי, בידור וספורט",
+        "identifier": null,
+        "status": "pending"
+      }
+    },
+    {
+      "itemIndex": 27,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-04-29T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -105,
+        "originalCurrency": "ILS",
+        "chargedAmount": -105,
+        "chargedCurrency": "ILS",
+        "description": "שגב אקספרס ראשון לציון",
+        "memo": "",
+        "category": "מסעדות, קפה וברים",
+        "identifier": "74403036123038005627314",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 28,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-04-29T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -512,
+        "originalCurrency": "ILS",
+        "chargedAmount": -512,
+        "chargedCurrency": "ILS",
+        "description": "איקאה IKEA",
+        "memo": "",
+        "category": "עיצוב הבית",
+        "identifier": "74580006121310069408356",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 29,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-04-30T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -164.82,
+        "originalCurrency": "ILS",
+        "chargedAmount": -164.82,
+        "chargedCurrency": "ILS",
+        "description": "רמי לוי -  ראשון  לציון",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036124025002183440",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 30,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-02T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -37,
+        "originalCurrency": "ILS",
+        "chargedAmount": -37,
+        "chargedCurrency": "ILS",
+        "description": "דודא לפיצה חולון",
+        "memo": "",
+        "category": "מסעדות, קפה וברים",
+        "identifier": "74403036125018005621689",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 31,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -30.25,
+        "originalCurrency": "ILS",
+        "chargedAmount": -30.25,
+        "chargedCurrency": "ILS",
+        "description": "א.א ירקות ופירות בלפור בע",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "04557436126006078672152",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 32,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -268,
+        "originalCurrency": "ILS",
+        "chargedAmount": -268,
+        "chargedCurrency": "ILS",
+        "description": "סופר פארם-צמרת",
+        "memo": "",
+        "category": "רפואה ובתי מרקחת",
+        "identifier": "04557436126006079991494",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 33,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -20.18,
+        "originalCurrency": "ILS",
+        "chargedAmount": -19.47,
+        "chargedCurrency": "ILS",
+        "description": "הקולה חונים קונים",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "04557436126006085279181",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 34,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-04T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -9.8,
+        "originalCurrency": "ILS",
+        "chargedAmount": -9.8,
+        "chargedCurrency": "ILS",
+        "description": "האחים חגולי",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74580006126310473004549",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 35,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-05T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -90.3,
+        "originalCurrency": "ILS",
+        "chargedAmount": -90.3,
+        "chargedCurrency": "ILS",
+        "description": "WOLT",
+        "memo": "",
+        "category": "מסעדות, קפה וברים",
+        "identifier": "74580006127310539012394",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 36,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-06T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -547.83,
+        "originalCurrency": "ILS",
+        "chargedAmount": -547.83,
+        "chargedCurrency": "ILS",
+        "description": "כל בו חצי חינם בע\"מ",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036130019006220136",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 37,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-06T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -22.32,
+        "originalCurrency": "ILS",
+        "chargedAmount": -22.32,
+        "chargedCurrency": "ILS",
+        "description": "שוק חצי חינם",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036130019006223106",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 38,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-06T21:00:00.000Z",
+        "processedDate": "2026-05-09T21:00:00.000Z",
+        "originalAmount": -50,
+        "originalCurrency": "ILS",
+        "chargedAmount": -50,
+        "chargedCurrency": "ILS",
+        "description": "סיטי מרקט סטרומה בע\"מ",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74580006128310616132874",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 39,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-12T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -153.94,
+        "originalCurrency": "ILS",
+        "chargedAmount": -153.94,
+        "chargedCurrency": "ILS",
+        "description": "רמי לוי -  חולון",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036135021001719232",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 40,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-12T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -19.9,
+        "originalCurrency": "ILS",
+        "chargedAmount": -19.9,
+        "chargedCurrency": "ILS",
+        "description": "רמי לוי -  חולון",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036135021001719240",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 41,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-12T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -81.7,
+        "originalCurrency": "ILS",
+        "chargedAmount": -81.7,
+        "chargedCurrency": "ILS",
+        "description": "מקס חולון בע\"מ",
+        "memo": "",
+        "category": "שונות",
+        "identifier": "04557436134006403094031",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 42,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-14T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -70,
+        "originalCurrency": "ILS",
+        "chargedAmount": -70,
+        "chargedCurrency": "ILS",
+        "description": "מיניגוד",
+        "memo": "",
+        "category": "ספרים ודפוס",
+        "identifier": "74403036137040000600050",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 43,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-14T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -70,
+        "originalCurrency": "ILS",
+        "chargedAmount": -67.9,
+        "chargedCurrency": "ILS",
+        "description": "צ'ינטרו",
+        "memo": "",
+        "category": "מסעדות, קפה וברים",
+        "identifier": "04557436137006491579841",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 44,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "installments",
+        "date": "2026-05-17T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -1566.33,
+        "originalCurrency": "ILS",
+        "chargedAmount": -783.17,
+        "chargedCurrency": "ILS",
+        "description": "מכבי טבעי חולון",
+        "memo": "תשלום 1 מתוך 2",
+        "category": "רפואה ובתי מרקחת",
+        "installments": {
+          "number": 1,
+          "total": 2
+        },
+        "identifier": "74403036140019005708048_1",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 45,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-19T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -198,
+        "originalCurrency": "ILS",
+        "chargedAmount": -198,
+        "chargedCurrency": "ILS",
+        "description": "קרייזי מיט",
+        "memo": "",
+        "category": "מסעדות, קפה וברים",
+        "identifier": "74580006141311689624949",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 46,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-20T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -276.55,
+        "originalCurrency": "ILS",
+        "chargedAmount": -276.55,
+        "chargedCurrency": "ILS",
+        "description": "רמי לוי -  ראשון  לציון",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036144045002493470",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 47,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-20T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -19.9,
+        "originalCurrency": "ILS",
+        "chargedAmount": -19.9,
+        "chargedCurrency": "ILS",
+        "description": "סטופמרקט ראשון לציון",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74580006143311800180795",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 48,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-20T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -10,
+        "originalCurrency": "ILS",
+        "chargedAmount": -10,
+        "chargedCurrency": "ILS",
+        "description": "סטרייט ביקרי מאפיית רחוב",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "04557436147006959034329",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 49,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-25T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -136.18,
+        "originalCurrency": "ILS",
+        "chargedAmount": -136.18,
+        "chargedCurrency": "ILS",
+        "description": "רמי לוי -  חולון",
+        "memo": "",
+        "category": "מזון וצריכה",
+        "identifier": "74403036149003000320166",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 50,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-25T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -175.72,
+        "originalCurrency": "ILS",
+        "chargedAmount": -175.72,
+        "chargedCurrency": "ILS",
+        "description": "טן חמת חולון",
+        "memo": "",
+        "category": "דלק, חשמל וגז",
+        "identifier": "74580006147312172034319",
+        "status": "completed"
+      }
+    },
+    {
+      "itemIndex": 51,
+      "accountIndex": 1,
+      "accountLabel": "5713",
+      "transaction": {
+        "type": "normal",
+        "date": "2026-05-26T21:00:00.000Z",
+        "processedDate": "2026-06-01T21:00:00.000Z",
+        "originalAmount": -135.01,
+        "originalCurrency": "ILS",
+        "chargedAmount": -135.01,
+        "chargedCurrency": "ILS",
+        "description": "NEXT TV BY HOT",
+        "memo": "הוראת קבע",
+        "category": "שירותי תקשורת",
+        "identifier": "74580006147312258000291",
+        "status": "completed"
+      }
+    }
+  ],
+  "runError": null,
+  "consoleOutput": "=== Israeli Bank Scrapers Interactive Test ===\n\nAvailable providers:\n[0] American Express (amex) - required fields: id, card6Digits, password\n[1] Bank Hapoalim (hapoalim) - required fields: userCode, password\n[2] Bank Leumi (leumi) - required fields: username, password\n[3] BeHatsdaa (behatsdaa) - required fields: id, password\n[4] CAL (visaCal) - required fields: username, password\n[5] Discount Bank (discount) - required fields: id, password, num\n[6] First International (beinleumi) - required fields: username, password\n[7] Massad (massad) - required fields: username, password\n[8] MAX (max) - required fields: username, password\n[9] Mercantile Bank (mercantile) - required fields: id, password, num\n[10] Mizrahi-Tefahot (mizrahi) - required fields: username, password\n[11] ONE ZERO (oneZero) - required fields: email, password, otpLongTermToken\n[12] Otsar HaHayal (otsarHahayal) - required fields: username, password\n[13] Pagi (pagi) - required fields: username, password\n[14] Poalei Agudat Israel (beyahadBishvilha) - required fields: id, password\n[15] Union Bank (union) - required fields: username, password\n[16] Yahav (yahav) - required fields: username, nationalID, password\n\u001b[1G\u001b[0J\nSelect provider index: \u001b[24G(node:25388) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n8\r\n\nSelected: MAX (max) at index 8\n\nEnter credentials:\n\u001b[1G\u001b[0JUsername: \u001b[11Gbackend\\scripts\\test-bank-scrapers-interactive.js\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interactive.j\u001b[59G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interactive.\u001b[58G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interactive\u001b[57G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interactiv\u001b[56G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interacti\u001b[55G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interact\u001b[54G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-interac\u001b[53G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-intera\u001b[52G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-inter\u001b[51G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-inte\u001b[50G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-int\u001b[49G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-in\u001b[48G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-i\u001b[47G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers-\u001b[46G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrapers\u001b[45G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scraper\u001b[44G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrape\u001b[43G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scrap\u001b[42G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scra\u001b[41G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-scr\u001b[40G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-sc\u001b[39G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-s\u001b[38G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank-\u001b[37G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-bank\u001b[36G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-ban\u001b[35G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-ba\u001b[34G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-b\u001b[33G\u001b[1G\u001b[0JUsername: backend\\scripts\\test-\u001b[32G\u001b[1G\u001b[0JUsername: backend\\scripts\\test\u001b[31G\u001b[1G\u001b[0JUsername: backend\\scripts\\tes\u001b[30G\u001b[1G\u001b[0JUsername: backend\\scripts\\te\u001b[29G\u001b[1G\u001b[0JUsername: backend\\scripts\\t\u001b[28G\u001b[1G\u001b[0JUsername: backend\\scripts\\\u001b[27G\u001b[1G\u001b[0JUsername: backend\\scripts\u001b[26G\u001b[1G\u001b[0JUsername: backend\\script\u001b[25G\u001b[1G\u001b[0JUsername: backend\\scrip\u001b[24G\u001b[1G\u001b[0JUsername: backend\\scri\u001b[23G\u001b[1G\u001b[0JUsername: backend\\scr\u001b[22G\u001b[1G\u001b[0JUsername: backend\\sc\u001b[21G\u001b[1G\u001b[0JUsername: backend\\s\u001b[20G\u001b[1G\u001b[0JUsername: backend\\\u001b[19G\u001b[1G\u001b[0JUsername: backend\u001b[18G\u001b[1G\u001b[0JUsername: backen\u001b[17G\u001b[1G\u001b[0JUsername: backe\u001b[16G\u001b[1G\u001b[0JUsername: back\u001b[15G\u001b[1G\u001b[0JUsername: bac\u001b[14G\u001b[1G\u001b[0JUsername: ba\u001b[13G\u001b[1G\u001b[0JUsername: b\u001b[12G\u001b[1G\u001b[0JUsername: \u001b[11Galmogaharon21@gmail.com\r\nPassword: a\b*l\b*m\b*e\b*j\b*1\b*9\b*9\b*7\b*!\b*\r\n\n\nRunning scrape with configuration:\n- companyId: max\n- startDate: 2026-04-29T07:40:46.633Z\n- verbose: true\n- showBrowser: false\n- credentials fields provided: username, password\n[BANK SYNC ATTEMPT] configured companyId=max startDate=2026-04-29T07:40:46.633Z attempts=full|reduced|reduced-browser showBrowserCfg=false verboseCfg=true\n[BANK SYNC ATTEMPT] start companyId=max scrapeMode=full attemptNumber=1/3 showBrowser=false additionalInfo=true\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=START_SCRAPING\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=INITIALIZING\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=INITIALIZING\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=LOGGING_IN\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=LOGIN_SUCCESS\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=TERMINATING\n[BANK SYNC ATTEMPT] progress companyId=max scrapeMode=full progressType=END_SCRAPING\n[BANK SYNC ATTEMPT] success companyId=max scrapeMode=full attemptNumber=1/3 durationMs=11642 totalDurationMs=11643 accounts=2\n\nCompleted in 11643ms total.\nMode used: full, attempts used: 1\n\nScrape summary:\n- Accounts: 2\n- Total transactions: 51\n  [0] 5021 - txns: 26\n  [1] 5713 - txns: 25\n\nFetched items details:\n\n[Item 1] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-04-29T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-02T21:00:00.000Z\",\n  \"originalAmount\": -15.17,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -17.9,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"דמי כרטיס\",\n  \"memo\": \"\",\n  \"category\": \"העברת כספים\",\n  \"identifier\": \"74403036123033000484605\",\n  \"status\": \"completed\"\n}\n\n[Item 2] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-04-29T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-02T21:00:00.000Z\",\n  \"originalAmount\": -470,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -470,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"ד\\\"ר בלום - בלום פלוס\",\n  \"memo\": \"\",\n  \"category\": \"רפואה ובתי מרקחת\",\n  \"identifier\": \"04557436121005899846933\",\n  \"status\": \"completed\"\n}\n\n[Item 3] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-04-30T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -99,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -99,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"אייקון בת ים הו\\\"ק\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"פנאי, בידור וספורט\",\n  \"identifier\": \"04557436123005951977889\",\n  \"status\": \"completed\"\n}\n\n[Item 4] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-02T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-06T21:00:00.000Z\",\n  \"originalAmount\": -159.29,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -159.29,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"PAYPAL *AISGECOMMER    4029357733    SG\",\n  \"memo\": \"חיוב עסקת חו\\\"ל בש\\\"ח \",\n  \"category\": \"שונות\",\n  \"identifier\": \"74423436125617839869964\",\n  \"status\": \"completed\"\n}\n\n[Item 5] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-03T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -129.44,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -129.44,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"מנורה מבטחים-חיים/בריאות\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"ביטוח\",\n  \"identifier\": \"74403036126021001357620\",\n  \"status\": \"completed\"\n}\n\n[Item 6] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-03T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -96.61,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -96.61,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"קרן מכבי\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"רפואה ובתי מרקחת\",\n  \"identifier\": \"74580006125310387303244\",\n  \"status\": \"completed\"\n}\n\n[Item 7] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-06T21:00:00.000Z\",\n  \"originalAmount\": -2600,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -2600,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"כספומט בנק 31   סניף 511\",\n  \"memo\": \"\",\n  \"category\": \"משיכת מזומן\",\n  \"identifier\": \"74403036127061000006835\",\n  \"status\": \"completed\"\n}\n\n[Item 8] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -100,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -100,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"תכשיטי שחיבר-צמרת\",\n  \"memo\": \"\",\n  \"category\": \"אופנה\",\n  \"identifier\": \"04557436126006080267496\",\n  \"status\": \"completed\"\n}\n\n[Item 9] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -900,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -900,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"סאנש\",\n  \"memo\": \"\",\n  \"category\": \"קוסמטיקה וטיפוח\",\n  \"identifier\": \"04557436131006264507546\",\n  \"status\": \"completed\"\n}\n\n[Item 10] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-09T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -161.5,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -161.5,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"רב קו אונליין\",\n  \"memo\": \"\",\n  \"category\": \"תחבורה ורכבים\",\n  \"identifier\": \"74403036132022002752100\",\n  \"status\": \"completed\"\n}\n\n[Item 11] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-12T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -38,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -38,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"הגחלים של סבא\",\n  \"memo\": \"\",\n  \"category\": \"מסעדות, קפה וברים\",\n  \"identifier\": \"74580006134311118689249\",\n  \"status\": \"completed\"\n}\n\n[Item 12] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-13T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-18T21:00:00.000Z\",\n  \"originalAmount\": -165.17,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -165.17,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"PAYPAL *EBAY US        4029357733    CA\",\n  \"memo\": \"חיוב עסקת חו\\\"ל בש\\\"ח \",\n  \"category\": \"עיצוב הבית\",\n  \"identifier\": \"74897296137619355431345\",\n  \"status\": \"completed\"\n}\n\n[Item 13] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-16T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -129,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -129,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"KSP חולון\",\n  \"memo\": \"\",\n  \"category\": \"חשמל ומחשבים\",\n  \"identifier\": \"74580006138311419078064\",\n  \"status\": \"completed\"\n}\n\n[Item 14] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-19T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-25T21:00:00.000Z\",\n  \"originalAmount\": -44,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -44,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"PAYPAL *FABMANIA FABMA 35314369001   GB\",\n  \"memo\": \"חיוב עסקת חו\\\"ל בש\\\"ח \",\n  \"category\": \"אופנה\",\n  \"identifier\": \"74004386142141053267238\",\n  \"status\": \"completed\"\n}\n\n[Item 15] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"installments\",\n  \"date\": \"2026-05-19T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -1563,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -156,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"הפניקס רכב חובה\",\n  \"memo\": \"תשלום 2 מתוך 10\",\n  \"category\": \"ביטוח\",\n  \"installments\": {\n    \"number\": 2,\n    \"total\": 10\n  },\n  \"identifier\": \"74580006111309183966390_2\",\n  \"status\": \"completed\"\n}\n\n[Item 16] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-22T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-26T21:00:00.000Z\",\n  \"originalAmount\": -124.89,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -124.89,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"PAYPAL *AISGECOMMER    4029357733    SG\",\n  \"memo\": \"חיוב עסקת חו\\\"ל בש\\\"ח \",\n  \"category\": \"שונות\",\n  \"identifier\": \"74423436145620758343868\",\n  \"status\": \"completed\"\n}\n\n[Item 17] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-23T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -130.94,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -130.94,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"מנורה מבטחים-חיים/בריאות\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"ביטוח\",\n  \"identifier\": \"74403036146026001725086\",\n  \"status\": \"completed\"\n}\n\n[Item 18] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-23T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -19.4,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -19.4,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"ב\\\"ב BOOOM\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74580006145311942486132\",\n  \"status\": \"completed\"\n}\n\n[Item 19] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-24T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -17.9,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": 17.9,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"MAX\",\n  \"memo\": \"זיכוי בגין שימוש בכרטיס\",\n  \"category\": \"העברת כספים\",\n  \"identifier\": \"74403036146020000006093\",\n  \"status\": \"completed\"\n}\n\n[Item 20] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-25T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-27T21:00:00.000Z\",\n  \"originalAmount\": -77.21,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -77.21,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"PAYPAL *EBAY US        4029357733    US\",\n  \"memo\": \"חיוב עסקת חו\\\"ל בש\\\"ח \",\n  \"category\": \"עיצוב הבית\",\n  \"identifier\": \"24027626146067581655037\",\n  \"status\": \"completed\"\n}\n\n[Item 21] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-25T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -35.93,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -35.93,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"טלזר 019 שירותי תקשורת בי\",\n  \"memo\": \"\",\n  \"category\": \"שירותי תקשורת\",\n  \"identifier\": \"74580006147312184053604\",\n  \"status\": \"completed\"\n}\n\n[Item 22] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-26T09:02:43.000Z\",\n  \"processedDate\": \"2026-05-26T09:02:43.000Z\",\n  \"originalAmount\": -394.51,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": 0,\n  \"description\": \"Global-E /Fear of God\",\n  \"memo\": \"\",\n  \"category\": \"אופנה\",\n  \"identifier\": null,\n  \"status\": \"pending\"\n}\n\n[Item 23] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-26T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -1.11,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -1.11,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"פנגו חשבונית חודשית\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"תחבורה ורכבים\",\n  \"identifier\": \"04557436147006979250442\",\n  \"status\": \"completed\"\n}\n\n[Item 24] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-27T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -240,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -240,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"הפניקס ביטוח\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"ביטוח\",\n  \"identifier\": \"74580006148312279248761\",\n  \"status\": \"completed\"\n}\n\n[Item 25] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-28T16:06:34.000Z\",\n  \"processedDate\": \"2026-05-28T16:06:34.000Z\",\n  \"originalAmount\": -73,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": 0,\n  \"description\": \"הנכד של אברם\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": null,\n  \"status\": \"pending\"\n}\n\n[Item 26] accountIndex=0 account=\"5021\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-28T18:32:25.000Z\",\n  \"processedDate\": \"2026-05-28T18:32:25.000Z\",\n  \"originalAmount\": -50,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": 0,\n  \"description\": \"פטריקס מזרח\",\n  \"memo\": \"\",\n  \"category\": \"פנאי, בידור וספורט\",\n  \"identifier\": null,\n  \"status\": \"pending\"\n}\n\n[Item 27] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-04-29T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -105,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -105,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"שגב אקספרס ראשון לציון\",\n  \"memo\": \"\",\n  \"category\": \"מסעדות, קפה וברים\",\n  \"identifier\": \"74403036123038005627314\",\n  \"status\": \"completed\"\n}\n\n[Item 28] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-04-29T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -512,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -512,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"איקאה IKEA\",\n  \"memo\": \"\",\n  \"category\": \"עיצוב הבית\",\n  \"identifier\": \"74580006121310069408356\",\n  \"status\": \"completed\"\n}\n\n[Item 29] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-04-30T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -164.82,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -164.82,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"רמי לוי -  ראשון  לציון\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036124025002183440\",\n  \"status\": \"completed\"\n}\n\n[Item 30] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-02T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -37,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -37,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"דודא לפיצה חולון\",\n  \"memo\": \"\",\n  \"category\": \"מסעדות, קפה וברים\",\n  \"identifier\": \"74403036125018005621689\",\n  \"status\": \"completed\"\n}\n\n[Item 31] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -30.25,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -30.25,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"א.א ירקות ופירות בלפור בע\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"04557436126006078672152\",\n  \"status\": \"completed\"\n}\n\n[Item 32] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -268,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -268,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"סופר פארם-צמרת\",\n  \"memo\": \"\",\n  \"category\": \"רפואה ובתי מרקחת\",\n  \"identifier\": \"04557436126006079991494\",\n  \"status\": \"completed\"\n}\n\n[Item 33] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -20.18,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -19.47,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"הקולה חונים קונים\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"04557436126006085279181\",\n  \"status\": \"completed\"\n}\n\n[Item 34] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-04T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -9.8,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -9.8,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"האחים חגולי\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74580006126310473004549\",\n  \"status\": \"completed\"\n}\n\n[Item 35] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-05T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -90.3,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -90.3,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"WOLT\",\n  \"memo\": \"\",\n  \"category\": \"מסעדות, קפה וברים\",\n  \"identifier\": \"74580006127310539012394\",\n  \"status\": \"completed\"\n}\n\n[Item 36] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-06T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -547.83,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -547.83,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"כל בו חצי חינם בע\\\"מ\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036130019006220136\",\n  \"status\": \"completed\"\n}\n\n[Item 37] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-06T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -22.32,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -22.32,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"שוק חצי חינם\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036130019006223106\",\n  \"status\": \"completed\"\n}\n\n[Item 38] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-06T21:00:00.000Z\",\n  \"processedDate\": \"2026-05-09T21:00:00.000Z\",\n  \"originalAmount\": -50,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -50,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"סיטי מרקט סטרומה בע\\\"מ\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74580006128310616132874\",\n  \"status\": \"completed\"\n}\n\n[Item 39] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-12T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -153.94,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -153.94,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"רמי לוי -  חולון\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036135021001719232\",\n  \"status\": \"completed\"\n}\n\n[Item 40] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-12T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -19.9,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -19.9,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"רמי לוי -  חולון\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036135021001719240\",\n  \"status\": \"completed\"\n}\n\n[Item 41] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-12T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -81.7,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -81.7,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"מקס חולון בע\\\"מ\",\n  \"memo\": \"\",\n  \"category\": \"שונות\",\n  \"identifier\": \"04557436134006403094031\",\n  \"status\": \"completed\"\n}\n\n[Item 42] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-14T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -70,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -70,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"מיניגוד\",\n  \"memo\": \"\",\n  \"category\": \"ספרים ודפוס\",\n  \"identifier\": \"74403036137040000600050\",\n  \"status\": \"completed\"\n}\n\n[Item 43] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-14T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -70,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -67.9,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"צ'ינטרו\",\n  \"memo\": \"\",\n  \"category\": \"מסעדות, קפה וברים\",\n  \"identifier\": \"04557436137006491579841\",\n  \"status\": \"completed\"\n}\n\n[Item 44] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"installments\",\n  \"date\": \"2026-05-17T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -1566.33,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -783.17,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"מכבי טבעי חולון\",\n  \"memo\": \"תשלום 1 מתוך 2\",\n  \"category\": \"רפואה ובתי מרקחת\",\n  \"installments\": {\n    \"number\": 1,\n    \"total\": 2\n  },\n  \"identifier\": \"74403036140019005708048_1\",\n  \"status\": \"completed\"\n}\n\n[Item 45] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-19T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -198,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -198,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"קרייזי מיט\",\n  \"memo\": \"\",\n  \"category\": \"מסעדות, קפה וברים\",\n  \"identifier\": \"74580006141311689624949\",\n  \"status\": \"completed\"\n}\n\n[Item 46] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-20T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -276.55,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -276.55,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"רמי לוי -  ראשון  לציון\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036144045002493470\",\n  \"status\": \"completed\"\n}\n\n[Item 47] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-20T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -19.9,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -19.9,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"סטופמרקט ראשון לציון\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74580006143311800180795\",\n  \"status\": \"completed\"\n}\n\n[Item 48] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-20T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -10,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -10,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"סטרייט ביקרי מאפיית רחוב\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"04557436147006959034329\",\n  \"status\": \"completed\"\n}\n\n[Item 49] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-25T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -136.18,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -136.18,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"רמי לוי -  חולון\",\n  \"memo\": \"\",\n  \"category\": \"מזון וצריכה\",\n  \"identifier\": \"74403036149003000320166\",\n  \"status\": \"completed\"\n}\n\n[Item 50] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-25T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -175.72,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -175.72,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"טן חמת חולון\",\n  \"memo\": \"\",\n  \"category\": \"דלק, חשמל וגז\",\n  \"identifier\": \"74580006147312172034319\",\n  \"status\": \"completed\"\n}\n\n[Item 51] accountIndex=1 account=\"5713\"\n{\n  \"type\": \"normal\",\n  \"date\": \"2026-05-26T21:00:00.000Z\",\n  \"processedDate\": \"2026-06-01T21:00:00.000Z\",\n  \"originalAmount\": -135.01,\n  \"originalCurrency\": \"ILS\",\n  \"chargedAmount\": -135.01,\n  \"chargedCurrency\": \"ILS\",\n  \"description\": \"NEXT TV BY HOT\",\n  \"memo\": \"הוראת קבע\",\n  \"category\": \"שירותי תקשורת\",\n  \"identifier\": \"74580006147312258000291\",\n  \"status\": \"completed\"\n}\n\nTotal fetched items printed: 51\n"
+}

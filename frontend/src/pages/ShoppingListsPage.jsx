@@ -25,12 +25,12 @@ import {
   ListItemText,
   Skeleton,
   Stack,
-  TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import AppTextField from "../components/AppTextField";
 import AppSnackbar from "../components/AppSnackbar";
 import GenericModal from "../components/GenericModal";
 import LiquidGlassContainer from "../components/LiquidGlassContainer";
@@ -706,7 +706,7 @@ export default function ShoppingListsPage() {
                                   alignItems="center"
                                   spacing={1}
                                 >
-                                  <TextField
+                                  <AppTextField
                                     fullWidth
                                     size="small"
                                     label={t("note")}
@@ -798,7 +798,7 @@ export default function ShoppingListsPage() {
       >
         <Box component="form" onSubmit={createList}>
           <Stack spacing={1.5}>
-            <TextField
+            <AppTextField
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
               label={t("title")}
@@ -813,7 +813,7 @@ export default function ShoppingListsPage() {
                     useFlexGap
                     sx={{ gap: 2, mt: 0.5 }}
                   >
-                    <TextField
+                    <AppTextField
                       value={itemValue.description}
                       onChange={(e) => onItemChange(index, e.target.value)}
                       label={t("itemName")}
@@ -893,7 +893,7 @@ export default function ShoppingListsPage() {
                         </Stack>
                       </Box>
                     ) : (
-                      <TextField
+                      <AppTextField
                         type="number"
                         dir="ltr"
                         value={itemValue.quantity}
@@ -962,7 +962,7 @@ export default function ShoppingListsPage() {
       >
         <Box component="form" onSubmit={saveEditedList}>
           <Stack spacing={1.5}>
-            <TextField
+            <AppTextField
               value={editingListTitle}
               onChange={(e) => setEditingListTitle(e.target.value)}
               label={t("title")}
@@ -977,7 +977,7 @@ export default function ShoppingListsPage() {
                     useFlexGap
                     sx={{ gap: 0.5 }}
                   >
-                    <TextField
+                    <AppTextField
                       value={item.description}
                       onChange={(e) => onEditItemChange(index, e.target.value)}
                       label={t("itemName")}
@@ -1057,7 +1057,7 @@ export default function ShoppingListsPage() {
                         </Stack>
                       </Box>
                     ) : (
-                      <TextField
+                      <AppTextField
                         type="number"
                         dir="ltr"
                         value={item.quantity}

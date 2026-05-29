@@ -1,6 +1,9 @@
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import process from "node:process";
 import { createInterface } from "node:readline/promises";
 import { setTimeout as wait } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
 import { assertSupportedNodeVersion } from "../src/utils/nodeVersion.js";
 
 const ONE_ZERO_REQUIRED_FIELDS = new Set([
@@ -32,9 +35,50 @@ const COMPANY_LABELS = {
 };
 let createScraper;
 let SCRAPERS;
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+
+function createOutputCapture() {
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  const chunks = [];
+
+  function appendChunk(chunk) {
+    if (typeof chunk === "string") {
+      chunks.push(chunk);
+      return;
+    }
+    if (Buffer.isBuffer(chunk)) {
+      chunks.push(chunk.toString("utf8"));
+      return;
+    }
+    chunks.push(String(chunk));
+  }
+
+  function patchWrite(originalWrite) {
+    return function patchedWrite(chunk, encoding, callback) {
+      appendChunk(chunk);
+      return originalWrite(chunk, encoding, callback);
+    };
+  }
+
+  process.stdout.write = patchWrite(originalStdoutWrite);
+  process.stderr.write = patchWrite(originalStderrWrite);
+
+  return {
+    getOutput() {
+      return chunks.join("");
+    },
+    restore() {
+      process.stdout.write = originalStdoutWrite;
+      process.stderr.write = originalStderrWrite;
+    },
+  };
+}
 
 function parseBoolean(value, defaultValue = false) {
-  const normalized = String(value ?? "").trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
   if (!normalized) return defaultValue;
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
@@ -174,7 +218,9 @@ function getProviderOptions() {
 }
 
 function summarizeScrape(scrapeResult) {
-  const accounts = Array.isArray(scrapeResult?.accounts) ? scrapeResult.accounts : [];
+  const accounts = Array.isArray(scrapeResult?.accounts)
+    ? scrapeResult.accounts
+    : [];
   const totalTransactions = accounts.reduce((sum, account) => {
     const txns = Array.isArray(account?.txns) ? account.txns.length : 0;
     return sum + txns;
@@ -195,12 +241,123 @@ function summarizeScrape(scrapeResult) {
     ]
       .filter(Boolean)
       .join(" | ");
-    console.log(`  [${index}] ${accountLabel || "Unnamed account"} - txns: ${txns}`);
+    console.log(
+      `  [${index}] ${accountLabel || "Unnamed account"} - txns: ${txns}`,
+    );
   }
 }
 
+function buildScrapeSummary(scrapeResult) {
+  const accounts = Array.isArray(scrapeResult?.accounts)
+    ? scrapeResult.accounts
+    : [];
+  const accountSummaries = accounts.map((account, index) => {
+    const txns = Array.isArray(account?.txns) ? account.txns.length : 0;
+    const accountLabel = [
+      account?.accountName,
+      account?.name,
+      account?.accountNumber,
+      account?.accountId,
+      account?.cardNumber,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+    return {
+      accountIndex: index,
+      accountLabel: accountLabel || "Unnamed account",
+      transactions: txns,
+    };
+  });
+
+  const totalTransactions = accountSummaries.reduce(
+    (sum, account) => sum + account.transactions,
+    0,
+  );
+  return {
+    accounts: accountSummaries.length,
+    totalTransactions,
+    accountSummaries,
+  };
+}
+
+function collectFetchedItems(scrapeResult) {
+  const accounts = Array.isArray(scrapeResult?.accounts)
+    ? scrapeResult.accounts
+    : [];
+  const items = [];
+
+  for (const [accountIndex, account] of accounts.entries()) {
+    const txns = Array.isArray(account?.txns) ? account.txns : [];
+    const accountLabel = [
+      account?.accountName,
+      account?.name,
+      account?.accountNumber,
+      account?.accountId,
+      account?.cardNumber,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    for (const txn of txns) {
+      items.push({
+        itemIndex: items.length + 1,
+        accountIndex,
+        accountLabel: accountLabel || "Unnamed account",
+        transaction: txn,
+      });
+    }
+  }
+
+  return items;
+}
+
+function getTimestampForFilename() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function serializeError(error) {
+  if (!error) return null;
+  return {
+    message: error?.message || String(error),
+    stack: error?.stack || null,
+  };
+}
+
+async function writeResultFile({
+  selectedProvider,
+  config,
+  scrapeMeta,
+  scrapeSummary,
+  fetchedItems,
+  runError,
+  consoleOutput,
+  startedAt,
+}) {
+  const filePath = path.join(
+    SCRIPT_DIR,
+    `test-bank-scrapers-interactive-result-${getTimestampForFilename()}.json`,
+  );
+
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    startedAt,
+    selectedProvider,
+    config,
+    scrapeMeta,
+    scrapeSummary,
+    fetchedItems,
+    runError: serializeError(runError),
+    consoleOutput,
+  };
+
+  await writeFile(filePath, JSON.stringify(payload, null, 2), "utf8");
+  return filePath;
+}
+
 function printFetchedItemsDetails(scrapeResult) {
-  const accounts = Array.isArray(scrapeResult?.accounts) ? scrapeResult.accounts : [];
+  const accounts = Array.isArray(scrapeResult?.accounts)
+    ? scrapeResult.accounts
+    : [];
   let itemCounter = 0;
 
   console.log("\nFetched items details:");
@@ -398,97 +555,160 @@ async function scrapeWithFallback({
 }
 
 async function main() {
-  assertSupportedNodeVersion();
-  ({ createScraper, SCRAPERS } = await import("israeli-bank-scrapers"));
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("Interactive test requires a TTY terminal.");
-  }
-
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const outputCapture = createOutputCapture();
+  const startedAt = new Date().toISOString();
+  let selectedProvider = null;
+  let config = null;
+  let scrapeMeta = null;
+  let scrapeSummary = null;
+  let fetchedItems = [];
+  let runError = null;
 
   try {
-    const providers = getProviderOptions();
-    if (providers.length === 0) {
-      throw new Error("No providers found from israeli-bank-scrapers.");
+    assertSupportedNodeVersion();
+    ({ createScraper, SCRAPERS } = await import("israeli-bank-scrapers"));
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      throw new Error("Interactive test requires a TTY terminal.");
     }
 
-    console.log("=== Israeli Bank Scrapers Interactive Test ===");
-    console.log("\nAvailable providers:");
-    providers.forEach((provider, index) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    try {
+      const providers = getProviderOptions();
+      if (providers.length === 0) {
+        throw new Error("No providers found from israeli-bank-scrapers.");
+      }
+
+      console.log("=== Israeli Bank Scrapers Interactive Test ===");
+      console.log("\nAvailable providers:");
+      providers.forEach((provider, index) => {
+        console.log(
+          `[${index}] ${provider.label} (${provider.companyId}) - required fields: ${provider.requiredFields.join(", ") || "none"}`,
+        );
+      });
+
+      const providerIndex = await promptProviderIndex(rl, providers);
+      const selected = providers[providerIndex];
+      selectedProvider = {
+        providerIndex,
+        companyId: selected.companyId,
+        label: selected.label,
+      };
       console.log(
-        `[${index}] ${provider.label} (${provider.companyId}) - required fields: ${provider.requiredFields.join(", ") || "none"}`,
+        `\nSelected: ${selected.label} (${selected.companyId}) at index ${providerIndex}`,
       );
-    });
 
-    const providerIndex = await promptProviderIndex(rl, providers);
-    const selected = providers[providerIndex];
-    console.log(
-      `\nSelected: ${selected.label} (${selected.companyId}) at index ${providerIndex}`,
-    );
+      const credentials = {};
+      console.log("\nEnter credentials:");
 
-    const credentials = {};
-    console.log("\nEnter credentials:");
+      const username = (await rl.question("Username: ")).trim();
+      if (username) credentials.username = username;
 
-    const username = (await rl.question("Username: ")).trim();
-    if (username) credentials.username = username;
+      const password = await promptHidden(rl, "Password: ");
+      if (password) credentials.password = password;
 
-    const password = await promptHidden(rl, "Password: ");
-    if (password) credentials.password = password;
+      for (const field of selected.requiredFields) {
+        if (field === "username" || field === "password") continue;
+        const value = await promptField(rl, field);
+        if (value) credentials[field] = value;
+      }
 
-    for (const field of selected.requiredFields) {
-      if (field === "username" || field === "password") continue;
-      const value = await promptField(rl, field);
-      if (value) credentials[field] = value;
-    }
-
-    const missingFields = selected.requiredFields.filter((field) => !credentials[field]);
-    if (missingFields.length > 0) {
-      throw new Error(
-        `Missing required credentials for ${selected.companyId}: ${missingFields.join(", ")}`,
+      const missingFields = selected.requiredFields.filter(
+        (field) => !credentials[field],
       );
+      if (missingFields.length > 0) {
+        throw new Error(
+          `Missing required credentials for ${selected.companyId}: ${missingFields.join(", ")}`,
+        );
+      }
+
+      const verbose = parseBoolean(process.env.BANK_SCRAPER_VERBOSE, true);
+      const showBrowser = parseBoolean(
+        process.env.BANK_SCRAPER_SHOW_BROWSER,
+        false,
+      );
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 1);
+
+      config = {
+        companyId: selected.companyId,
+        startDate: startDate.toISOString(),
+        verbose,
+        showBrowser,
+        credentialsFieldsProvided: Object.keys(credentials),
+      };
+
+      console.log("\nRunning scrape with configuration:");
+      console.log(`- companyId: ${selected.companyId}`);
+      console.log(`- startDate: ${startDate.toISOString()}`);
+      console.log(`- verbose: ${verbose}`);
+      console.log(`- showBrowser: ${showBrowser}`);
+      console.log(
+        `- credentials fields provided: ${Object.keys(credentials).join(", ") || "none"}`,
+      );
+
+      const result = await scrapeWithFallback({
+        companyId: selected.companyId,
+        credentials,
+        verbose,
+        showBrowser,
+        startDate,
+      });
+
+      scrapeMeta = {
+        success: Boolean(result?.success),
+        scrapeMode: result?.scrapeMode || "unknown",
+        attemptsUsed: Number(result?.attemptsUsed || 0),
+        totalDurationMs: Number(result?.totalDurationMs || 0),
+        error: result?.error || null,
+      };
+
+      const durationMs = Number(result?.totalDurationMs || 0);
+      console.log(`\nCompleted in ${durationMs}ms total.`);
+      console.log(
+        `Mode used: ${result.scrapeMode}, attempts used: ${result.attemptsUsed}`,
+      );
+
+      if (!result.success) {
+        console.error(`Scrape failed: ${result.error}`);
+        process.exitCode = 1;
+        return;
+      }
+
+      scrapeSummary = buildScrapeSummary(result.scrapeResult);
+      fetchedItems = collectFetchedItems(result.scrapeResult);
+      summarizeScrape(result.scrapeResult);
+      printFetchedItemsDetails(result.scrapeResult);
+    } finally {
+      rl.close();
     }
-
-    const verbose = parseBoolean(process.env.BANK_SCRAPER_VERBOSE, true);
-    const showBrowser = parseBoolean(process.env.BANK_SCRAPER_SHOW_BROWSER, false);
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 1);
-
-    console.log("\nRunning scrape with configuration:");
-    console.log(`- companyId: ${selected.companyId}`);
-    console.log(`- startDate: ${startDate.toISOString()}`);
-    console.log(`- verbose: ${verbose}`);
-    console.log(`- showBrowser: ${showBrowser}`);
-    console.log(
-      `- credentials fields provided: ${Object.keys(credentials).join(", ") || "none"}`,
-    );
-
-    const result = await scrapeWithFallback({
-      companyId: selected.companyId,
-      credentials,
-      verbose,
-      showBrowser,
-      startDate,
-    });
-
-    const durationMs = Number(result?.totalDurationMs || 0);
-    console.log(`\nCompleted in ${durationMs}ms total.`);
-    console.log(
-      `Mode used: ${result.scrapeMode}, attempts used: ${result.attemptsUsed}`,
-    );
-
-    if (!result.success) {
-      console.error(`Scrape failed: ${result.error}`);
-      process.exitCode = 1;
-      return;
-    }
-
-    summarizeScrape(result.scrapeResult);
-    printFetchedItemsDetails(result.scrapeResult);
+  } catch (error) {
+    runError = error;
+    throw error;
   } finally {
-    rl.close();
+    try {
+      await writeResultFile({
+        selectedProvider,
+        config,
+        scrapeMeta,
+        scrapeSummary,
+        fetchedItems,
+        runError,
+        consoleOutput: outputCapture.getOutput(),
+        startedAt,
+      });
+    } catch (writeError) {
+      console.error(
+        `Failed to write interactive scrape result file: ${
+          writeError?.stack || writeError?.message || String(writeError)
+        }`,
+      );
+    } finally {
+      outputCapture.restore();
+    }
   }
 }
 

@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema(
     expenseSyncMeta: {
       lastBankFetchAt: { type: Date, default: null },
     },
+    passwordResetTokenHash: { type: String, default: "" },
+    passwordResetTokenExpiresAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
