@@ -22,6 +22,7 @@ import DashboardFilters from "../components/DashboardFilters";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
+import { formatIlsAmount } from "../lib/currency";
 import {
   getBankCredentialStatus,
   getBankProviders,
@@ -320,7 +321,7 @@ function createAlwaysVisibleLabelsPlugin({ chartGrouping, bucketKeys }) {
         ? formatDayMonthFromBucketKey(bucketKeys[index])
         : "";
       const amountY = Math.max(bar.y - (dayMonth ? 16 : 6), top + 12);
-      ctx.fillText(`₪${Math.round(value)}`, bar.x, amountY);
+      ctx.fillText(formatIlsAmount(Math.round(value)), bar.x, amountY);
       if (dayMonth) {
         ctx.fillText(dayMonth, bar.x, amountY + 12);
       }

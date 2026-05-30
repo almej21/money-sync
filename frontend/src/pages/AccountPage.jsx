@@ -609,18 +609,6 @@ export default function AccountPage() {
                           onChange={(e) => setInviteEmail(e.target.value)}
                           InputProps={{ notched: Boolean(inviteEmail) }}
                           sx={{
-                            "& .MuiInputLabel-root.MuiInputLabel-outlined": {
-                              transform:
-                                direction === "rtl"
-                                  ? "translate(-14px, 10px) scale(1)"
-                                  : "translate(14px, 10px) scale(1)",
-                            },
-                            "& .MuiInputLabel-root.MuiInputLabel-shrink": {
-                              transform:
-                                direction === "rtl"
-                                  ? "translate(-14px, -9px) scale(0.75)"
-                                  : "translate(14px, -9px) scale(0.75)",
-                            },
                             "& .MuiOutlinedInput-notchedOutline legend": {
                               maxWidth: "100%",
                             },

@@ -21,6 +21,7 @@ import MinimalExpenseItem from "../components/MinimalExpenseItem";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
+import { formatCurrencyAmount } from "../lib/currency";
 import {
   getBankCredentialStatus,
   getBankProviders,
@@ -706,7 +707,11 @@ export default function DashboardPieChartPage() {
             enabled: !isMobile,
             callbacks: {
               label: (context) =>
-                `${context.label}: ${chartCurrency}${Number(context.raw || 0).toFixed(2)}`,
+                `${context.label}: ${formatCurrencyAmount(
+                  Number(context.raw || 0),
+                  chartCurrency,
+                  { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                )}`,
             },
           },
         },
@@ -889,10 +894,19 @@ export default function DashboardPieChartPage() {
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ whiteSpace: "nowrap", fontWeight: 700 }}
+                        dir="ltr"
+                        sx={{
+                          whiteSpace: "nowrap",
+                          fontWeight: 700,
+                          display: "inline-flex",
+                          alignItems: "baseline",
+                          gap: 0.35,
+                          unicodeBidi: "bidi-override",
+                        }}
                       >
-                        {chartCurrency}
-                        {Math.round(item.value)}
+                        <Box component="span">
+                          {formatCurrencyAmount(Math.round(item.value), chartCurrency)}
+                        </Box>
                       </Typography>
                     </Stack>
                     <Box sx={{ display: "flex", justifyContent: "flex-end" }}>

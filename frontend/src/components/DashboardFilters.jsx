@@ -24,6 +24,7 @@ import {
 import { useMemo, useState } from "react";
 import AppTextField from "./AppTextField";
 import Dropdown from "./Dropdown";
+import { formatIlsAmount } from "../lib/currency";
 
 export default function DashboardFilters({
   t,
@@ -187,10 +188,11 @@ export default function DashboardFilters({
                   ))}
                 </Dropdown>
 
-                  <Dropdown
+                <Dropdown
                     labelId="time-range-label"
                     value={timeRange}
                     label={labelWithIcon(t("timeRange"), AccessTimeOutlinedIcon)}
+                    labelShrink
                     onChange={(event) => onTimeRangeChange(event.target.value)}
                     sx={{ width: "100%" }}
                 >
@@ -239,6 +241,7 @@ export default function DashboardFilters({
                     labelId="sort-by-label"
                     value={sortBy}
                     label={labelWithIcon(t("sortBy"), SortOutlinedIcon)}
+                    labelShrink
                     onChange={(event) => onSortByChange(event.target.value)}
                     sx={{ width: "100%" }}
                   >
@@ -260,6 +263,20 @@ export default function DashboardFilters({
                       AccountBalanceOutlinedIcon,
                     )}
                     labelShrink
+                    inputLabelSx={(theme) => ({
+                      "&.MuiInputLabel-outlined:not(.MuiInputLabel-shrink)": {
+                        transform:
+                          theme.direction === "rtl"
+                            ? "translate(-16px, 9px) scale(1) !important"
+                            : "translate(0, 9px) scale(1) !important",
+                      },
+                      "&.MuiInputLabel-outlined.MuiInputLabel-shrink": {
+                        transform:
+                          theme.direction === "rtl"
+                            ? "translate(-16px, -9px) scale(0.75) !important"
+                            : "translate(0, -9px) scale(0.75) !important",
+                      },
+                    })}
                     multiple
                   displayEmpty
                   disabled={!shouldShowAccountFilter}
@@ -317,6 +334,11 @@ export default function DashboardFilters({
                     sx={{
                       "& .MuiInputLabel-root": {
                         fontSize: "1.1rem",
+                        lineHeight: 1,
+                      },
+                      "& .MuiInputLabel-root .MuiBox-root": {
+                        display: "inline-flex",
+                        alignItems: "center",
                       },
                       "& .MuiOutlinedInput-root": {
                         minHeight: "45px",
@@ -358,10 +380,11 @@ export default function DashboardFilters({
                     {t("amountRange")}:{" "}
                   <Box
                     component="span"
-                    sx={{ direction: "ltr", unicodeBidi: "isolate" }}
+                    dir="ltr"
+                    sx={{ unicodeBidi: "isolate" }}
                   >
-                    ₪{Math.round(selectedAmountRange[0])} - ₪
-                    {Math.round(selectedAmountRange[1])}
+                    {formatIlsAmount(Math.round(selectedAmountRange[0]))} -{" "}
+                    {formatIlsAmount(Math.round(selectedAmountRange[1]))}
                   </Box>
                 </Typography>
                 <ThemeProvider theme={ltrSliderTheme}>
@@ -379,7 +402,7 @@ export default function DashboardFilters({
                     }}
                     valueLabelDisplay="auto"
                     valueLabelFormat={(value) =>
-                      `₪${Math.round(Number(value))}`
+                      formatIlsAmount(Math.round(Number(value)))
                     }
                     sx={{ direction: "ltr" }}
                   />

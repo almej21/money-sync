@@ -17,6 +17,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
+import { formatIlsAmount } from "../../lib/currency";
 import Dropdown from "../Dropdown";
 
 function isCardSuffix(value) {
@@ -193,12 +194,8 @@ function AccountSettingsRow({
     return "";
   }
 
-  function formatIlsAmount(value) {
-    const numericValue = Number(value || 0);
-    const roundedValue = Number.isFinite(numericValue)
-      ? Math.round(numericValue)
-      : 0;
-    return `\u200E₪${roundedValue}\u200E`;
+  function formatRoundedIlsAmount(value) {
+    return formatIlsAmount(Math.round(Number(value || 0)));
   }
 
   function getDayOfMonth(value) {
@@ -522,7 +519,7 @@ function AccountSettingsRow({
                             mt: 0.25,
                           }}
                         >
-                          {`${t("manualExpenseEachPayment")}: ${formatIlsAmount(perPaymentAmount)}`}
+                          {`${t("manualExpenseEachPayment")}: ${formatRoundedIlsAmount(perPaymentAmount)}`}
                         </Typography>
                       )}
                       {isStandingOrder && (
@@ -629,8 +626,8 @@ function AccountSettingsRow({
                         }}
                       >
                         {isGroupedPayments
-                          ? `${t("manualExpenseTotal")}: ${formatIlsAmount(displayedAmount)}`
-                          : formatIlsAmount(displayedAmount)}
+                          ? `${t("manualExpenseTotal")}: ${formatRoundedIlsAmount(displayedAmount)}`
+                          : formatRoundedIlsAmount(displayedAmount)}
                       </Typography>
                       {isGroupedStanding && (
                         <Stack sx={{ mt: 0.8, pt: 0.5 }}>
@@ -697,7 +694,7 @@ function AccountSettingsRow({
                                       variant="caption"
                                       sx={{ color: theme.palette.text.contrastText }}
                                     >
-                                      {`${formatManualDate(occurrence?.date)} • ${formatIlsAmount(occurrence?.amount)}`}
+                                      {`${formatManualDate(occurrence?.date)} • ${formatRoundedIlsAmount(occurrence?.amount)}`}
                                     </Typography>
                                     <Stack direction="row" spacing={0} sx={{ direction: "ltr", gap: "4px" }}>
                                       {direction === "rtl" ? (

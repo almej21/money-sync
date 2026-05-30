@@ -1131,15 +1131,20 @@ export default function DashboardListPage({ hideTotal = false }) {
             px: { xs: 0.5, sm: 0.75 },
             textAlign: direction === "rtl" ? "right" : "left",
             fontSize: "3rem",
+            width: "100%",
+            display: "flex",
+            justifyContent: "flex-start",
           }}
         >
           <Box
             component="span"
+            dir="ltr"
             sx={{
               display: "inline-flex",
+              justifyContent: "flex-start",
               alignItems: "baseline",
-              direction: "ltr",
-              unicodeBidi: "isolate",
+              flexDirection: "row",
+              unicodeBidi: "bidi-override",
               gap: 0.5,
             }}
           >

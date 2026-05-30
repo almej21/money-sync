@@ -63,14 +63,7 @@ export default function MinimalExpenseItem({
   const shouldShowSourceAccountId =
     showSourceAccountIdAfterCategory && Boolean(sourceAccountIdText);
   const formattedDate = formatDate(exp?.date);
-  const detailsText =
-    direction === "rtl"
-      ? shouldShowSourceAccountId
-        ? `(${sourceAccountIdText}) \u2022 ${formattedDate}`
-        : formattedDate
-      : `\u2022 ${formattedDate}${
-          shouldShowSourceAccountId ? ` \u2022 (${sourceAccountIdText})` : ""
-        }`;
+  const amountCurrency = String(exp?.currency || "").trim() || "₪";
   const statusBadgeSx = {
     display: "inline-flex",
     alignItems: "center",
@@ -100,11 +93,12 @@ export default function MinimalExpenseItem({
             sx={{
               position: "absolute",
               top: 0,
-              left: direction === "rtl" ? "auto" : 8,
-              right: direction === "rtl" ? 8 : "auto",
+              left: 8,
+              right: 8,
               transform: "translateY(-35%)",
               zIndex: 2,
               display: "flex",
+              flexDirection: direction === "rtl" ? "row-reverse" : "row",
               flexWrap: "wrap",
               gap: 0.35,
               justifyContent: direction === "rtl" ? "flex-end" : "flex-start",
@@ -206,29 +200,70 @@ export default function MinimalExpenseItem({
                   fontFamily: "inherit",
                   whiteSpace: "nowrap",
                   flexShrink: 0,
-                  direction: "ltr",
-                  unicodeBidi: "isolate",
+                  direction,
                 }}
               >
-                {detailsText}
+                {direction === "rtl" ? "" : "\u2022 "}
+                <Box component="span" sx={{ direction: "ltr" }}>
+                  {formattedDate}
+                </Box>
+                {shouldShowSourceAccountId && (
+                  <>
+                    {" \u2022 "}
+                    <Box
+                      component="span"
+                      sx={{ direction: "ltr", unicodeBidi: "bidi-override" }}
+                    >
+                      ({sourceAccountIdText})
+                    </Box>
+                  </>
+                )}
               </Typography>
             </Stack>
           </Box>
-          <Typography
+          <Box
             component="span"
+            dir="ltr"
             sx={{
               color: isReturn ? "#00b909" : theme.palette.text.primary,
+              display: "inline-flex",
+              alignItems: "baseline",
+              gap: 0.35,
               fontWeight: 800,
-              fontSize: ".82rem",
-              direction: "ltr",
-              unicodeBidi: "isolate",
+              unicodeBidi: "bidi-override",
               flexShrink: 0,
             }}
           >
-            {isReturn ? "+" : ""}
-            {exp?.currency}
-            {normalizedAmount}
-          </Typography>
+            {isReturn && (
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 400,
+                  fontSize: ".72rem",
+                }}
+              >
+                +
+              </Typography>
+            )}
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 400,
+                fontSize: ".72rem",
+              }}
+            >
+              {amountCurrency}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 800,
+                fontSize: ".82rem",
+              }}
+            >
+              {normalizedAmount}
+            </Typography>
+          </Box>
         </Stack>
       </Box>
     </ListItem>

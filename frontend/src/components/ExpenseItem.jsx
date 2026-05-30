@@ -16,16 +16,16 @@ import {
   CircularProgress,
   Collapse,
   IconButton,
-  MenuItem,
   ListItem,
+  MenuItem,
   Stack,
   Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
 import { memo, useEffect, useState } from "react";
-import AppTextField from "./AppTextField";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
+import AppTextField from "./AppTextField";
 import PingPongTypography from "./PingPongTypography";
 
 function formatDateTime(value, locale) {
@@ -193,10 +193,7 @@ function ExpenseItem({
   const sourceAccountIdText = String(exp.sourceAccountId || "").trim();
   const shouldShowSourceAccountId =
     showSourceAccountIdAfterCategory && Boolean(sourceAccountIdText);
-  const isHebrewLocale = String(locale || "")
-    .toLowerCase()
-    .startsWith("he");
-  const metaDisplayDirection = isHebrewLocale ? "rtl" : "ltr";
+  const amountCurrency = String(exp.currency || "").trim() || "₪";
   const editedLabel = String(locale || "")
     .toLowerCase()
     .startsWith("he")
@@ -257,11 +254,12 @@ function ExpenseItem({
               sx={{
                 position: "absolute",
                 top: 0,
-                left: direction === "rtl" ? "auto" : 12,
-                right: direction === "rtl" ? 12 : "auto",
+                left: 12,
+                right: 12,
                 transform: "translateY(-30%)",
                 zIndex: 2,
                 display: "flex",
+                flexDirection: direction === "rtl" ? "row-reverse" : "row",
                 flexWrap: "wrap",
                 gap: 0.5,
                 justifyContent: direction === "rtl" ? "flex-end" : "flex-start",
@@ -432,42 +430,60 @@ function ExpenseItem({
                       </Typography>
                     )}
                   </Box>
-                  <PingPongTypography
+                  <Box
+                    component="div"
                     dir={direction}
                     sx={{
                       color: "text.primary",
                       fontWeight: 600,
                       fontSize: ".75rem",
-                      textAlign: direction === "rtl" ? "right" : "left",
+                      width: "100%",
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent:
+                        direction === "rtl" ? "flex-start" : "flex-start",
+                      gap: 0.5,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
                     }}
                   >
-                    {formatDate(exp.date)} {"\u2022"}{" "}
+                    <Box
+                      component="span"
+                      dir="ltr"
+                      sx={{ unicodeBidi: "isolate", flexShrink: 0 }}
+                    >
+                      {formatDate(exp.date)}
+                    </Box>
+                    <Box component="span" sx={{ flexShrink: 0 }}>
+                      {"\u2022"}
+                    </Box>
+                    {shouldShowSourceAccountId && (
+                      <>
+                        <Box
+                          component="span"
+                          dir="ltr"
+                          sx={{ unicodeBidi: "isolate", flexShrink: 0 }}
+                        >
+                          ({sourceAccountIdText})
+                        </Box>
+                        <Box component="span" sx={{ flexShrink: 0 }}>
+                          {"\u2022"}
+                        </Box>
+                      </>
+                    )}
                     <Box
                       component="span"
                       sx={{
-                        direction: metaDisplayDirection,
                         unicodeBidi: "isolate",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
-                      <Box component="span" sx={{ unicodeBidi: "isolate" }}>
-                        {categoryText}
-                      </Box>
-                      {shouldShowSourceAccountId && (
-                        <>
-                          {" "}
-                          <Box component="span" sx={{ unicodeBidi: "isolate" }}>
-                            {"\u2022"}
-                          </Box>{" "}
-                          <Box
-                            component="span"
-                            sx={{ direction: "ltr", unicodeBidi: "isolate" }}
-                          >
-                            ({sourceAccountIdText})
-                          </Box>
-                        </>
-                      )}
+                      {categoryText}
                     </Box>
-                  </PingPongTypography>
+                  </Box>
                 </>
               )}
               {saveError && (
@@ -493,14 +509,26 @@ function ExpenseItem({
             >
               <Box
                 component="span"
+                dir="ltr"
                 sx={{
                   color: isReturn ? "#00b909" : theme.palette.text.primary,
                   display: "inline-flex",
                   alignItems: "baseline",
-                  direction: "ltr",
-                  unicodeBidi: "isolate",
+                  flexDirection: "row",
+                  unicodeBidi: "bidi-override",
                 }}
               >
+                {isReturn && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontWeight: 400,
+                      fontSize: ".9rem",
+                    }}
+                  >
+                    +
+                  </Typography>
+                )}
                 <Typography
                   component="span"
                   sx={{
@@ -508,8 +536,7 @@ function ExpenseItem({
                     fontSize: ".9rem",
                   }}
                 >
-                  {isReturn ? "+" : ""}
-                  {exp.currency}
+                  {amountCurrency}
                 </Typography>
                 <Typography
                   component="span"
