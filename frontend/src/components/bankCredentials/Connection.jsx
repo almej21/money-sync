@@ -967,6 +967,11 @@ export default function Connection({
   t,
 }) {
   const theme = useTheme();
+  const isRtl =
+    direction === "rtl" ||
+    theme.direction === "rtl" ||
+    (typeof document !== "undefined" &&
+      document?.documentElement?.dir === "rtl");
   const connectionId = String(connection?.id || "").trim();
   const sourceAccounts = Array.isArray(connection?.sourceAccounts)
     ? connection.sourceAccounts
@@ -1105,100 +1110,140 @@ export default function Connection({
           sx={{
             position: "absolute",
             top: 12,
-            ...(direction === "rtl" ? { left: 12 } : { right: 12 }),
+            insetInlineEnd: 12,
+            flexDirection: "row",
             direction: "ltr",
             alignItems: "center",
           }}
         >
-          {direction === "rtl" && (
-            <Button
-              type="button"
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => openRemoveConfirmation(connectionId)}
-              disabled={saving || loading || !canManageBankConnections}
-              sx={{
-                minWidth: 0,
-                width: 32,
-                height: 32,
-                p: 0,
-                borderRadius: 0.7,
-                borderColor: "error.main",
-                border: "2px solid",
-                color: "error.main",
-                "&:hover": {
-                  bgcolor: "error.main",
-                  borderColor: "error.main",
-                  color: "common.white",
-                },
-              }}
-            >
-              <DeleteOutlineIcon fontSize="small" />
-            </Button>
-          )}
-          {showSyncButton && (
-            <Button
-              type="button"
-              variant="outlined"
-              size="small"
-              onClick={() => syncConnection(connectionId)}
-              disabled={
-                saving ||
-                loading ||
-                !canManageBankConnections ||
-                Boolean(syncingConnectionId)
-              }
-              aria-label={t("syncConnection")}
-              sx={{
-                minWidth: 0,
-                width: 32,
-                height: 32,
-                p: 0,
-                borderRadius: 0.7,
-                borderColor: theme.palette.primary.main,
-                border: "2px solid",
-                color: theme.palette.primary.main,
-                "&:hover": {
-                  bgcolor: theme.palette.primary.main,
-                  borderColor: theme.palette.primary.main,
-                  color: "common.white",
-                },
-              }}
-            >
-              {isSyncingThisConnection ? (
-                <CircularProgress size={14} color="inherit" />
-              ) : (
-                <SyncIcon fontSize="small" />
+          {isRtl ? (
+            <>
+              {showSyncButton && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => syncConnection(connectionId)}
+                  disabled={
+                    saving ||
+                    loading ||
+                    !canManageBankConnections ||
+                    Boolean(syncingConnectionId)
+                  }
+                  aria-label={t("syncConnection")}
+                  sx={{
+                    minWidth: 0,
+                    width: 32,
+                    height: 32,
+                    p: 0,
+                    borderRadius: 0.7,
+                    borderColor: theme.palette.primary.main,
+                    border: "2px solid",
+                    color: theme.palette.primary.main,
+                    "&:hover": {
+                      bgcolor: theme.palette.primary.main,
+                      borderColor: theme.palette.primary.main,
+                      color: "common.white",
+                    },
+                  }}
+                >
+                  {isSyncingThisConnection ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <SyncIcon fontSize="small" />
+                  )}
+                </Button>
               )}
-            </Button>
-          )}
-          {direction !== "rtl" && (
-            <Button
-              type="button"
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => openRemoveConfirmation(connectionId)}
-              disabled={saving || loading || !canManageBankConnections}
-              sx={{
-                minWidth: 0,
-                width: 32,
-                height: 32,
-                p: 0,
-                borderRadius: 0.7,
-                borderColor: "error.main",
-                border: "2px solid",
-                color: "error.main",
-                "&:hover": {
-                  bgcolor: "error.main",
+              <Button
+                type="button"
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={() => openRemoveConfirmation(connectionId)}
+                disabled={saving || loading || !canManageBankConnections}
+                sx={{
+                  minWidth: 0,
+                  width: 32,
+                  height: 32,
+                  p: 0,
+                  borderRadius: 0.7,
                   borderColor: "error.main",
-                  color: "common.white",
-                },
-              }}
-            >
-              <DeleteOutlineIcon fontSize="small" />
-            </Button>
+                  border: "2px solid",
+                  color: "error.main",
+                  "&:hover": {
+                    bgcolor: "error.main",
+                    borderColor: "error.main",
+                    color: "common.white",
+                  },
+                }}
+              >
+                <DeleteOutlineIcon fontSize="small" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={() => openRemoveConfirmation(connectionId)}
+                disabled={saving || loading || !canManageBankConnections}
+                sx={{
+                  minWidth: 0,
+                  width: 32,
+                  height: 32,
+                  p: 0,
+                  borderRadius: 0.7,
+                  borderColor: "error.main",
+                  border: "2px solid",
+                  color: "error.main",
+                  "&:hover": {
+                    bgcolor: "error.main",
+                    borderColor: "error.main",
+                    color: "common.white",
+                  },
+                }}
+              >
+                <DeleteOutlineIcon fontSize="small" />
+              </Button>
+              {showSyncButton && (
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => syncConnection(connectionId)}
+                  disabled={
+                    saving ||
+                    loading ||
+                    !canManageBankConnections ||
+                    Boolean(syncingConnectionId)
+                  }
+                  aria-label={t("syncConnection")}
+                  sx={{
+                    minWidth: 0,
+                    width: 32,
+                    height: 32,
+                    p: 0,
+                    borderRadius: 0.7,
+                    borderColor: theme.palette.primary.main,
+                    border: "2px solid",
+                    color: theme.palette.primary.main,
+                    "&:hover": {
+                      bgcolor: theme.palette.primary.main,
+                      borderColor: theme.palette.primary.main,
+                      color: "common.white",
+                    },
+                  }}
+                >
+                  {isSyncingThisConnection ? (
+                    <CircularProgress size={14} color="inherit" />
+                  ) : (
+                    <SyncIcon fontSize="small" />
+                  )}
+                </Button>
+              )}
+            </>
           )}
         </Stack>
       </CardContent>

@@ -23,6 +23,7 @@ export default function MinimalExpenseItem({
   direction,
   t,
 }) {
+  console.log(direction);
   const theme = useTheme();
   const amountValue = Number(exp?.amount || 0);
   const normalizedAmount = Math.abs(amountValue);
@@ -63,6 +64,7 @@ export default function MinimalExpenseItem({
   const shouldShowSourceAccountId =
     showSourceAccountIdAfterCategory && Boolean(sourceAccountIdText);
   const formattedDate = formatDate(exp?.date);
+  const categoryText = String(exp?.category || "").trim() || "-";
   const amountCurrency = String(exp?.currency || "").trim() || "₪";
   const statusBadgeSx = {
     display: "inline-flex",
@@ -82,7 +84,8 @@ export default function MinimalExpenseItem({
         sx={{
           width: "100%",
           position: "relative",
-          p: 0.35,
+          px: 0.5,
+          py: 0.2,
           borderRadius: 0.9,
           bgcolor: theme.palette.background.default,
         }}
@@ -98,10 +101,10 @@ export default function MinimalExpenseItem({
               transform: "translateY(-35%)",
               zIndex: 2,
               display: "flex",
-              flexDirection: direction === "rtl" ? "row-reverse" : "row",
+              flexDirection: "row",
               flexWrap: "wrap",
               gap: 0.35,
-              justifyContent: direction === "rtl" ? "flex-end" : "flex-start",
+              justifyContent: "flex-end",
             }}
           >
             {isPending && (
@@ -122,10 +125,13 @@ export default function MinimalExpenseItem({
             {isInstallmentType && (
               <Box
                 component="span"
+                dir={direction}
                 sx={{
                   ...statusBadgeSx,
                   bgcolor: theme.palette.info.main,
                   color: theme.palette.info.contrastText,
+                  textAlign: direction === "rtl" ? "right" : "left",
+                  direction,
                 }}
               >
                 {installmentsStateText}
@@ -133,93 +139,94 @@ export default function MinimalExpenseItem({
             )}
           </Box>
         )}
-        <Stack
-          direction={direction === "rtl" ? "row-reverse" : "row"}
-          alignItems="center"
-          spacing={0.7}
-          sx={{ direction: "ltr" }}
-        >
+        <Stack direction="row" alignItems="center" spacing={0.7}>
           <Box
             sx={{
               flex: 1,
               minWidth: 0,
-              textAlign: "start",
               mt: isPending || isInstallmentType ? 0.5 : 0,
             }}
           >
-            <Stack
-              direction={direction === "rtl" ? "row-reverse" : "row"}
-              alignItems="center"
-              spacing={0.35}
+            <Box
               sx={{
                 minWidth: 0,
                 width: "100%",
-                justifyContent: "flex-start",
               }}
             >
               <Typography
-                component="span"
-                dir={direction === "rtl" ? "auto" : "ltr"}
+                dir={direction}
                 sx={{
+                  display: "block",
+                  width: "100%",
                   fontWeight: 700,
+                  direction,
+                  unicodeBidi: "isolate",
+                  margin: 0,
+                  padding: 0,
+                  lineHeight: 1.2,
                   fontSize: ".72rem",
-                  fontFamily: "inherit",
-                  flexShrink: 1,
-                  maxWidth: "100%",
                   minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {String(exp?.description || "-").trim()}
+              </Typography>
+              <Box
+                component="div"
+                dir={direction}
+                sx={{
+                  color: "text.primary",
+                  fontWeight: 600,
+                  fontSize: ".68rem",
+                  width: "100%",
+                  minWidth: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: 0.35,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  unicodeBidi: "plaintext",
-                  textAlign: direction === "rtl" ? "right" : "left",
                 }}
               >
-                {String(exp?.description || "-")}
-              </Typography>
-              {direction === "rtl" && (
-                <Typography
+                <Box
                   component="span"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: ".72rem",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                    direction: "ltr",
-                    unicodeBidi: "isolate",
-                  }}
+                  dir="ltr"
+                  sx={{ unicodeBidi: "isolate", flexShrink: 0 }}
                 >
-                  {"\u2022"}
-                </Typography>
-              )}
-              <Typography
-                component="span"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: ".72rem",
-                  fontFamily: "inherit",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                  direction,
-                }}
-              >
-                {direction === "rtl" ? "" : "\u2022 "}
-                <Box component="span" sx={{ direction: "ltr" }}>
                   {formattedDate}
+                </Box>
+                <Box component="span" sx={{ flexShrink: 0 }}>
+                  {"\u2022"}
                 </Box>
                 {shouldShowSourceAccountId && (
                   <>
-                    {" \u2022 "}
                     <Box
                       component="span"
-                      sx={{ direction: "ltr", unicodeBidi: "bidi-override" }}
+                      dir="ltr"
+                      sx={{ unicodeBidi: "isolate", flexShrink: 0 }}
                     >
                       ({sourceAccountIdText})
                     </Box>
+                    <Box component="span" sx={{ flexShrink: 0 }}>
+                      {"\u2022"}
+                    </Box>
                   </>
                 )}
-              </Typography>
-            </Stack>
+                <Box
+                  component="span"
+                  sx={{
+                    unicodeBidi: "isolate",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {categoryText}
+                </Box>
+              </Box>
+            </Box>
           </Box>
           <Box
             component="span"
@@ -228,8 +235,7 @@ export default function MinimalExpenseItem({
               color: isReturn ? "#00b909" : theme.palette.text.primary,
               display: "inline-flex",
               alignItems: "baseline",
-              gap: 0.35,
-              fontWeight: 800,
+              flexDirection: "row",
               unicodeBidi: "bidi-override",
               flexShrink: 0,
             }}
@@ -269,3 +275,5 @@ export default function MinimalExpenseItem({
     </ListItem>
   );
 }
+
+

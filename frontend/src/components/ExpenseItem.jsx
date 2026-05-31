@@ -246,7 +246,7 @@ function ExpenseItem({
 
   return (
     <div>
-      <ListItem disableGutters sx={{ py: 0.75, overflow: "visible" }}>
+      <ListItem disableGutters sx={{ py: 0.2, overflow: "visible" }}>
         <Box sx={{ width: "100%", position: "relative" }}>
           {(isPending || isInstallmentType) && (
             <Box
@@ -259,10 +259,10 @@ function ExpenseItem({
                 transform: "translateY(-30%)",
                 zIndex: 2,
                 display: "flex",
-                flexDirection: direction === "rtl" ? "row-reverse" : "row",
+                flexDirection: "row",
                 flexWrap: "wrap",
                 gap: 0.5,
-                justifyContent: direction === "rtl" ? "flex-end" : "flex-start",
+                justifyContent: "flex-end",
               }}
             >
               {isPending && (
@@ -293,10 +293,13 @@ function ExpenseItem({
               {isInstallmentType && (
                 <Box
                   component="span"
+                  dir={direction}
                   sx={{
                     ...statusBadgeSx,
                     bgcolor: theme.palette.info.main,
                     color: theme.palette.info.contrastText,
+                    textAlign: direction === "rtl" ? "right" : "left",
+                    direction,
                   }}
                 >
                   {installmentsStateText}
@@ -307,7 +310,7 @@ function ExpenseItem({
           <Box
             sx={{
               width: "100%",
-              mt: isPending || isInstallmentType ? 0.5 : 0,
+              mt: 0,
               p: 0.5,
               borderRadius: 1.2,
               bgcolor: theme.palette.background.default,
@@ -617,3 +620,5 @@ function ExpenseItem({
 }
 
 export default memo(ExpenseItem);
+
+
