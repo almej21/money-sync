@@ -6,6 +6,7 @@ const SUPERMARKET_SOURCE_CATEGORIES = new Set([
   "מזון וצריכה",
 ]);
 const SUPERMARKET_TARGET_CATEGORY = "סופרמרקט";
+const FALLBACK_DESCRIPTION = "Expense with no name";
 
 function toNumber(value) {
   const parsed = Number(value);
@@ -80,6 +81,11 @@ function normalizeInstallments(installmentsValue) {
   return { number: normalizedNumber, total: normalizedTotal };
 }
 
+function resolveTransactionDescription(transaction = {}) {
+  const description = String(transaction.description || "").trim();
+  return description || FALLBACK_DESCRIPTION;
+}
+
 function resolveExternalId(transaction = {}, normalizedInstallments = {}) {
   const explicitId = String(transaction.identifier || transaction.id || "").trim();
   if (explicitId) return explicitId;
@@ -108,6 +114,8 @@ export function normalizeScrapedTransactions(scraped = []) {
       sourceTransactionType === "installments" ? hasInstallmentsPlan : null;
 
     const normalizedCategory = normalizeExpenseCategory(t.category, "Imported");
+    const description = resolveTransactionDescription(t);
+    const merchant = String(t.description || "").trim();
 
     return {
       source: "israeli-bank-scrapers",
@@ -118,8 +126,8 @@ export function normalizeScrapedTransactions(scraped = []) {
       transactionType,
       status,
       currency: "₪",
-      description: t.description || t.memo || "Bank transaction",
-      merchant: t.description || "",
+      description,
+      merchant,
       sourceTransactionType,
       installmentNumber: installments.number,
       installmentTotal: installments.total,
@@ -134,8 +142,8 @@ export function normalizeScrapedTransactions(scraped = []) {
         amount,
         transactionType,
         currency: "₪",
-        description: t.description || t.memo || "Bank transaction",
-        merchant: t.description || "",
+        description,
+        merchant,
         sourceCompanyId: t.companyId || "",
         sourceAccountId: t.accountNumber || t.accountId || "",
         sourceAccountName: t.accountName || "",

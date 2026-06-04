@@ -24,6 +24,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { memo, useEffect, useState } from "react";
+import { formatExpenseDescription } from "../lib/expenseDisplay";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
 import AppTextField from "./AppTextField";
 import PingPongTypography from "./PingPongTypography";
@@ -154,6 +155,7 @@ function ExpenseItem({
   );
 
   const CategoryIcon = getCategoryIcon(exp.category);
+  const displayDescription = formatExpenseDescription(exp.description, t);
   const amountValue = Number(exp.amount || 0);
   const normalizedAmount = Math.abs(amountValue);
   const isReturn =
@@ -416,7 +418,7 @@ function ExpenseItem({
                         minWidth: 0,
                       }}
                     >
-                      {exp.description || "-"}
+                      {displayDescription}
                     </PingPongTypography>
                     {exp.isUserAltered && (
                       <Typography

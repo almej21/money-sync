@@ -6,6 +6,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import { formatExpenseDescription } from "../lib/expenseDisplay";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -25,6 +26,7 @@ export default function MinimalExpenseItem({
 }) {
   console.log(direction);
   const theme = useTheme();
+  const displayDescription = formatExpenseDescription(exp?.description, t);
   const amountValue = Number(exp?.amount || 0);
   const normalizedAmount = Math.abs(amountValue);
   const isReturn =
@@ -171,7 +173,7 @@ export default function MinimalExpenseItem({
                   whiteSpace: "nowrap",
                 }}
               >
-                {String(exp?.description || "-").trim()}
+                {displayDescription}
               </Typography>
               <Box
                 component="div"
@@ -275,5 +277,4 @@ export default function MinimalExpenseItem({
     </ListItem>
   );
 }
-
 

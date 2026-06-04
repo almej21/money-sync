@@ -1,3 +1,5 @@
+import createCache from "@emotion/cache";
+import { CacheProvider } from "@emotion/react";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
@@ -25,6 +27,8 @@ import { useMemo, useState } from "react";
 import AppTextField from "./AppTextField";
 import Dropdown from "./Dropdown";
 import { formatIlsAmount } from "../lib/currency";
+
+const ltrSliderCache = createCache({ key: "mui-slider-ltr" });
 
 export default function DashboardFilters({
   t,
@@ -359,7 +363,7 @@ export default function DashboardFilters({
               <Box
                 sx={{
                   mb: 1,
-                  px: { xs: 0.5, sm: 1 },
+                  px: { xs: 0, sm: 1 },
                   width: { xs: "100%", md: "80%" },
                   mx: "auto",
                 }}
@@ -387,26 +391,30 @@ export default function DashboardFilters({
                     {formatIlsAmount(Math.round(selectedAmountRange[1]))}
                   </Box>
                 </Typography>
-                <ThemeProvider theme={ltrSliderTheme}>
-                  <Slider
-                    value={selectedAmountRange}
-                    min={minExpenseAmount}
-                    max={maxExpenseAmount}
-                    step={1}
-                    disableSwap
-                    onChange={(_, newValue) => {
-                      const nextRange = Array.isArray(newValue)
-                        ? newValue
-                        : [minExpenseAmount, maxExpenseAmount];
-                      onAmountRangeChange(nextRange);
-                    }}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(value) =>
-                      formatIlsAmount(Math.round(Number(value)))
-                    }
-                    sx={{ direction: "ltr" }}
-                  />
-                </ThemeProvider>
+                <CacheProvider value={ltrSliderCache}>
+                  <Box dir="ltr" sx={{ px: { xs: 2.25, sm: 2.5 } }}>
+                    <ThemeProvider theme={ltrSliderTheme}>
+                      <Slider
+                        value={selectedAmountRange}
+                        min={minExpenseAmount}
+                        max={maxExpenseAmount}
+                        step={1}
+                        disableSwap
+                        onChange={(_, newValue) => {
+                          const nextRange = Array.isArray(newValue)
+                            ? newValue
+                            : [minExpenseAmount, maxExpenseAmount];
+                          onAmountRangeChange(nextRange);
+                        }}
+                        valueLabelDisplay="auto"
+                        valueLabelFormat={(value) =>
+                          formatIlsAmount(Math.round(Number(value)))
+                        }
+                        sx={{ direction: "ltr", width: "100%" }}
+                      />
+                    </ThemeProvider>
+                  </Box>
+                </CacheProvider>
               </Box>
               {footerContent ? (
                 <Box

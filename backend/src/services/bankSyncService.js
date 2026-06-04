@@ -29,8 +29,8 @@ const TIMEOUT_PATTERN = /(timed out|timeout)/i;
 const FETCH_COOLDOWN_MS = 60 * 60 * 1000;
 const DEFAULT_SCRAPE_ATTEMPT_TIMEOUT_MS = 30_000;
 const DEFAULT_RETRY_DELAY_MS = 1_500;
-const PENDING_REVISIT_BUFFER_DAYS = 2;
-const MAX_PENDING_REVISIT_DAYS = 90;
+const LAST_BANK_FETCH_BACKFILL_DAYS = 14;
+const FIRST_SYNC_LOOKBACK_MONTHS = 6;
 const PENDING_POSTED_MAX_DATE_DIFF_MS = 10 * 24 * 60 * 60 * 1000;
 const MATCH_TEXT_MIN_TOKEN_LENGTH = 2;
 const BANK_COMPANY_LABELS = {
@@ -223,17 +223,31 @@ function getDecryptedHouseholdConnections(household) {
   return { connections, errors };
 }
 
-function oneMonthWindow() {
-  const endDate = new Date();
-  const startDate = new Date(endDate);
-  startDate.setMonth(startDate.getMonth() - 1);
-  return { startDate, endDate };
+function firstDayOfMonthMonthsAgo(value = new Date(), monthsAgo = 0) {
+  const parsed = parseDate(value) || new Date();
+  return new Date(
+    Date.UTC(
+      parsed.getUTCFullYear(),
+      parsed.getUTCMonth() - Math.max(0, Number(monthsAgo || 0)),
+      1,
+      0,
+      0,
+      0,
+      0,
+    ),
+  );
 }
 
-function getWindowStartDate(lastBankFetchAt, fallbackStartDate) {
+function firstSyncWindowStartDate() {
+  return firstDayOfMonthMonthsAgo(new Date(), FIRST_SYNC_LOOKBACK_MONTHS);
+}
+
+function getWindowStartDate(lastBankFetchAt, initialSyncStartDate) {
   const parsedLastFetchAt = parseDate(lastBankFetchAt);
-  if (parsedLastFetchAt) return parsedLastFetchAt;
-  return new Date(fallbackStartDate);
+  if (parsedLastFetchAt) {
+    return subtractUtcDays(parsedLastFetchAt, LAST_BANK_FETCH_BACKFILL_DAYS);
+  }
+  return new Date(initialSyncStartDate);
 }
 
 function subtractUtcDays(value, days) {
@@ -244,73 +258,11 @@ function subtractUtcDays(value, days) {
   return next;
 }
 
-async function findOldestPendingDateForConnection({
-  householdId,
-  connectionId,
-  companyId,
-}) {
-  const normalizedConnectionId = String(connectionId || "").trim();
-  const normalizedCompanyId = String(companyId || "").trim();
-  const clauses = [];
-  if (normalizedConnectionId) {
-    clauses.push({ sourceConnectionKey: normalizedConnectionId });
-  }
-  if (normalizedCompanyId) {
-    clauses.push({
-      sourceCompanyId: normalizedCompanyId,
-      $or: [
-        { sourceConnectionKey: { $exists: false } },
-        { sourceConnectionKey: null },
-        { sourceConnectionKey: "" },
-      ],
-    });
-  }
-  if (!clauses.length) return null;
-
-  const oldestPending = await Expense.findOne({
-    householdId,
-    source: "israeli-bank-scrapers",
-    status: "pending",
-    $or: clauses,
-  })
-    .select({ date: 1 })
-    .sort({ date: 1 })
-    .lean();
-
-  return parseDate(oldestPending?.date);
-}
-
-async function resolveWindowStartDateForConnection({
-  householdId,
-  connectionId,
-  companyId,
+function resolveWindowStartDateForConnection({
   lastBankFetchAt,
-  fallbackStartDate,
+  initialSyncStartDate,
 }) {
-  const baseWindowStart = getWindowStartDate(lastBankFetchAt, fallbackStartDate);
-  const oldestPendingDate = await findOldestPendingDateForConnection({
-    householdId,
-    connectionId,
-    companyId,
-  });
-  if (!oldestPendingDate) return baseWindowStart;
-
-  const pendingBackfillStart = subtractUtcDays(
-    oldestPendingDate,
-    PENDING_REVISIT_BUFFER_DAYS,
-  );
-  if (!pendingBackfillStart) return baseWindowStart;
-
-  const maxLookbackStart = subtractUtcDays(new Date(), MAX_PENDING_REVISIT_DAYS);
-  const boundedPendingStart =
-    maxLookbackStart &&
-    pendingBackfillStart.getTime() < maxLookbackStart.getTime()
-      ? maxLookbackStart
-      : pendingBackfillStart;
-
-  return boundedPendingStart.getTime() < baseWindowStart.getTime()
-    ? boundedPendingStart
-    : baseWindowStart;
+  return getWindowStartDate(lastBankFetchAt, initialSyncStartDate);
 }
 
 function flattenTransactions(scrapeResult) {
@@ -1155,7 +1107,7 @@ export async function syncLastMonthExpensesForUser(user, options = {}) {
 
   const { createScraper, SCRAPERS } = await import("israeli-bank-scrapers");
   const browserLaunchOverrides = await resolveBrowserLaunchOverrides();
-  const { startDate: defaultWindowStartDate } = oneMonthWindow();
+  const initialSyncStartDate = firstSyncWindowStartDate();
   const connectionSummaries = [...connectionErrors];
   const docs = [];
   const attemptedConnectionKeys = new Set();
@@ -1166,12 +1118,9 @@ export async function syncLastMonthExpensesForUser(user, options = {}) {
     const fetchStartedAt = Date.now();
     const connectionId =
       String(activeCreds.connectionKey || "").trim() || activeCreds.companyId;
-    const windowStartDate = await resolveWindowStartDateForConnection({
-      householdId,
-      connectionId,
-      companyId: activeCreds.companyId,
+    const windowStartDate = resolveWindowStartDateForConnection({
       lastBankFetchAt: activeCreds.lastBankFetchAt,
-      fallbackStartDate: defaultWindowStartDate,
+      initialSyncStartDate,
     });
     console.log(
       `[BANK SYNC RUN] connection_started userId=${userId} householdId=${householdId} companyId=${formatLogValue(

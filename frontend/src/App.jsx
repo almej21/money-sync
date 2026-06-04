@@ -29,6 +29,7 @@ import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import { AppThemeProvider, useAppTheme } from "./context/ThemeContext";
 import AccountPage from "./pages/AccountPage";
 import BankCredentialsPage from "./pages/BankCredentialsPage";
+import BudgetsPage from "./pages/BudgetsPage";
 import DashboardChartsPage from "./pages/DashboardChartsPage";
 import DashboardListPage from "./pages/DashboardListPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -138,6 +139,7 @@ function ProtectedRoutes() {
           </Route>
           <Route path="/shopping-lists" element={<ShoppingListsPage />} />
           <Route path="/bank" element={<BankCredentialsPage />} />
+          <Route path="/budgets" element={<BudgetsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

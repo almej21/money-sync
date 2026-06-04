@@ -1,6 +1,5 @@
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
-import LogoutIcon from "@mui/icons-material/Logout";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import WalletIcon from "@mui/icons-material/Wallet";
 import {
@@ -9,10 +8,6 @@ import {
   Badge,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
   Stack,
   Toolbar,
   Tooltip,
@@ -30,7 +25,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { getMyHouseholdInvitations } from "../services/householdService";
 
 export default function NavBar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const theme = useTheme();
@@ -40,7 +35,6 @@ export default function NavBar() {
   const isMdOnly = useMediaQuery(theme.breakpoints.only("md"));
   const isLgOnly = useMediaQuery(theme.breakpoints.only("lg"));
   const isXlUp = useMediaQuery(theme.breakpoints.up("xl"));
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileHeaderHeight, setMobileHeaderHeight] = useState(0);
   const [pendingInvitationCount, setPendingInvitationCount] = useState(0);
@@ -49,13 +43,6 @@ export default function NavBar() {
   const toggleLanguage = () => setLanguage(nextLanguage);
   const nextLanguageFlagIcon =
     nextLanguage === "en" ? usaFlagIcon : israelFlagIcon;
-  const openLogoutModal = () => setIsLogoutModalOpen(true);
-  const closeLogoutModal = () => setIsLogoutModalOpen(false);
-  const confirmLogout = () => {
-    setIsLogoutModalOpen(false);
-    logout();
-  };
-
   useEffect(() => {
     if (!isMobile) return;
     const onScroll = () => setIsScrolled(window.scrollY > 0);
@@ -124,6 +111,18 @@ export default function NavBar() {
   };
 
   const navIconSx = { fontSize: 26 };
+  const budgetsIconSx = {
+    width: 26,
+    height: 26,
+    display: "block",
+    bgcolor: "currentColor",
+    mask: "url('/icons/budgets.svg') center / contain no-repeat",
+    WebkitMask: "url('/icons/budgets.svg') center / contain no-repeat",
+  };
+  const topActionClusterSx = {
+    flexWrap: "wrap",
+    mx: { xs: 2, sm: 1.5, md: 0 },
+  };
   const currentScreenSize = isXlUp
     ? "xl"
     : isLgOnly
@@ -214,7 +213,12 @@ export default function NavBar() {
           )}
           {user &&
             (isMobile ? (
-              <Stack direction="row" spacing={1} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={topActionClusterSx}
+              >
                 <Tooltip title={t("account")}>
                   <Button
                     component={Link}
@@ -254,23 +258,13 @@ export default function NavBar() {
                     />
                   </Button>
                 </Tooltip>
-                <Tooltip title={t("logout")}>
-                  <Button
-                    color="inherit"
-                    onClick={openLogoutModal}
-                    aria-label={t("logout")}
-                    sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-                  >
-                    <LogoutIcon />
-                  </Button>
-                </Tooltip>
               </Stack>
             ) : (
               <Stack
                 direction="row"
                 spacing={1}
                 alignItems="center"
-                sx={{ flexWrap: "wrap" }}
+                sx={topActionClusterSx}
               >
                 <Tooltip title={t("dashboard")}>
                   <Button
@@ -303,6 +297,21 @@ export default function NavBar() {
                     sx={getNavButtonSx("/bank")}
                   >
                     <WalletIcon sx={navIconSx} />
+                  </Button>
+                </Tooltip>
+                <Tooltip title={t("budgets")}>
+                  <Button
+                    component={Link}
+                    to="/budgets"
+                    color="inherit"
+                    aria-label={t("budgets")}
+                    sx={getNavButtonSx("/budgets")}
+                  >
+                    <Box
+                      component="span"
+                      aria-hidden="true"
+                      sx={budgetsIconSx}
+                    />
                   </Button>
                 </Tooltip>
                 <Tooltip title={t("account")}>
@@ -339,33 +348,8 @@ export default function NavBar() {
                     />
                   </Button>
                 </Tooltip>
-                <Tooltip title={t("logout")}>
-                  <Button
-                    color="inherit"
-                    onClick={openLogoutModal}
-                    aria-label={t("logout")}
-                    sx={{ ...mobileNavButtonSx, minWidth: 0 }}
-                  >
-                    <LogoutIcon />
-                  </Button>
-                </Tooltip>
               </Stack>
             ))}
-          <Dialog open={isLogoutModalOpen} onClose={closeLogoutModal}>
-            <DialogContent>
-              <DialogContentText>{t("logoutConfirmMessage")}</DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={closeLogoutModal}>{t("cancel")}</Button>
-              <Button
-                onClick={confirmLogout}
-                variant="contained"
-                color="primary"
-              >
-                {t("logout")}
-              </Button>
-            </DialogActions>
-          </Dialog>
         </Toolbar>
       </AppBar>
       {user && isMobile && (
@@ -380,7 +364,7 @@ export default function NavBar() {
               px: 2,
               py: 0.75,
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
               gap: 1,
               bgcolor: theme.palette.primary.main,
               borderTop: `1px solid ${activePageBorderColor}`,
@@ -415,6 +399,16 @@ export default function NavBar() {
                 aria-label={t("bank")}
               >
                 <WalletIcon sx={navIconSx} />
+              </Button>
+            </Tooltip>
+            <Tooltip title={t("budgets")}>
+              <Button
+                component={Link}
+                to="/budgets"
+                sx={getNavButtonSx("/budgets", true)}
+                aria-label={t("budgets")}
+              >
+                <Box component="span" aria-hidden="true" sx={budgetsIconSx} />
               </Button>
             </Tooltip>
           </Box>

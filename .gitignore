@@ -8,3 +8,4 @@ coverage
 .serverless
 .DS_Store
 backend/reports
+backend/scripts

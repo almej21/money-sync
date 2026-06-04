@@ -228,7 +228,7 @@ function getAmountRangeBounds(expenses = []) {
   }
 
   return {
-    min: Math.max(0, Math.min(...values)),
+    min: 0,
     max: Math.max(0, Math.max(...values)),
   };
 }
@@ -1251,8 +1251,8 @@ export default function DashboardListPage({ hideTotal = false }) {
             maxExpenseAmount={maxExpenseAmount}
             onAmountRangeChange={setSelectedAmountRange}
             showSearch
-            searchLabel="Search"
-            searchPlaceholder="Search expense, category, or date"
+            searchLabel={t("search")}
+            searchPlaceholder={t("searchExpenseCategoryOrDate")}
             searchQuery={listSearchQuery}
             onSearchQueryChange={setListSearchQuery}
           />
@@ -1278,7 +1278,14 @@ export default function DashboardListPage({ hideTotal = false }) {
                 dir={direction}
                 sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
               >
-                {t("summaryDates")}: {displayedDateRange}
+                {t("summaryDates")}:{" "}
+                <Box
+                  component="span"
+                  dir="ltr"
+                  sx={{ unicodeBidi: "isolate" }}
+                >
+                  {displayedDateRange}
+                </Box>
               </Typography>
               <Typography
                 variant="subtitle1"

@@ -206,6 +206,36 @@ async function promptProviderIndex(rl, providers) {
   }
 }
 
+function parseStartDateInput(value) {
+  const normalized = String(value || "").trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(normalized);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return parsed;
+}
+
+async function promptStartDate(rl) {
+  while (true) {
+    const answer = (
+      await rl.question("\nStart date (required format: YYYY-MM-DD): ")
+    ).trim();
+    const parsed = parseStartDateInput(answer);
+    if (parsed) return parsed;
+    console.log("Please enter a valid start date in YYYY-MM-DD format.");
+  }
+}
+
 function getProviderOptions() {
   return Object.keys(SCRAPERS)
     .filter((companyId) => !HIDDEN_COMPANY_IDS.has(companyId))
@@ -630,8 +660,7 @@ async function main() {
         process.env.BANK_SCRAPER_SHOW_BROWSER,
         false,
       );
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 1);
+      const startDate = await promptStartDate(rl);
 
       config = {
         companyId: selected.companyId,

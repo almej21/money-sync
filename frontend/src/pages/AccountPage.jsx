@@ -1,5 +1,6 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import LogoutIcon from "@mui/icons-material/Logout";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import {
   Accordion,
@@ -12,6 +13,10 @@ import {
   Checkbox,
   CircularProgress,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
   FormControlLabel,
   IconButton,
   MenuItem,
@@ -49,7 +54,7 @@ function formatVersionDateTime(value) {
 }
 
 export default function AccountPage() {
-  const { user, updatePreferences, refreshUser } = useAuth();
+  const { user, updatePreferences, refreshUser, logout } = useAuth();
   const { t, direction } = useLanguage();
   const { schemeKey, schemeKeys, setSchemeKey } = useAppTheme();
   const [sourceAccountOptions, setSourceAccountOptions] = useState([]);
@@ -64,6 +69,7 @@ export default function AccountPage() {
   const [savingProfileName, setSavingProfileName] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [joiningInvitationId, setJoiningInvitationId] = useState("");
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const versionDateTime = useMemo(
@@ -289,6 +295,15 @@ export default function AccountPage() {
     } finally {
       setJoiningInvitationId("");
     }
+  }
+
+  function closeLogoutModal() {
+    setIsLogoutModalOpen(false);
+  }
+
+  function confirmLogout() {
+    setIsLogoutModalOpen(false);
+    logout();
   }
 
   return (
@@ -682,6 +697,22 @@ export default function AccountPage() {
                 )}
               </AccordionDetails>
             </Accordion>
+
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              startIcon={<LogoutIcon />}
+              onClick={() => setIsLogoutModalOpen(true)}
+              sx={{
+                justifyContent: "flex-start",
+                px: 2,
+                py: 1.15,
+                borderRadius: 1,
+              }}
+            >
+              {t("logout")}
+            </Button>
           </Stack>
         </CardContent>
       </Card>
@@ -710,6 +741,17 @@ export default function AccountPage() {
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         onClose={() => setSuccess("")}
       />
+      <Dialog open={isLogoutModalOpen} onClose={closeLogoutModal}>
+        <DialogContent>
+          <DialogContentText>{t("logoutConfirmMessage")}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeLogoutModal}>{t("cancel")}</Button>
+          <Button onClick={confirmLogout} variant="contained" color="primary">
+            {t("logout")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
