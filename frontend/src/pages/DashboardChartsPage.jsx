@@ -4,10 +4,14 @@ import {
   Button,
   Card,
   CardContent,
+  Collapse,
   CircularProgress,
+  List,
   Stack,
   Typography,
 } from "@mui/material";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   BarController,
   BarElement,
@@ -19,10 +23,11 @@ import {
 } from "chart.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardFilters from "../components/DashboardFilters";
+import MinimalExpenseItem from "../components/MinimalExpenseItem";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
-import { formatIlsAmount } from "../lib/currency";
+import { formatCurrencyAmount, formatIlsAmount } from "../lib/currency";
 import {
   getBankCredentialStatus,
   getBankProviders,
@@ -332,6 +337,104 @@ function createAlwaysVisibleLabelsPlugin({ chartGrouping, bucketKeys }) {
   };
 }
 
+function ChartBucketDetails({
+  chartSeries,
+  chartCurrency,
+  direction,
+  expandedBuckets,
+  hasMultipleSelectedAccounts,
+  onToggleBucket,
+  t,
+}) {
+  const visibleChartSeries = chartSeries.filter(
+    (item) => Number(item?.value || 0) !== 0,
+  ).sort(
+    (a, b) =>
+      Math.abs(Number(b?.value || 0)) - Math.abs(Number(a?.value || 0)),
+  );
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      {visibleChartSeries.map((item) => {
+        const bucketKey = String(item?.key || "").trim();
+        const bucketExpenses = Array.isArray(item?.expenses)
+          ? item.expenses
+          : [];
+        const isExpanded = Boolean(expandedBuckets[bucketKey]);
+
+        return (
+          <Stack
+            key={bucketKey}
+            sx={{
+              py: 0.5,
+              borderBottom: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography
+                variant="body2"
+                sx={{ flex: 1, minWidth: 0, wordBreak: "break-word" }}
+                dir={direction}
+              >
+                {item.label}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                {bucketExpenses.length} {t("itemsCountLabel")}
+              </Typography>
+              <Typography
+                variant="body2"
+                dir="ltr"
+                sx={{
+                  whiteSpace: "nowrap",
+                  fontWeight: 700,
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  unicodeBidi: "bidi-override",
+                }}
+              >
+                <Box component="span">
+                  {formatCurrencyAmount(Math.round(item.value), chartCurrency)}
+                </Box>
+              </Typography>
+            </Stack>
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => onToggleBucket(bucketKey)}
+                disabled={!bucketExpenses.length}
+                endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              >
+                {isExpanded ? t("hideDetails") : t("showDetails")}
+              </Button>
+            </Box>
+            <Collapse in={isExpanded}>
+              <List disablePadding>
+                {bucketExpenses.map((expense) => (
+                  <MinimalExpenseItem
+                    key={`${bucketKey}:${String(expense?._id || "")}`}
+                    exp={expense}
+                    showSourceAccountIdAfterCategory={
+                      hasMultipleSelectedAccounts
+                    }
+                    direction={direction}
+                    t={t}
+                  />
+                ))}
+              </List>
+            </Collapse>
+          </Stack>
+        );
+      })}
+    </Box>
+  );
+}
+
 export default function DashboardChartsPage() {
   const { t, locale, direction } = useLanguage();
   const { user } = useAuth();
@@ -344,6 +447,7 @@ export default function DashboardChartsPage() {
   const [expenses, setExpenses] = useState([]);
   const [bankConnections, setBankConnections] = useState([]);
   const [providerLabels, setProviderLabels] = useState({});
+  const [expandedChartBuckets, setExpandedChartBuckets] = useState({});
   const [chartGrouping, setChartGrouping] = useState("days");
   const { filters, setFilters } = useDashboardFilters();
   const {
@@ -580,6 +684,7 @@ export default function DashboardChartsPage() {
     shouldShowAccountFilter &&
     selectedConnectionIds.length > 0 &&
     selectedConnectionIds.length < accountFilterOptions.length;
+  const hasMultipleSelectedAccounts = selectedConnectionIds.length > 1;
 
   const dropdownFiltersSignature = useMemo(() => {
     const accountSignature = shouldApplyAccountFilter
@@ -766,15 +871,23 @@ export default function DashboardChartsPage() {
       const absoluteAmount = Math.abs(Number(expense.amount || 0));
       if (!Number.isFinite(absoluteAmount)) return;
       const signedAmount = isReturnExpense(expense) ? -absoluteAmount : absoluteAmount;
-      buckets.set(key, (buckets.get(key) || 0) + signedAmount);
+      const bucket = buckets.get(key) || { value: 0, expenses: [] };
+      bucket.value += signedAmount;
+      bucket.expenses.push(expense);
+      buckets.set(key, bucket);
     });
 
     const orderedEntries = Array.from(buckets.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => ({
+      .map(([key, bucket]) => ({
         key,
         label: formatBucketLabel(key, chartGrouping, locale),
-        value: Number(value.toFixed(2)),
+        value: Number(bucket.value.toFixed(2)),
+        expenses: [...bucket.expenses].sort(
+          (a, b) =>
+            new Date(b?.date || 0).getTime() -
+            new Date(a?.date || 0).getTime(),
+        ),
       }));
 
     const bounds = getSelectedRangeBounds({
@@ -785,14 +898,15 @@ export default function DashboardChartsPage() {
     });
     if (!bounds) return orderedEntries;
 
-    const valuesByKey = new Map(orderedEntries.map((item) => [item.key, item.value]));
+    const valuesByKey = new Map(orderedEntries.map((item) => [item.key, item]));
 
     if (chartGrouping === "days") {
       const dayKeys = getDayKeysBetween(bounds.start, bounds.end);
       return dayKeys.map((key) => ({
         key,
         label: formatBucketLabel(key, "days", locale),
-        value: Number((valuesByKey.get(key) || 0).toFixed(2)),
+        value: valuesByKey.get(key)?.value || 0,
+        expenses: valuesByKey.get(key)?.expenses || [],
       }));
     }
 
@@ -801,7 +915,8 @@ export default function DashboardChartsPage() {
       return weekKeys.map((key) => ({
         key,
         label: formatBucketLabel(key, "weeks", locale, bounds.end),
-        value: Number((valuesByKey.get(key) || 0).toFixed(2)),
+        value: valuesByKey.get(key)?.value || 0,
+        expenses: valuesByKey.get(key)?.expenses || [],
       }));
     }
 
@@ -914,6 +1029,16 @@ export default function DashboardChartsPage() {
     },
     [allCategoriesSelected, returnsLabel, t],
   );
+  const chartCurrency = displayedExpenses[0]?.currency || "₪";
+
+  function toggleChartBucket(bucketKey) {
+    const key = String(bucketKey || "").trim();
+    if (!key) return;
+    setExpandedChartBuckets((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
 
   return (
     <Card sx={{ border: "none !important", borderRadius: "16px" }}>
@@ -998,9 +1123,20 @@ export default function DashboardChartsPage() {
             {t("allExpenses")}: 0
           </Typography>
         ) : (
-          <Box sx={{ height: 380 }}>
-            <canvas ref={chartCanvasRef} />
-          </Box>
+          <>
+            <Box sx={{ height: 380 }}>
+              <canvas ref={chartCanvasRef} />
+            </Box>
+            <ChartBucketDetails
+              chartSeries={chartSeries}
+              chartCurrency={chartCurrency}
+              direction={direction}
+              expandedBuckets={expandedChartBuckets}
+              hasMultipleSelectedAccounts={hasMultipleSelectedAccounts}
+              onToggleBucket={toggleChartBucket}
+              t={t}
+            />
+          </>
         )}
       </CardContent>
     </Card>

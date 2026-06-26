@@ -83,6 +83,7 @@ export default function ShoppingListsPage() {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [expandedLists, setExpandedLists] = useState({});
   const listsRef = useRef([]);
+  const compactInputHeight = "calc(var(--app-outlined-input-min-height) * 0.7)";
 
   async function load() {
     setIsLoadingLists(true);
@@ -827,6 +828,7 @@ export default function ShoppingListsPage() {
                                   <AppTextField
                                     fullWidth
                                     size="small"
+                                    inputHeight={compactInputHeight}
                                     label={t("note")}
                                     value={getDraftNoteValue(list._id, item)}
                                     onChange={(event) =>
@@ -920,6 +922,7 @@ export default function ShoppingListsPage() {
               value={newListTitle}
               onChange={(e) => setNewListTitle(e.target.value)}
               label={t("title")}
+              inputHeight={compactInputHeight}
               fullWidth
             />
             <Stack useFlexGap sx={{ rowGap: 2 }}>
@@ -935,6 +938,7 @@ export default function ShoppingListsPage() {
                       value={itemValue.description}
                       onChange={(e) => onItemChange(index, e.target.value)}
                       label={t("itemName")}
+                      inputHeight={compactInputHeight}
                       InputLabelProps={{ shrink: true }}
                       placeholder={t("sampleMilk")}
                       fullWidth
@@ -943,8 +947,8 @@ export default function ShoppingListsPage() {
                       <Box
                         sx={{
                           width: 124,
-                          height: "var(--app-outlined-input-min-height)",
-                          minHeight: "var(--app-outlined-input-min-height)",
+                          height: compactInputHeight,
+                          minHeight: compactInputHeight,
                           boxSizing: "border-box",
                           bgcolor: "background.default",
                           border: "1px solid",
@@ -1019,6 +1023,7 @@ export default function ShoppingListsPage() {
                           onItemQuantityChange(index, e.target.value)
                         }
                         label={t("itemQuantity")}
+                        inputHeight={compactInputHeight}
                         InputLabelProps={{ shrink: true }}
                         inputProps={{
                           min: 1,
@@ -1084,9 +1089,10 @@ export default function ShoppingListsPage() {
               value={editingListTitle}
               onChange={(e) => setEditingListTitle(e.target.value)}
               label={t("title")}
+              inputHeight={compactInputHeight}
               fullWidth
             />
-            <Stack useFlexGap sx={{ rowGap: 2 }}>
+            <Stack useFlexGap sx={{ rowGap: .5 }}>
               {editingItems.map((item, index) => {
                 return (
                   <Stack
@@ -1099,6 +1105,7 @@ export default function ShoppingListsPage() {
                       value={item.description}
                       onChange={(e) => onEditItemChange(index, e.target.value)}
                       label={t("itemName")}
+                      inputHeight={compactInputHeight}
                       InputLabelProps={{ shrink: true }}
                       placeholder={t("sampleMilk")}
                       fullWidth
@@ -1107,8 +1114,8 @@ export default function ShoppingListsPage() {
                       <Box
                         sx={{
                           width: 104,
-                          height: "var(--app-outlined-input-min-height)",
-                          minHeight: "var(--app-outlined-input-min-height)",
+                          height: compactInputHeight,
+                          minHeight: compactInputHeight,
                           boxSizing: "border-box",
                           bgcolor: "background.default",
                           border: "1px solid",
@@ -1183,6 +1190,7 @@ export default function ShoppingListsPage() {
                           onEditItemQuantityChange(index, e.target.value)
                         }
                         label={t("itemQuantity")}
+                        inputHeight={compactInputHeight}
                         InputLabelProps={{ shrink: true }}
                         inputProps={{
                           min: 1,

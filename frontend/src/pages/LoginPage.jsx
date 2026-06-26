@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   Container,
+  CircularProgress,
   IconButton,
   InputAdornment,
   Stack,
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ email: "", password: "", name: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [sendingForgotEmail, setSendingForgotEmail] = useState(false);
   const [error, setError] = useState("");
@@ -44,8 +46,11 @@ export default function LoginPage() {
 
   async function submit(e) {
     e.preventDefault();
+    if (submitting) return;
+
     setError("");
     setSuccess("");
+    setSubmitting(true);
     try {
       await login(
         form.email,
@@ -54,6 +59,8 @@ export default function LoginPage() {
       );
     } catch (err) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -118,7 +125,7 @@ export default function LoginPage() {
             {isForgotPasswordMode
               ? t("forgotPasswordTitle")
               : mode === "login"
-                ? t("login")
+                ? ""
                 : t("createAccount")}
           </Typography>
           {isForgotPasswordMode ? (
@@ -215,8 +222,23 @@ export default function LoginPage() {
                     }}
                     fullWidth
                   />
-                  <Button type="submit" variant="contained" size="large" fullWidth>
-                    {mode === "login" ? t("login") : t("register")}
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    fullWidth
+                    disabled={submitting}
+                    startIcon={
+                      submitting ? (
+                        <CircularProgress color="inherit" size={20} />
+                      ) : null
+                    }
+                  >
+                    {submitting
+                      ? t("loading")
+                      : mode === "login"
+                        ? t("login")
+                        : t("register")}
                   </Button>
                 </Stack>
               </Box>

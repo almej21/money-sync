@@ -254,6 +254,7 @@ export default function DashboardListPage({ hideTotal = false }) {
   const listContainerRef = useRef(null);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 50 });
   const { t, locale, direction } = useLanguage();
+  console.log("direction:", direction);
   const { filters, setFilters } = useDashboardFilters();
   const {
     selectedCategories,
@@ -279,7 +280,9 @@ export default function DashboardListPage({ hideTotal = false }) {
       setFilters((prev) => ({
         ...prev,
         selectedConnectionIds:
-          typeof value === "function" ? value(prev.selectedConnectionIds) : value,
+          typeof value === "function"
+            ? value(prev.selectedConnectionIds)
+            : value,
       })),
     [setFilters],
   );
@@ -883,7 +886,10 @@ export default function DashboardListPage({ hideTotal = false }) {
   }
 
   const normalizedListSearchQuery = useMemo(
-    () => String(listSearchQuery || "").trim().toLowerCase(),
+    () =>
+      String(listSearchQuery || "")
+        .trim()
+        .toLowerCase(),
     [listSearchQuery],
   );
 
@@ -931,7 +937,11 @@ export default function DashboardListPage({ hideTotal = false }) {
         formatDate(expense?.date),
         localizedDate,
       ]
-        .map((value) => String(value || "").trim().toLowerCase())
+        .map((value) =>
+          String(value || "")
+            .trim()
+            .toLowerCase(),
+        )
         .filter(Boolean)
         .join(" ");
 
@@ -1279,11 +1289,7 @@ export default function DashboardListPage({ hideTotal = false }) {
                 sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
               >
                 {t("summaryDates")}:{" "}
-                <Box
-                  component="span"
-                  dir="ltr"
-                  sx={{ unicodeBidi: "isolate" }}
-                >
+                <Box component="span" dir="ltr" sx={{ unicodeBidi: "isolate" }}>
                   {displayedDateRange}
                 </Box>
               </Typography>
@@ -1304,103 +1310,116 @@ export default function DashboardListPage({ hideTotal = false }) {
                   variant="body2"
                   dir={direction}
                   color="warning.main"
-                  sx={{ textAlign: direction === "rtl" ? "right" : "left" }}
                 >
                   {t("dashboardNoBankConnectionMessage")}
                 </Typography>
               </Box>
             )}
           <Box
+            dir={direction}
             sx={{
               display: "flex",
-              direction: "ltr",
-              justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
-              mt: -2,
+              alignItems: "center",
+              gap: 1.5,
+              p: 0.5,
+              mt: -1,
             }}
           >
-            <IconButton
-              className="amount-sort-button"
-              onClick={handleAmountSortToggle}
-              disableRipple
-              disableFocusRipple
-              aria-label={
-                sortBy === "amount_asc"
-                  ? t("sortPriceLowToHigh")
-                  : t("sortPriceHighToLow")
-              }
+            <Box sx={{ width: 38, flexShrink: 0 }} />
+            <Box sx={{ flex: 1, minWidth: 0 }} />
+            <Box
               sx={{
-                border: `2px solid ${isAmountSortActive ? theme.palette.primary.main : "transparent"}`,
-                bgcolor: "background.paper",
-                color: theme.palette.text.primary,
-                opacity: 1,
-                borderRadius: 1.25,
-                scale: 0.8,
-                transition: "none !important",
-                "&.amount-sort-button, &.amount-sort-button:hover, &.amount-sort-button:active":
-                  {
-                    color: `${theme.palette.text.primary} !important`,
-                    opacity: "1 !important",
-                  },
-                "&:hover": {
-                  bgcolor: "background.paper",
-                  color: theme.palette.text.primary,
-                  opacity: 1,
-                },
-                "&:active": {
-                  bgcolor: "background.paper",
-                  color: theme.palette.text.primary,
-                  opacity: 1,
-                },
-                "&.Mui-focusVisible": {
-                  bgcolor: "background.paper !important",
-                  color: "inherit !important",
-                  opacity: "1 !important",
-                  boxShadow: "none !important",
-                  border: `2px solid ${theme.palette.primary.main}`,
-                  outline: "none !important",
-                },
-                "&:focus": {
-                  bgcolor: "background.paper !important",
-                  color: "inherit !important",
-                  opacity: "1 !important",
-                  boxShadow: "none !important",
-                  border: `2px solid ${theme.palette.primary.main}`,
-                  outline: "none !important",
-                },
-                "& .MuiTouchRipple-root": {
-                  display: "none",
-                },
-                "&:focus .MuiSvgIcon-root, &:focus-visible .MuiSvgIcon-root, &.Mui-focusVisible .MuiSvgIcon-root":
-                  {
-                    color: `${theme.palette.text.primary} !important`,
-                    opacity: "1 !important",
-                    fill: "currentColor",
-                  },
+                width: "fit-content",
+                display: "flex",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
             >
-              {sortBy === "amount_asc" ? (
-                <ArrowUpwardRoundedIcon
-                  fontSize="small"
-                  sx={{
+              <IconButton
+                className="amount-sort-button"
+                onClick={handleAmountSortToggle}
+                disableRipple
+                disableFocusRipple
+                aria-label={
+                  sortBy === "amount_asc"
+                    ? t("sortPriceLowToHigh")
+                    : t("sortPriceHighToLow")
+                }
+                sx={{
+                  border: `2px solid ${isAmountSortActive ? theme.palette.primary.main : "transparent"}`,
+                  bgcolor: "background.paper",
+                  color: theme.palette.text.primary,
+                  opacity: 1,
+                  borderRadius: 1.25,
+                  scale: 0.8,
+                  transition: "none !important",
+                  "&.amount-sort-button, &.amount-sort-button:hover, &.amount-sort-button:active":
+                    {
+                      color: `${theme.palette.text.primary} !important`,
+                      opacity: "1 !important",
+                    },
+                  "&:hover": {
+                    bgcolor: "background.paper",
                     color: theme.palette.text.primary,
-                    opacity: "1 !important",
-                    transition: "none !important",
-                    fill: "currentColor",
-                  }}
-                />
-              ) : (
-                <ArrowDownwardRoundedIcon
-                  fontSize="small"
-                  sx={{
+                    opacity: 1,
+                  },
+                  "&:active": {
+                    bgcolor: "background.paper",
                     color: theme.palette.text.primary,
+                    opacity: 1,
+                  },
+                  "&.Mui-focusVisible": {
+                    bgcolor: "background.paper !important",
+                    color: "inherit !important",
                     opacity: "1 !important",
-                    transition: "none !important",
-                    fill: "currentColor",
-                  }}
-                />
-              )}
-            </IconButton>
+                    boxShadow: "none !important",
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    outline: "none !important",
+                  },
+                  "&:focus": {
+                    bgcolor: "background.paper !important",
+                    color: "inherit !important",
+                    opacity: "1 !important",
+                    boxShadow: "none !important",
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    outline: "none !important",
+                  },
+                  "& .MuiTouchRipple-root": {
+                    display: "none",
+                  },
+                  "&:focus .MuiSvgIcon-root, &:focus-visible .MuiSvgIcon-root, &.Mui-focusVisible .MuiSvgIcon-root":
+                    {
+                      color: `${theme.palette.text.primary} !important`,
+                      opacity: "1 !important",
+                      fill: "currentColor",
+                    },
+                }}
+              >
+                {sortBy === "amount_asc" ? (
+                  <ArrowUpwardRoundedIcon
+                    fontSize="small"
+                    sx={{
+                      color: theme.palette.text.primary,
+                      opacity: "1 !important",
+                      transition: "none !important",
+                      fill: "currentColor",
+                    }}
+                  />
+                ) : (
+                  <ArrowDownwardRoundedIcon
+                    fontSize="small"
+                    sx={{
+                      color: theme.palette.text.primary,
+                      opacity: "1 !important",
+                      transition: "none !important",
+                      fill: "currentColor",
+                    }}
+                  />
+                )}
+              </IconButton>
+            </Box>
           </Box>
+
           <List disablePadding ref={listContainerRef}>
             {isLoading ? (
               Array.from({ length: 6 }).map((_, index) => (

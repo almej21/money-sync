@@ -1,10 +1,10 @@
-import { useMemo } from "react";
 import TextField from "@mui/material/TextField";
 import { useTheme } from "@mui/material/styles";
+import { useMemo } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function AppTextField(props) {
-  const { sx, ...rest } = props;
+  const { inputHeight, sx, ...rest } = props;
   const theme = useTheme();
   const { direction } = useLanguage();
   const isRtl = direction === "rtl" || theme.direction === "rtl";
@@ -16,6 +16,23 @@ export default function AppTextField(props) {
         "& .MuiInputLabel-root": {
           textAlign: isRtl ? "right" : "left",
         },
+        ...(inputHeight
+          ? {
+              "& .MuiOutlinedInput-root": {
+                minHeight: inputHeight,
+              },
+              "& .MuiInputBase-input": {
+                boxSizing: "border-box",
+                height: inputHeight,
+              },
+              "& .MuiSelect-select": {
+                minHeight: "0 !important",
+                height: `${inputHeight} !important`,
+                display: "flex",
+                alignItems: "center",
+              },
+            }
+          : {}),
         "& .MuiInputLabel-root.MuiInputLabel-outlined": {
           insetInlineStart: "14px !important",
           insetInlineEnd: "auto !important",
@@ -28,18 +45,18 @@ export default function AppTextField(props) {
         "& .MuiInputLabel-root.MuiInputLabel-outlined:not(.MuiInputLabel-shrink)":
           {
             transform: isRtl
-              ? "translate(-14px, 9px) scale(1) !important"
-              : "translate(0, 9px) scale(1) !important",
+              ? "translate(10px, 9px) scale(1) !important"
+              : "translate(10px, 10px) scale(1) !important",
           },
         "& .MuiInputLabel-root.MuiInputLabel-outlined.MuiInputLabel-shrink": {
           transform: isRtl
-            ? "translate(-8px, -9px) scale(0.75) !important"
-            : "translate(10px, -9px) scale(0.75) !important",
+            ? "translate(2px, -9px) scale(0.75) !important"
+            : "translate(14px, -9px) scale(0.75) !important",
         },
       },
       ...sxArray.filter(Boolean),
     ];
-  }, [isRtl, sx]);
+  }, [inputHeight, isRtl, sx]);
 
   return <TextField {...rest} sx={mergedSx} />;
 }
