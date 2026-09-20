@@ -2,6 +2,7 @@ import { SCRAPERS } from "israeli-bank-scrapers";
 import Expense from "../models/Expense.js";
 import Household from "../models/Household.js";
 import { encryptValue } from "../services/credentialCrypto.js";
+import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
 import {
   buildHouseholdConnectionVisibilityMap,
   normalizeVisibilityScope,
@@ -12,7 +13,6 @@ import {
   ensureHouseholdBankConnections,
   toStoredEncryptedFields,
 } from "../services/householdBankConnections.js";
-import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
 
 const COMPANY_LABELS = {
   hapoalim: "Bank Hapoalim",
@@ -910,6 +910,18 @@ export async function triggerBankConnectionSync(req, res) {
   if (String(syncState?.lastError || "").trim()) {
     return res.status(500).json({
       message: String(syncState.lastError).trim(),
+    });
+  }
+  const syncResult = syncState?.lastResult || null;
+  if (syncResult?.skipped) {
+    const lockUntil = syncResult?.lockUntil || null;
+    return res.status(syncResult.reason === "lock_held" ? 423 : 409).json({
+      message:
+        syncResult.reason === "lock_held"
+          ? "Bank sync is already running. Please try again shortly."
+          : "Bank sync was skipped. Please try again shortly.",
+      reason: syncResult.reason || "skipped",
+      lockUntil,
     });
   }
 

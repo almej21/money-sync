@@ -31,6 +31,8 @@ import {
 } from "../services/expenseService";
 
 const HIDDEN_COMPANY_IDS = new Set(["isracard"]);
+const SYNC_LOCK_RETRY_COUNT = 2;
+const SYNC_LOCK_RETRY_DELAY_MS = 10_000;
 
 function buildEmptyCredentials(fields = []) {
   return Object.fromEntries(fields.map((field) => [field.name, ""]));
@@ -58,6 +60,25 @@ function canTriggerConnectionSync(lastBankFetchAt) {
   const lastFetchDate = new Date(lastBankFetchAt);
   if (Number.isNaN(lastFetchDate.getTime())) return true;
   return Date.now() - lastFetchDate.getTime() >= 60 * 60 * 1000;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function getSyncRetryDelayMs(error) {
+  const lockUntilDate = error?.body?.lockUntil
+    ? new Date(error.body.lockUntil)
+    : null;
+  if (lockUntilDate && !Number.isNaN(lockUntilDate.getTime())) {
+    const lockWaitMs = lockUntilDate.getTime() - Date.now() + 1_000;
+    if (lockWaitMs > 0) {
+      return Math.min(lockWaitMs, SYNC_LOCK_RETRY_DELAY_MS);
+    }
+  }
+  return SYNC_LOCK_RETRY_DELAY_MS;
 }
 
 function buildAccountVisibilityState(connections = []) {
@@ -563,7 +584,17 @@ export default function BankCredentialsPage() {
     setSyncingConnectionId(normalizedConnectionId);
 
     try {
-      await triggerBankConnectionSync(normalizedConnectionId);
+      for (let attempt = 0; attempt <= SYNC_LOCK_RETRY_COUNT; attempt += 1) {
+        try {
+          await triggerBankConnectionSync(normalizedConnectionId);
+          break;
+        } catch (err) {
+          const shouldRetry =
+            err?.status === 423 && attempt < SYNC_LOCK_RETRY_COUNT;
+          if (!shouldRetry) throw err;
+          await wait(getSyncRetryDelayMs(err));
+        }
+      }
       setSuccess(t("connectionSyncCompleted"));
       await loadBankConfig();
     } catch (err) {

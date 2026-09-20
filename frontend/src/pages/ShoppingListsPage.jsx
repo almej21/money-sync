@@ -30,8 +30,8 @@ import {
   useTheme,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import AppTextField from "../components/AppTextField";
 import AppSnackbar from "../components/AppSnackbar";
+import AppTextField from "../components/AppTextField";
 import GenericModal from "../components/GenericModal";
 import LiquidGlassContainer from "../components/LiquidGlassContainer";
 import { useLanguage } from "../context/LanguageContext";
@@ -77,13 +77,16 @@ export default function ShoppingListsPage() {
   const [editingListId, setEditingListId] = useState("");
   const [editingListTitle, setEditingListTitle] = useState("");
   const [editingItems, setEditingItems] = useState([]);
+  const [initialEditingValues, setInitialEditingValues] = useState(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [expandedNoteEditorKey, setExpandedNoteEditorKey] = useState("");
   const [noteDrafts, setNoteDrafts] = useState({});
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [expandedLists, setExpandedLists] = useState({});
   const listsRef = useRef([]);
-  const compactInputHeight = "calc(var(--app-outlined-input-min-height) * 0.7)";
+  const createModalBottomRef = useRef(null);
+  const editModalBottomRef = useRef(null);
+  const compactInputHeight = "calc(var(--app-outlined-input-min-height) * 0.8)";
 
   async function load() {
     setIsLoadingLists(true);
@@ -147,6 +150,12 @@ export default function ShoppingListsPage() {
 
   function addItemRow() {
     setNewListItems((prev) => [...prev, { description: "", quantity: 1 }]);
+    requestAnimationFrame(() => {
+      createModalBottomRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    });
   }
 
   function removeItemRow(index) {
@@ -158,9 +167,7 @@ export default function ShoppingListsPage() {
 
   function openEditModal(list) {
     if (!list?._id) return;
-    setEditingListId(String(list._id));
-    setEditingListTitle(String(list.title || "").trim());
-    setEditingItems(
+    const items =
       Array.isArray(list.items) && list.items.length
         ? list.items.map((item) => ({
             _id: item._id,
@@ -169,8 +176,12 @@ export default function ShoppingListsPage() {
             note: String(item.note || "").trim(),
             completed: Boolean(item.completed),
           }))
-        : [{ description: "", quantity: 1, completed: false }],
-    );
+        : [{ description: "", quantity: 1, completed: false }];
+    const title = String(list.title || "").trim();
+    setEditingListId(String(list._id));
+    setEditingListTitle(title);
+    setEditingItems(items);
+    setInitialEditingValues({ title, items });
     setIsEditModalOpen(true);
   }
 
@@ -180,6 +191,7 @@ export default function ShoppingListsPage() {
     setEditingListId("");
     setEditingListTitle("");
     setEditingItems([]);
+    setInitialEditingValues(null);
   }
 
   function onEditItemChange(index, value) {
@@ -217,7 +229,18 @@ export default function ShoppingListsPage() {
       ...prev,
       { description: "", quantity: 1, completed: false },
     ]);
+    requestAnimationFrame(() => {
+      editModalBottomRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    });
   }
+
+  const hasEditingChanges =
+    initialEditingValues !== null &&
+    JSON.stringify({ title: editingListTitle, items: editingItems }) !==
+      JSON.stringify(initialEditingValues);
 
   function removeEditItemRow(index) {
     setEditingItems((prev) => {
@@ -956,6 +979,7 @@ export default function ShoppingListsPage() {
                           borderRadius: (muiTheme) =>
                             `${muiTheme.shape.borderRadius}px`,
                           display: "flex",
+                          flexDirection: "row-reverse",
                           alignItems: "center",
                           justifyContent: "space-between",
                           px: 1,
@@ -1037,7 +1061,7 @@ export default function ShoppingListsPage() {
                       aria-label="Delete item"
                       color="error"
                       onClick={() => removeItemRow(index)}
-                      sx={{ alignSelf: "center", mt: 0.25 }}
+                      sx={{ alignSelf: "center" }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
@@ -1050,6 +1074,7 @@ export default function ShoppingListsPage() {
                 {t("newItemButton")}
               </Button>
             </Box>
+            <Box ref={createModalBottomRef} />
             <Stack
               direction="row"
               useFlexGap
@@ -1092,7 +1117,7 @@ export default function ShoppingListsPage() {
               inputHeight={compactInputHeight}
               fullWidth
             />
-            <Stack useFlexGap sx={{ rowGap: .5 }}>
+            <Stack useFlexGap sx={{ rowGap: 1 }}>
               {editingItems.map((item, index) => {
                 return (
                   <Stack
@@ -1123,6 +1148,7 @@ export default function ShoppingListsPage() {
                           borderRadius: (muiTheme) =>
                             `${muiTheme.shape.borderRadius}px`,
                           display: "flex",
+                          flexDirection: "row-reverse",
                           alignItems: "center",
                           justifyContent: "space-between",
                           px: 1,
@@ -1205,7 +1231,7 @@ export default function ShoppingListsPage() {
                       color="error"
                       onClick={() => removeEditItemRow(index)}
                       disabled={isSavingEdit}
-                      sx={{ alignSelf: "center", mt: 0.25 }}
+                      sx={{ alignSelf: "center" }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
@@ -1218,16 +1244,33 @@ export default function ShoppingListsPage() {
                 {t("newItemButton")}
               </Button>
             </Box>
-            <Button type="submit" variant="contained" disabled={isSavingEdit}>
-              {isSavingEdit ? (
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CircularProgress size={16} color="inherit" />
-                  <span>{t("loading")}</span>
-                </Stack>
-              ) : (
-                t("save")
-              )}
-            </Button>
+            <Box ref={editModalBottomRef} />
+            <Stack direction="row" useFlexGap spacing={1} sx={{ gap: 1 }}>
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={closeEditModal}
+                disabled={isSavingEdit || !hasEditingChanges}
+                fullWidth
+              >
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isSavingEdit}
+                fullWidth
+              >
+                {isSavingEdit ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CircularProgress size={16} color="inherit" />
+                    <span>{t("loading")}</span>
+                  </Stack>
+                ) : (
+                  t("save")
+                )}
+              </Button>
+            </Stack>
           </Stack>
         </Box>
       </GenericModal>

@@ -25,8 +25,8 @@ export default function GenericModal({
       slotProps={{
         backdrop: {
           sx: {
-            backdropFilter: "blur(8px)",
-            backgroundColor: "rgba(0, 0, 0, 0.55)",
+            // backdropFilter: "blur(8px)",
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
           },
         },
       }}
@@ -41,6 +41,25 @@ export default function GenericModal({
             width: { xs: "92vw", sm: width },
             maxHeight: "85vh",
             overflowY: "auto",
+            scrollbarWidth: "thin",
+            scrollbarColor: (muiTheme) =>
+              `${muiTheme.palette.primary.main} ${muiTheme.palette.background.paper}`,
+            "&::-webkit-scrollbar": {
+              width: 8,
+            },
+            "&::-webkit-scrollbar-track": {
+              backgroundColor: "background.paper",
+              borderRadius: 999,
+            },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "primary.main",
+              border: "2px solid",
+              borderColor: "background.paper",
+              borderRadius: 999,
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              backgroundColor: "primary.dark",
+            },
             bgcolor: "background.paper",
             border: "1px solid",
             borderColor: "divider",

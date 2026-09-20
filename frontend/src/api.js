@@ -92,7 +92,10 @@ export async function api(path, options = {}) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: "Request failed" }));
-    throw new Error(err.message || "Request failed");
+    const error = new Error(err.message || "Request failed");
+    error.status = res.status;
+    error.body = err;
+    throw error;
   }
 
   return res.json();

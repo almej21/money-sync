@@ -11,6 +11,8 @@ const DEFAULT_SCRAPE_RETRY_DELAY_MS = 1_500;
 const DEFAULT_SYNC_TIMEOUT_BUFFER_MS = 5_000;
 const DEFAULT_SCRAPE_TIMEOUT_CLEANUP_MS = 5_000;
 const DEFAULT_SYNC_LOCK_BUFFER_MS = 10_000;
+const DEFAULT_DISTRIBUTED_LOCK_WAIT_MS = 45_000;
+const DEFAULT_DISTRIBUTED_LOCK_POLL_MS = 1_000;
 const DEFAULT_LAMBDA_TIMEOUT_SECONDS = 180;
 const LAMBDA_WAIT_SAFETY_BUFFER_MS = 2_000;
 
@@ -86,6 +88,17 @@ function resolveDistributedLockMs(syncTimeoutMs) {
   const configuredLockMs = toPositiveNumber(process.env.BANK_SYNC_LOCK_MS, 0);
   if (configuredLockMs > 0) return configuredLockMs;
   return syncTimeoutMs + DEFAULT_SYNC_LOCK_BUFFER_MS;
+}
+
+function resolveDistributedLockWaitMs(waitTimeoutMs) {
+  const configuredWaitMs = toPositiveNumber(
+    process.env.BANK_SYNC_DISTRIBUTED_LOCK_WAIT_MS,
+    DEFAULT_DISTRIBUTED_LOCK_WAIT_MS,
+  );
+  if (!Number.isFinite(waitTimeoutMs) || waitTimeoutMs <= 0) {
+    return configuredWaitMs;
+  }
+  return Math.min(configuredWaitMs, waitTimeoutMs);
 }
 
 async function acquireDistributedSyncLock({
@@ -197,6 +210,44 @@ function waitForPromiseWithTimeout(promise, timeoutMs) {
   ]);
 }
 
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function waitForDistributedSyncLockRelease({
+  householdId,
+  timeoutMs,
+  pollMs = DEFAULT_DISTRIBUTED_LOCK_POLL_MS,
+}) {
+  if (!mongoose.isValidObjectId(householdId)) return "released";
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return "timeout";
+
+  const deadlineMs = Date.now() + timeoutMs;
+  while (Date.now() < deadlineMs) {
+    const existing = await Household.findById(householdId)
+      .select("bankSync.lockUntil bankSync.lockOwner")
+      .lean();
+    const lockUntilDate = existing?.bankSync?.lockUntil
+      ? new Date(existing.bankSync.lockUntil)
+      : null;
+    const lockIsActive =
+      Boolean(String(existing?.bankSync?.lockOwner || "").trim()) &&
+      Boolean(lockUntilDate) &&
+      !Number.isNaN(lockUntilDate.getTime()) &&
+      lockUntilDate.getTime() > Date.now();
+
+    if (!lockIsActive) return "released";
+
+    const remainingMs = deadlineMs - Date.now();
+    if (remainingMs <= 0) break;
+    await wait(Math.min(pollMs, remainingMs));
+  }
+
+  return "timeout";
+}
+
 export async function triggerExpenseSyncForUser(
   user,
   reason = "unknown",
@@ -223,6 +274,7 @@ export async function triggerExpenseSyncForUser(
   );
 
   state.lastTriggerReason = reason;
+  state.lastError = null;
   if (isLambdaRuntime && !awaitCompletion) {
     console.log(
       `[BANK SYNC COORD] skipped userId=${userId} reason=${reason} state=nonblocking_lambda`,
@@ -259,14 +311,41 @@ export async function triggerExpenseSyncForUser(
 
   const lockMs = resolveDistributedLockMs(syncBudgetMs);
   const lockOwner = `${userId}:${new mongoose.Types.ObjectId().toString()}`;
-  const lockResult = await acquireDistributedSyncLock({
+  let lockResult = await acquireDistributedSyncLock({
     householdId,
     lockOwner,
     reason,
     lockMs,
   });
 
+  if (!lockResult.acquired && awaitCompletion) {
+    const distributedLockWaitMs = resolveDistributedLockWaitMs(waitTimeoutMs);
+    console.log(
+      `[BANK SYNC COORD] waiting_for_lock userId=${userId} reason=${reason} state=${lockResult.state} lockOwner=${String(lockResult.lockOwner || "-")} lockUntil=${lockResult.lockUntil ? new Date(lockResult.lockUntil).toISOString() : "-"} timeoutMs=${distributedLockWaitMs}`,
+    );
+    const waitResult = await waitForDistributedSyncLockRelease({
+      householdId,
+      timeoutMs: distributedLockWaitMs,
+    });
+    if (waitResult === "released") {
+      lockResult = await acquireDistributedSyncLock({
+        householdId,
+        lockOwner,
+        reason,
+        lockMs,
+      });
+    }
+  }
+
   if (!lockResult.acquired) {
+    state.lastResult = {
+      skipped: true,
+      reason: lockResult.state,
+      lockOwner: String(lockResult.lockOwner || ""),
+      lockUntil: lockResult.lockUntil
+        ? new Date(lockResult.lockUntil).toISOString()
+        : null,
+    };
     console.log(
       `[BANK SYNC COORD] skipped userId=${userId} reason=${reason} state=${lockResult.state} lockOwner=${String(lockResult.lockOwner || "-")} lockUntil=${lockResult.lockUntil ? new Date(lockResult.lockUntil).toISOString() : "-"}`,
     );
@@ -278,7 +357,6 @@ export async function triggerExpenseSyncForUser(
 
   state.running = true;
   state.lastStartedAt = new Date(now);
-  state.lastError = null;
   const fetchStartedAt = state.lastStartedAt;
   const runStartedAtMs = Date.now();
 

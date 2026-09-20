@@ -45,12 +45,12 @@ export default function AppTextField(props) {
         "& .MuiInputLabel-root.MuiInputLabel-outlined:not(.MuiInputLabel-shrink)":
           {
             transform: isRtl
-              ? "translate(10px, 9px) scale(1) !important"
+              ? "translate(0, 9px) scale(1) !important"
               : "translate(10px, 10px) scale(1) !important",
           },
         "& .MuiInputLabel-root.MuiInputLabel-outlined.MuiInputLabel-shrink": {
           transform: isRtl
-            ? "translate(2px, -9px) scale(0.75) !important"
+            ? "translate(0, -9px) scale(0.75) !important"
             : "translate(14px, -9px) scale(0.75) !important",
         },
       },
