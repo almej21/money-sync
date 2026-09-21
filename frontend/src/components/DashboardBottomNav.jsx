@@ -127,11 +127,22 @@ export default function DashboardBottomNav() {
           isolation: "isolate",
           overflow: "hidden",
           borderRadius: "34px",
+          // Quick Liquid places the supplied content in this layer. Give it
+          // the pill's exact dimensions so percentage-based grid/button
+          // sizing does not fall back to intrinsic content sizing.
+          "& > .ql-content": {
+            display: "block",
+            width: "100%",
+            height: "100%",
+          },
         }}
         contentSx={{
           px: "6px",
           py: 0,
+          boxSizing: "border-box",
+          width: "100%",
           height: "100%",
+          minHeight: 0,
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           alignItems: "stretch",
@@ -203,6 +214,7 @@ export default function DashboardBottomNav() {
                 position: "relative",
                 zIndex: 2,
                 minWidth: 0,
+                minHeight: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -211,8 +223,8 @@ export default function DashboardBottomNav() {
                 width: "100%",
                 height: "calc(100% - 10px)",
                 lineHeight: 0,
-                px: 0,
-                mx: 0,
+                p: 0,
+                m: 0,
                 borderRadius: "22px",
                 backgroundColor: "transparent",
                 color: isActive
@@ -241,6 +253,9 @@ export default function DashboardBottomNav() {
                 sx={{
                   "--dashboard-nav-icon-offset": `${iconOffsetX}px`,
                   fontSize: 24,
+                  width: 24,
+                  height: 24,
+                  flexShrink: 0,
                   display: "block",
                   transform:
                     "translateX(var(--dashboard-nav-icon-offset, 0px)) scale(1)",
