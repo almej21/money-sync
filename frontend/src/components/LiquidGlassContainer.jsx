@@ -13,6 +13,15 @@ const getBorderRadius = (cardSx, sx) => {
   return 16;
 };
 
+const isIOS = () => {
+  if (typeof navigator === "undefined") return false;
+
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+};
+
 export default function LiquidGlassContainer({
   children,
   sx,
@@ -21,14 +30,28 @@ export default function LiquidGlassContainer({
   ...boxProps
 }) {
   const borderRadius = getBorderRadius(cardSx, sx);
-
-  return (
-    <LiquidGlass
-      as={Box}
-      {...boxProps}
-      config={{
-        // A clear, refractive surface with a pronounced rim—closer to the
-        // iOS Liquid Glass treatment than a frosted glass card.
+  const glassConfig = isIOS()
+    ? {
+        // WebKit cannot render Quick Liquid's SVG backdrop refraction.
+        // Use a more visible native-CSS glass treatment on iPhone and iPad.
+        material: "thin",
+        borderRadius,
+        blur: 8,
+        saturation: 1.35,
+        tint: "255, 255, 255",
+        tintOpacity: 0.1,
+        refractionStrength: 0,
+        refractionMode: "css",
+        edgeHighlight: 0.8,
+        specularStrength: 0.3,
+        dynamicLighting: false,
+        chromaticAberration: 0,
+        elevation: 1,
+        quality: "high",
+        appearance: "auto",
+      }
+    : {
+        // Chromium uses Quick Liquid's full SVG-backed refraction path.
         material: "clear",
         borderRadius,
         blur: 1,
@@ -47,11 +70,16 @@ export default function LiquidGlassContainer({
         elevation: 1,
         quality: "high",
         appearance: "auto",
-      }}
+      };
+
+  return (
+    <LiquidGlass
+      as={Box}
+      {...boxProps}
+      config={glassConfig}
       sx={[
         {
           position: "relative",
-          isolation: "isolate",
           overflow: "hidden",
           border: "none !important",
           borderRadius: "16px",

@@ -124,7 +124,6 @@ export default function DashboardBottomNav() {
           width: "min(calc(100vw - 16px), 320px)",
           height: 54,
           zIndex: (activeTheme) => activeTheme.zIndex.appBar + 3,
-          isolation: "isolate",
           overflow: "hidden",
           borderRadius: "34px",
           // Quick Liquid places the supplied content in this layer. Give it
