@@ -5,6 +5,7 @@ import {
   Select,
   useTheme,
 } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
 
 function toSxArray(sx) {
@@ -22,12 +23,29 @@ export default function Dropdown({
   menuPaperSx,
   menuItemSx,
   MenuProps: incomingMenuProps,
+  onOpen,
+  onClose,
   children,
   ...selectProps
 }) {
   const theme = useTheme();
   const { direction } = useLanguage();
+  const menuActionRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isRtl = direction === "rtl";
+
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    const updateMenuPosition = () => {
+      menuActionRef.current?.updatePosition();
+    };
+
+    // MUI's Menu uses a Popover, which does not reposition itself when the
+    // page scrolls while scroll locking is disabled.
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => window.removeEventListener("scroll", updateMenuPosition, true);
+  }, [isMenuOpen]);
   const baseMenuItemSx = {
     fontSize: "1rem",
     minHeight: "34px",
@@ -59,6 +77,7 @@ export default function Dropdown({
       ...toSxArray(incomingMenuProps?.sx),
     ],
     ...incomingMenuProps,
+    action: menuActionRef,
     PaperProps: {
       ...(incomingMenuProps?.PaperProps || {}),
       sx: [
@@ -145,6 +164,14 @@ export default function Dropdown({
           ...toSxArray(selectSx),
         ]}
         {...selectProps}
+        onOpen={(event) => {
+          onOpen?.(event);
+          setIsMenuOpen(true);
+        }}
+        onClose={(event) => {
+          onClose?.(event);
+          setIsMenuOpen(false);
+        }}
       >
         {children}
       </Select>

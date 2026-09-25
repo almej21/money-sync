@@ -5,6 +5,7 @@ import {
   Box,
   Card,
   CardContent,
+  Chip,
   Divider,
   IconButton,
   List,
@@ -36,6 +37,7 @@ import {
   upsertCachedExpenses,
 } from "../services/expenseCache";
 import { getExpenseChanges, getExpenses } from "../services/expenseService";
+import { formatIlsAmount } from "../lib/currency";
 
 const CATEGORY_ALL_VALUE = "__all_categories__";
 const CATEGORY_RETURNS_VALUE = "__returns_only__";
@@ -1044,6 +1046,73 @@ export default function DashboardListPage({ hideTotal = false }) {
     },
     [allCategoriesSelected, returnsLabel, t],
   );
+  const appliedFilterBadges = useMemo(() => {
+    const categoryValue = allCategoriesSelected
+      ? t("all")
+      : selectedCategories
+          .map((value) =>
+            value === CATEGORY_RETURNS_VALUE ? returnsLabel : value,
+          )
+          .join(", ");
+    const timeRangeValue =
+      timeRange === "custom_range"
+        ? `${t("customRange")}: ${displayedDateRange}`
+        : timeRange === "this_month"
+          ? t("thisMonth")
+          : timeRange === "all_time"
+            ? t("allTime")
+            : lastSixMonthOptions.find((option) => option.value === timeRange)
+                ?.label || timeRange;
+    const accountValue = shouldApplyAccountFilter
+      ? selectedConnectionIds
+          .map(
+            (accountId) =>
+              accountFilterOptions.find((option) => option.id === accountId)
+                ?.label || accountId,
+          )
+          .join(", ")
+      : t("allAccounts");
+    const sortLabels = {
+      date_desc: t("sortDateNewest"),
+      date_asc: t("sortDateOldest"),
+      amount_desc: t("sortPriceHighToLow"),
+      amount_asc: t("sortPriceLowToHigh"),
+    };
+    const badges = [
+      { key: "category", label: `${t("categoryFilter")}: ${categoryValue}` },
+      { key: "time", label: `${t("timeRange")}: ${timeRangeValue}` },
+      { key: "account", label: `${t("accountFilter")}: ${accountValue}` },
+      {
+        key: "amount",
+        label: `${t("amountRange")}: ${formatIlsAmount(Math.round(selectedAmountRange[0]))} - ${formatIlsAmount(Math.round(selectedAmountRange[1]))}`,
+      },
+      { key: "sort", label: `${t("sortBy")}: ${sortLabels[sortBy] || sortBy}` },
+    ];
+
+    if (normalizedListSearchQuery) {
+      badges.push({
+        key: "search",
+        label: `${t("search")}: ${String(listSearchQuery).trim()}`,
+      });
+    }
+
+    return badges;
+  }, [
+    accountFilterOptions,
+    allCategoriesSelected,
+    displayedDateRange,
+    lastSixMonthOptions,
+    listSearchQuery,
+    normalizedListSearchQuery,
+    returnsLabel,
+    selectedAmountRange,
+    selectedCategories,
+    selectedConnectionIds,
+    shouldApplyAccountFilter,
+    sortBy,
+    t,
+    timeRange,
+  ]);
   const visibleExpenses = useMemo(() => {
     if (isLoading) return [];
     if (isMobileListView) return displayedExpenses;
@@ -1084,10 +1153,17 @@ export default function DashboardListPage({ hideTotal = false }) {
       const rect = container.getBoundingClientRect();
       const viewportHeight = window.innerHeight || 0;
       const topOffset = Math.max(0, -rect.top);
-      const bottomOffset = Math.max(0, rect.bottom - viewportHeight);
+      const availableViewportHeight = Math.max(
+        0,
+        viewportHeight - Math.max(0, rect.top),
+      );
+      const estimatedContentHeight = rowCount * VIRTUAL_ROW_HEIGHT_PX;
       const visibleHeight = Math.max(
         0,
-        viewportHeight - topOffset - bottomOffset,
+        Math.min(
+          availableViewportHeight,
+          estimatedContentHeight - topOffset,
+        ),
       );
 
       const start = Math.max(
@@ -1419,6 +1495,25 @@ export default function DashboardListPage({ hideTotal = false }) {
               </IconButton>
             </Box>
           </Box>
+
+          <Stack
+            direction="row"
+            useFlexGap
+            flexWrap="wrap"
+            gap={0.75}
+            dir={direction}
+            sx={{ mb: 1.5 }}
+          >
+            {appliedFilterBadges.map((badge) => (
+              <Chip
+                key={badge.key}
+                label={badge.label}
+                size="small"
+                variant="outlined"
+                sx={{ maxWidth: "100%" }}
+              />
+            ))}
+          </Stack>
 
           <List disablePadding ref={listContainerRef}>
             {isLoading ? (

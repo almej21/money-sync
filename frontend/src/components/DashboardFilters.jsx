@@ -150,7 +150,17 @@ export default function DashboardFilters({
                 boxSizing: "border-box",
               }}
             >
-              <Stack direction="column" spacing={2} sx={{ mb: 2 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "minmax(0, 1fr)",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 2,
+                  mb: 2,
+                }}
+              >
                   <Dropdown
                     labelId="category-filter-label"
                     label={labelWithIcon(t("categoryFilter"), CategoryOutlinedIcon)}
@@ -213,7 +223,7 @@ export default function DashboardFilters({
                   <Stack
                     direction="row"
                     useFlexGap
-                    sx={{ gap: 2 }}
+                    sx={{ gap: 2, gridColumn: { sm: "1 / -1" } }}
                   >
                     <AppTextField
                       id="custom-start-date"
@@ -358,7 +368,7 @@ export default function DashboardFilters({
                     }}
                   />
                 )}
-              </Stack>
+              </Box>
 
               <Box
                 sx={{

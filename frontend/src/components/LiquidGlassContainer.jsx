@@ -57,7 +57,7 @@ export default function LiquidGlassContainer({
         blur: 1,
         saturation: 1,
         tint: "255, 255, 255",
-        tintOpacity: 0.05,
+        tintOpacity: 0.02,
         refractionStrength: 15,
         bezelWidth: 8,
         thickness: 2,
@@ -67,7 +67,7 @@ export default function LiquidGlassContainer({
         fresnelPower: 2,
         dynamicLighting: true,
         chromaticAberration: .5,
-        elevation: 1,
+        elevation: .5,
         quality: "high",
         appearance: "auto",
       };

@@ -23,7 +23,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { formatExpenseDescription } from "../lib/expenseDisplay";
 import { updateExpense as updateExpenseRequest } from "../services/expenseService";
 import AppTextField from "./AppTextField";
@@ -137,11 +137,24 @@ function ExpenseItem({
   const [draftCategory, setDraftCategory] = useState(exp.category || "");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const categoryMenuActionRef = useRef(null);
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
 
   useEffect(() => {
     setDraftDescription(exp.description || "");
     setDraftCategory(exp.category || "");
   }, [exp.category, exp.description, exp._id]);
+
+  useEffect(() => {
+    if (!isCategoryMenuOpen) return undefined;
+
+    const updateMenuPosition = () => {
+      categoryMenuActionRef.current?.updatePosition();
+    };
+
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => window.removeEventListener("scroll", updateMenuPosition, true);
+  }, [isCategoryMenuOpen]);
 
   const editCategoryOptions = Array.from(
     new Set(
@@ -323,8 +336,12 @@ function ExpenseItem({
           >
             <IconButton
               size="small"
-              aria-label={t("edit")}
+              aria-label={isEditing ? t("cancel") : t("edit")}
               onClick={() => {
+                if (isEditing) {
+                  handleCancel();
+                  return;
+                }
                 setSaveError("");
                 setIsEditing(true);
               }}
@@ -344,7 +361,10 @@ function ExpenseItem({
             </IconButton>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               {isEditing ? (
-                <Stack sx={{ gap: 2.5, py: 1 }}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  sx={{ gap: 2.5, py: 1 }}
+                >
                   <AppTextField
                     variant="outlined"
                     size="small"
@@ -358,7 +378,12 @@ function ExpenseItem({
                     InputLabelProps={{ shrink: true }}
                     InputProps={{ notched: true }}
                     sx={{
-                      mt: 1,
+                      flex: { sm: "1 1 0" },
+                      minWidth: 0,
+                      mt: { xs: 1, sm: 0 },
+                      "& .MuiOutlinedInput-root": {
+                        height: "var(--app-outlined-input-min-height)",
+                      },
                       "& .MuiOutlinedInput-input": {
                         paddingTop: 1,
                         paddingBottom: 1,
@@ -376,7 +401,56 @@ function ExpenseItem({
                     label={t("category")}
                     InputLabelProps={{ shrink: true }}
                     InputProps={{ notched: true }}
+                    SelectProps={{
+                      onOpen: () => setIsCategoryMenuOpen(true),
+                      onClose: () => setIsCategoryMenuOpen(false),
+                      MenuProps: {
+                        action: categoryMenuActionRef,
+                        anchorOrigin: {
+                          vertical: "bottom",
+                          horizontal: direction === "rtl" ? "right" : "left",
+                        },
+                        transformOrigin: {
+                          vertical: "top",
+                          horizontal: direction === "rtl" ? "right" : "left",
+                        },
+                        marginThreshold: null,
+                        disableScrollLock: true,
+                        PaperProps: {
+                          sx: {
+                            maxHeight: "min(420px, calc(100vh - 120px))",
+                            scrollbarWidth: "thin",
+                            scrollbarColor: (muiTheme) =>
+                              `${muiTheme.palette.primary.main} ${muiTheme.palette.background.paper}`,
+                            "&::-webkit-scrollbar": {
+                              width: 8,
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              backgroundColor: "background.paper",
+                              borderRadius: 999,
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              backgroundColor: "primary.main",
+                              border: "2px solid",
+                              borderColor: "background.paper",
+                              borderRadius: 999,
+                            },
+                            "&::-webkit-scrollbar-thumb:hover": {
+                              backgroundColor: "primary.dark",
+                            },
+                            "& .MuiMenuItem-root": {
+                              fontWeight: 700,
+                            },
+                          },
+                        },
+                      },
+                    }}
                     sx={{
+                      flex: { sm: "1 1 0" },
+                      minWidth: 0,
+                      "& .MuiOutlinedInput-root": {
+                        height: "var(--app-outlined-input-min-height)",
+                      },
                       "& .MuiOutlinedInput-input": {
                         paddingTop: 1,
                         paddingBottom: 1,
@@ -521,6 +595,7 @@ function ExpenseItem({
                   alignItems: "baseline",
                   flexDirection: "row",
                   unicodeBidi: "bidi-override",
+                  mt: isEditing ? 0.5 : 0,
                 }}
               >
                 {isReturn && (

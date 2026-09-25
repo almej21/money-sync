@@ -1,28 +1,17 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import EditSquareIcon from "@mui/icons-material/EditSquare";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import {
   Box,
   Button,
   Card,
   CardContent,
-  Checkbox,
   CircularProgress,
-  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
   Skeleton,
   Stack,
   Typography,
@@ -34,6 +23,7 @@ import AppSnackbar from "../components/AppSnackbar";
 import AppTextField from "../components/AppTextField";
 import GenericModal from "../components/GenericModal";
 import LiquidGlassContainer from "../components/LiquidGlassContainer";
+import ShoppingListCard from "../components/ShoppingListCard";
 import { useLanguage } from "../context/LanguageContext";
 import {
   createShoppingList,
@@ -501,411 +491,32 @@ export default function ShoppingListsPage() {
             </Card>
           ))
         : lists.map((list) => (
-            <Card key={list._id}>
-              {(() => {
-                const expanded = isListExpanded(list._id);
-                const listItems = Array.isArray(list.items) ? list.items : [];
-                const allItemsCompleted =
-                  listItems.length > 0 &&
-                  listItems.every((item) => Boolean(item?.completed));
-                return (
-                  <CardContent
-                    sx={{
-                      px: 1,
-                      py: expanded ? 1.5 : 1.25,
-                      "&:last-child": { pb: expanded ? 1.5 : 1.25 },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 116px",
-                        alignItems: "center",
-                        columnGap: 1,
-                        mb: expanded ? 1 : 0,
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="baseline"
-                        spacing={0.75}
-                        onClick={() => toggleListExpanded(list._id)}
-                        sx={{ cursor: "pointer" }}
-                      >
-                        <Typography
-                          variant="h8"
-                          sx={{
-                            textDecoration: allItemsCompleted
-                              ? "line-through"
-                              : "underline",
-                            textDecorationThickness: allItemsCompleted
-                              ? "1.5px"
-                              : "2px",
-                            textUnderlineOffset: allItemsCompleted
-                              ? "0px"
-                              : "5px",
-                            opacity: allItemsCompleted ? 0.75 : 1,
-                          }}
-                        >
-                          {list.title}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ px: 1 }}
-                        >
-                          ({Array.isArray(list.items) ? list.items.length : 0}{" "}
-                          {t("itemsCountLabel")})
-                        </Typography>
-                      </Stack>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "row",
-                          direction: "ltr",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          columnGap: 0.8,
-                          width: 116,
-                        }}
-                      >
-                        {isRtl ? (
-                          <>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => toggleListExpanded(list._id)}
-                              aria-label={
-                                isListExpanded(list._id)
-                                  ? t("hideDetails")
-                                  : t("showDetails")
-                              }
-                              sx={{
-                                minWidth: 0,
-                                width: 32,
-                                height: 32,
-                                p: 0,
-                                borderRadius: 0.8,
-                                border: "2px solid",
-                              }}
-                            >
-                              {isListExpanded(list._id) ? (
-                                <ExpandLessIcon fontSize="small" />
-                              ) : (
-                                <ExpandMoreIcon fontSize="small" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => openEditModal(list)}
-                              sx={{
-                                minWidth: 0,
-                                width: 32,
-                                height: 32,
-                                p: 0,
-                                borderRadius: 0.8,
-                                border: "2px solid",
-                              }}
-                            >
-                              <EditOutlinedIcon fontSize="small" />
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() => openDeleteConfirmation(list)}
-                              sx={{
-                                minWidth: 0,
-                                width: 32,
-                                height: 32,
-                                p: 0,
-                                borderRadius: 0.8,
-                                borderColor: "error.main",
-                                border: "2px solid",
-                                color: "error.main",
-                                "&:hover": {
-                                  bgcolor: "error.main",
-                                  borderColor: "error.main",
-                                  color: "common.white",
-                                },
-                              }}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => toggleListExpanded(list._id)}
-                              aria-label={
-                                isListExpanded(list._id)
-                                  ? t("hideDetails")
-                                  : t("showDetails")
-                              }
-                              sx={{
-                                minWidth: 0,
-                                width: 32,
-                                height: 32,
-                                p: 0,
-                                borderRadius: 0.8,
-                                border: "2px solid",
-                              }}
-                            >
-                              {isListExpanded(list._id) ? (
-                                <ExpandLessIcon fontSize="small" />
-                              ) : (
-                                <ExpandMoreIcon fontSize="small" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => openEditModal(list)}
-                              sx={{
-                                minWidth: 0,
-                                width: 32,
-                                height: 32,
-                                p: 0,
-                                borderRadius: 0.8,
-                                border: "2px solid",
-                              }}
-                            >
-                              <EditOutlinedIcon fontSize="small" />
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() => openDeleteConfirmation(list)}
-                              sx={{
-                                minWidth: 0,
-                                width: 32,
-                                height: 32,
-                                p: 0,
-                                borderRadius: 0.8,
-                                borderColor: "error.main",
-                                border: "2px solid",
-                                color: "error.main",
-                                "&:hover": {
-                                  bgcolor: "error.main",
-                                  borderColor: "error.main",
-                                  color: "common.white",
-                                },
-                              }}
-                            >
-                              <DeleteOutlineIcon fontSize="small" />
-                            </Button>
-                          </>
-                        )}
-                      </Box>
-                    </Box>
-                    <Collapse in={isListExpanded(list._id)}>
-                      <Divider sx={{ mb: 1.5 }} />
-                      <List disablePadding>
-                        {list.items.map((item, index) => (
-                          <Box key={item._id}>
-                            <ListItem disableGutters sx={{ py: 0 }}>
-                              <Stack
-                                direction="row"
-                                justifyContent="flex-start"
-                                alignItems="center"
-                                spacing={1}
-                                sx={{ width: "100%", minHeight: 24 }}
-                              >
-                                <Stack
-                                  direction="row"
-                                  alignItems="center"
-                                  sx={{
-                                    minWidth: 0,
-                                    width: "100%",
-                                    minHeight: 24,
-                                  }}
-                                >
-                                  {isRtl ? (
-                                    <>
-                                      <Checkbox
-                                        checked={Boolean(item.completed)}
-                                        onChange={() =>
-                                          toggleItem(list._id, item._id)
-                                        }
-                                        size="small"
-                                        sx={{ p: 0.7, mr: 0.15 }}
-                                      />
-                                      <ListItemText
-                                        primary={`${item.description || item.text || "-"} x${item.quantity}`}
-                                        primaryTypographyProps={{
-                                          dir: direction,
-                                          sx: {
-                                            textAlign: "left",
-                                            fontSize: "0.9rem",
-                                            wordBreak: "break-word",
-                                            textDecoration: item.completed
-                                              ? "line-through"
-                                              : "none",
-                                            opacity: item.completed ? 0.7 : 1,
-                                          },
-                                        }}
-                                        sx={{
-                                          my: 0,
-                                          mx: 0.25,
-                                          "& .MuiTypography-root": {
-                                            lineHeight: 1.1,
-                                          },
-                                        }}
-                                      />
-                                      <IconButton
-                                        size="small"
-                                        onClick={() =>
-                                          setExpandedNoteEditorKey((prev) =>
-                                            prev ===
-                                            getItemNoteEditorKey(
-                                              list._id,
-                                              item._id,
-                                            )
-                                              ? ""
-                                              : getItemNoteEditorKey(
-                                                  list._id,
-                                                  item._id,
-                                                ),
-                                          )
-                                        }
-                                        aria-label={t("addNote")}
-                                        sx={{ alignSelf: "center", p: 0.2 }}
-                                      >
-                                        <EditSquareIcon fontSize="small" />
-                                      </IconButton>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() =>
-                                          setExpandedNoteEditorKey((prev) =>
-                                            prev ===
-                                            getItemNoteEditorKey(
-                                              list._id,
-                                              item._id,
-                                            )
-                                              ? ""
-                                              : getItemNoteEditorKey(
-                                                  list._id,
-                                                  item._id,
-                                                ),
-                                          )
-                                        }
-                                        aria-label={t("addNote")}
-                                        sx={{ alignSelf: "center", p: 0.2 }}
-                                      >
-                                        <EditSquareIcon fontSize="small" />
-                                      </IconButton>
-                                      <ListItemText
-                                        primary={`${item.description || item.text || "-"} x${item.quantity}`}
-                                        primaryTypographyProps={{
-                                          dir: direction,
-                                          sx: {
-                                            textAlign: "right",
-                                            fontSize: "0.9rem",
-                                            wordBreak: "break-word",
-                                            textDecoration: item.completed
-                                              ? "line-through"
-                                              : "none",
-                                            opacity: item.completed ? 0.7 : 1,
-                                          },
-                                        }}
-                                        sx={{
-                                          my: 0,
-                                          mx: 0.25,
-                                          "& .MuiTypography-root": {
-                                            lineHeight: 1.1,
-                                          },
-                                        }}
-                                      />
-                                      <Checkbox
-                                        checked={Boolean(item.completed)}
-                                        onChange={() =>
-                                          toggleItem(list._id, item._id)
-                                        }
-                                        size="small"
-                                        sx={{ p: 0.7, ml: 0.15 }}
-                                      />
-                                    </>
-                                  )}
-                                </Stack>
-                              </Stack>
-                            </ListItem>
-                            <Collapse
-                              in={
-                                expandedNoteEditorKey ===
-                                getItemNoteEditorKey(list._id, item._id)
-                              }
-                            >
-                              <Box sx={{ py: 1 }}>
-                                <Stack
-                                  direction="row"
-                                  alignItems="center"
-                                  spacing={1}
-                                >
-                                  <AppTextField
-                                    fullWidth
-                                    size="small"
-                                    inputHeight={compactInputHeight}
-                                    label={t("note")}
-                                    value={getDraftNoteValue(list._id, item)}
-                                    onChange={(event) =>
-                                      onNoteDraftChange(
-                                        list._id,
-                                        item._id,
-                                        event.target.value,
-                                      )
-                                    }
-                                    onKeyDown={(event) => {
-                                      if (event.key !== "Enter") return;
-                                      event.preventDefault();
-                                      saveItemNote(list, item);
-                                      setExpandedNoteEditorKey("");
-                                    }}
-                                    disabled={isSavingNote}
-                                  />
-                                  <IconButton
-                                    color="primary"
-                                    onClick={() => {
-                                      saveItemNote(list, item);
-                                      setExpandedNoteEditorKey("");
-                                    }}
-                                    aria-label={t("save")}
-                                    disabled={isSavingNote}
-                                  >
-                                    <SaveOutlinedIcon fontSize="small" />
-                                  </IconButton>
-                                </Stack>
-                              </Box>
-                            </Collapse>
-                            {index < list.items.length - 1 && <Divider />}
-                          </Box>
-                        ))}
-                      </List>
-                      <Box
-                        sx={{
-                          mt: 1.25,
-                          display: "flex",
-                          direction: "ltr",
-                          justifyContent:
-                            direction === "rtl" ? "flex-start" : "flex-end",
-                        }}
-                      >
-                        <Typography variant="caption" color="text.secondary">
-                          {t("createdAtLabel")}{" "}
-                          {formatCreatedAt(list.createdAt)}
-                        </Typography>
-                      </Box>
-                    </Collapse>
-                  </CardContent>
+            <ShoppingListCard
+              key={list._id}
+              list={list}
+              isExpanded={isListExpanded(list._id)}
+              onToggleExpanded={() => toggleListExpanded(list._id)}
+              onEdit={() => openEditModal(list)}
+              onDelete={() => openDeleteConfirmation(list)}
+              onToggleItem={toggleItem}
+              expandedNoteEditorKey={expandedNoteEditorKey}
+              onToggleNoteEditor={(listId, itemId, close) => {
+                const key = getItemNoteEditorKey(listId, itemId);
+                setExpandedNoteEditorKey((prev) =>
+                  close || prev === key ? "" : key,
                 );
-              })()}
-            </Card>
+              }}
+              getItemNoteEditorKey={getItemNoteEditorKey}
+              getDraftNoteValue={getDraftNoteValue}
+              onNoteDraftChange={onNoteDraftChange}
+              onSaveNote={saveItemNote}
+              isSavingNote={isSavingNote}
+              formatCreatedAt={formatCreatedAt}
+              compactInputHeight={compactInputHeight}
+              isRtl={isRtl}
+              direction={direction}
+              t={t}
+            />
           ))}
 
       <LiquidGlassContainer
