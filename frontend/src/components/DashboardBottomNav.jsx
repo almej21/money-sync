@@ -2,7 +2,7 @@ import { keyframes } from "@emotion/react";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import PieChartRoundedIcon from "@mui/icons-material/PieChartRounded";
-import { alpha, Box, Button, useMediaQuery, useTheme } from "@mui/material";
+import { alpha, Box, Button, useTheme } from "@mui/material";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
@@ -42,7 +42,6 @@ const iconPressPop = keyframes`
 
 export default function DashboardBottomNav() {
   const theme = useTheme();
-  const isXsScreen = useMediaQuery(theme.breakpoints.only("xs"));
   const location = useLocation();
   const { t } = useLanguage();
 
@@ -53,24 +52,18 @@ export default function DashboardBottomNav() {
         path: "/dashboard/charts",
         label: t("dashboardCharts"),
         icon: BarChartRoundedIcon,
-        iconOffsetX: 0.75,
-        iconOffsetDesktopX: -12,
       },
       {
         key: "dashboard-expenses",
         path: "/dashboard/list",
         label: t("dashboard"),
         icon: FormatListBulletedIcon,
-        iconOffsetX: 0,
-        iconOffsetDesktopX: 0,
       },
       {
         key: "dashboard-targets",
         path: "/dashboard/pie",
         label: t("dashboardTargets"),
         icon: PieChartRoundedIcon,
-        iconOffsetX: -0.75,
-        iconOffsetDesktopX: 12,
       },
     ],
     [t],
@@ -136,7 +129,11 @@ export default function DashboardBottomNav() {
           },
         }}
         contentSx={{
-          px: "6px",
+          // LiquidGlassContainer has responsive horizontal padding. Match it
+          // at every breakpoint; a non-responsive value is overridden by its
+          // `sm` rule, narrowing the button grid while the indicator remains
+          // sized from the full pill.
+          px: { xs: "6px", sm: "6px" },
           py: 0,
           boxSizing: "border-box",
           width: "100%",
@@ -196,9 +193,6 @@ export default function DashboardBottomNav() {
         />
         {dashboardBottomTabs.map((tab) => {
           const Icon = tab.icon;
-          const iconOffsetX = isXsScreen
-            ? Number(tab.iconOffsetX || 0)
-            : Number(tab.iconOffsetDesktopX || 0);
           const isActive = location.pathname.startsWith(tab.path);
           return (
             <Button
@@ -250,7 +244,7 @@ export default function DashboardBottomNav() {
               <Icon
                 className="dashboard-bottom-nav-icon"
                 sx={{
-                  "--dashboard-nav-icon-offset": `${iconOffsetX}px`,
+                  "--dashboard-nav-icon-offset": "0px",
                   fontSize: 24,
                   width: 24,
                   height: 24,
