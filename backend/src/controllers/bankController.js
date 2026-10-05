@@ -716,6 +716,55 @@ export async function setBankCredentials(req, res) {
   });
 }
 
+export async function updateBankConnectionPassword(req, res) {
+  if (!isHouseholdManager(req.user)) {
+    return res.status(403).json({
+      message: "Only household managers can change bank connection passwords",
+    });
+  }
+
+  const connectionId = String(req.params?.connectionId || "").trim();
+  const password = String(req.body?.password || "").trim();
+  if (!connectionId) {
+    return res.status(400).json({ message: "connectionId is required" });
+  }
+  if (!password) {
+    return res.status(400).json({ message: "password is required" });
+  }
+
+  const household = await getHouseholdWithConnections(req, res);
+  if (!household) return;
+  const connectionIndex = household.bankConnections.findIndex(
+    (connection) => String(connection?._id || "") === connectionId,
+  );
+  if (connectionIndex < 0) {
+    return res.status(404).json({ message: "Bank connection not found" });
+  }
+
+  const connection = household.bankConnections[connectionIndex];
+  if (
+    !getApiLoginFields(String(connection?.companyId || "")).some(
+      (field) => field.name === "password",
+    )
+  ) {
+    return res.status(400).json({
+      message: "This bank connection does not use a password",
+    });
+  }
+
+  const encryptedPassword = encryptValue(password);
+  connection.passwordEnc = encryptedPassword;
+  connection.encryptedFields = {
+    ...toStoredEncryptedFields(connection),
+    password: encryptedPassword,
+  };
+  connection.updatedAt = new Date();
+  connection.lastBankFetchAt = null;
+  await household.save();
+
+  res.json({ success: true, connectionId });
+}
+
 export async function setBankConnectionAccountVisibility(req, res) {
   if (!isHouseholdManager(req.user)) {
     return res.status(403).json({

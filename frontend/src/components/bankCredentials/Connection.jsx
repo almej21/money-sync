@@ -1,5 +1,6 @@
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import LockResetIcon from "@mui/icons-material/LockReset";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SyncIcon from "@mui/icons-material/Sync";
@@ -957,6 +958,7 @@ export default function Connection({
   toggleConnectionExpanded,
   updateCardSettings,
   openRemoveConfirmation,
+  openChangePassword,
   onOpenManualExpense,
   manualExpensesByConnection,
   manualExpensesLoadingByConnection,
@@ -1118,6 +1120,31 @@ export default function Connection({
         >
           {isRtl ? (
             <>
+              <Button
+                type="button"
+                variant="outlined"
+                size="small"
+                onClick={() => openChangePassword(connectionId)}
+                disabled={saving || loading || !canManageBankConnections}
+                aria-label={t("changeBankPassword")}
+                sx={{
+                  minWidth: 0,
+                  width: 32,
+                  height: 32,
+                  p: 0,
+                  borderRadius: 0.7,
+                  borderColor: theme.palette.primary.main,
+                  border: "2px solid",
+                  color: theme.palette.primary.main,
+                  "&:hover": {
+                    bgcolor: theme.palette.primary.main,
+                    borderColor: theme.palette.primary.main,
+                    color: "common.white",
+                  },
+                }}
+              >
+                <LockResetIcon fontSize="small" />
+              </Button>
               {showSyncButton && (
                 <Button
                   type="button"
@@ -1182,6 +1209,31 @@ export default function Connection({
             </>
           ) : (
             <>
+              <Button
+                type="button"
+                variant="outlined"
+                size="small"
+                onClick={() => openChangePassword(connectionId)}
+                disabled={saving || loading || !canManageBankConnections}
+                aria-label={t("changeBankPassword")}
+                sx={{
+                  minWidth: 0,
+                  width: 32,
+                  height: 32,
+                  p: 0,
+                  borderRadius: 0.7,
+                  borderColor: theme.palette.primary.main,
+                  border: "2px solid",
+                  color: theme.palette.primary.main,
+                  "&:hover": {
+                    bgcolor: theme.palette.primary.main,
+                    borderColor: theme.palette.primary.main,
+                    color: "common.white",
+                  },
+                }}
+              >
+                <LockResetIcon fontSize="small" />
+              </Button>
               <Button
                 type="button"
                 variant="outlined"

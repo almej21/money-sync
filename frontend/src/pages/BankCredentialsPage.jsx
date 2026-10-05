@@ -1,13 +1,20 @@
 import {
+  Box,
+  Button,
   Card,
   CardContent,
   CircularProgress,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Stack,
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import AppSnackbar from "../components/AppSnackbar";
+import AppTextField from "../components/AppTextField";
 import ConfirmationDialog from "../components/ConfirmationDialog";
 import AddConnectionForm from "../components/bankCredentials/AddConnectionForm";
 import Connection from "../components/bankCredentials/Connection";
@@ -23,6 +30,7 @@ import {
   saveBankCredentials,
   saveConnectionAccountVisibility,
   triggerBankConnectionSync,
+  updateBankConnectionPassword,
 } from "../services/bankService";
 import {
   deleteManualExpense,
@@ -139,6 +147,8 @@ export default function BankCredentialsPage() {
     useState("");
   const [pendingRemoveAllConfirmation, setPendingRemoveAllConfirmation] =
     useState(false);
+  const [passwordConnectionId, setPasswordConnectionId] = useState("");
+  const [newBankPassword, setNewBankPassword] = useState("");
   const [isAddAccountExpanded, setIsAddAccountExpanded] = useState(false);
   const [expandedConnectionIds, setExpandedConnectionIds] = useState({});
   const [expenseCategories, setExpenseCategories] = useState([]);
@@ -576,6 +586,40 @@ export default function BankCredentialsPage() {
     }
   }
 
+  function openChangePassword(connectionId) {
+    setPasswordConnectionId(String(connectionId || "").trim());
+    setNewBankPassword("");
+  }
+
+  function closeChangePassword() {
+    if (saving) return;
+    setPasswordConnectionId("");
+    setNewBankPassword("");
+  }
+
+  async function changeBankPassword(e) {
+    e.preventDefault();
+    if (!passwordConnectionId || !newBankPassword.trim()) return;
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await updateBankConnectionPassword(
+        passwordConnectionId,
+        newBankPassword.trim(),
+      );
+      setSuccess(t("bankPasswordChanged"));
+      setPasswordConnectionId("");
+      setNewBankPassword("");
+      await loadBankConfig();
+    } catch (err) {
+      setError(err.message || t("failedChangeBankPassword"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function syncConnection(connectionId) {
     const normalizedConnectionId = String(connectionId || "").trim();
     if (!normalizedConnectionId) return;
@@ -713,6 +757,7 @@ export default function BankCredentialsPage() {
                   billingDayOptions={billingDayOptions}
                   toggleConnectionExpanded={toggleConnectionExpanded}
                   updateCardSettings={updateCardSettings}
+                  openChangePassword={openChangePassword}
                   openRemoveConfirmation={openRemoveConfirmation}
                   onOpenManualExpense={openManualExpenseModal}
                   manualExpensesByConnection={manualExpensesByConnection}
@@ -794,6 +839,39 @@ export default function BankCredentialsPage() {
         onConfirm={confirmRemoveAllConnections}
         disabled={saving}
       />
+      <Dialog open={Boolean(passwordConnectionId)} onClose={closeChangePassword}>
+        <Box component="form" onSubmit={changeBankPassword}>
+          <DialogTitle>{t("changeBankPassword")}</DialogTitle>
+          <DialogContent>
+            <AppTextField
+              autoFocus
+              fullWidth
+              required
+              type="password"
+              label={t("newBankPassword")}
+              value={newBankPassword}
+              onChange={(e) => setNewBankPassword(e.target.value)}
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeChangePassword} disabled={saving}>
+              {t("cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={saving || !newBankPassword.trim()}
+            >
+              {saving ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                t("changeBankPassword")
+              )}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
       <ConfirmationDialog
         open={Boolean(pendingManualExpenseDelete)}
         title={t("logoutConfirmMessage")}

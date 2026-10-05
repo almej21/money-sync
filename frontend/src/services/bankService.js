@@ -15,6 +15,13 @@ export async function saveBankCredentials(payload) {
   });
 }
 
+export async function updateBankConnectionPassword(connectionId, password) {
+  return api(`/bank/credentials/${connectionId}/password`, {
+    method: "PATCH",
+    body: JSON.stringify({ password }),
+  });
+}
+
 export async function saveConnectionAccountVisibility(
   connectionId,
   payload,
