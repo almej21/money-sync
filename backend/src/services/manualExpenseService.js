@@ -110,12 +110,6 @@ function normalizeAmountMode(value) {
   return ALLOWED_AMOUNT_MODES.has(normalized) ? normalized : "";
 }
 
-function getEntryStatus(entryDate) {
-  const today = normalizeDateOnly(new Date());
-  const target = normalizeDateOnly(entryDate);
-  return target.getTime() > today.getTime() ? "pending" : "posted";
-}
-
 function splitTotalAmount(totalAmount, paymentsCount) {
   const totalCents = Math.round(totalAmount * 100);
   const base = Math.floor(totalCents / paymentsCount);
@@ -216,14 +210,13 @@ export async function createManualExpensesForUser(user, payload = {}) {
   };
 
   if (entryType === ENTRY_TYPE_SINGLE) {
-    const status = getEntryStatus(entryDate);
     const created = await Expense.create({
       ...base,
       date: entryDate,
       amount,
-      status,
+      status: "posted",
       sourceTransactionType: "manual_single",
-      processedDate: status === "posted" ? entryDate : null,
+      processedDate: entryDate,
       installmentNumber: null,
       installmentTotal: null,
       isInstallmentCharged: null,
@@ -247,14 +240,13 @@ export async function createManualExpensesForUser(user, payload = {}) {
       .join(" | ");
 
     const docs = standingDates.map((standingDate) => {
-      const status = getEntryStatus(standingDate);
       return {
         ...base,
         date: standingDate,
         amount,
-        status,
+        status: "posted",
         sourceTransactionType: "standing_order",
-        processedDate: status === "posted" ? standingDate : null,
+        processedDate: standingDate,
         installmentNumber: null,
         installmentTotal: null,
         isInstallmentCharged: null,
@@ -282,17 +274,16 @@ export async function createManualExpensesForUser(user, payload = {}) {
 
   const docs = installmentAmounts.map((installmentAmount, index) => {
     const installmentDate = addMonths(entryDate, index);
-    const status = getEntryStatus(installmentDate);
     return {
       ...base,
       date: installmentDate,
       amount: installmentAmount,
-      status,
+      status: "posted",
       sourceTransactionType: "installments",
-      processedDate: status === "posted" ? installmentDate : null,
+      processedDate: installmentDate,
       installmentNumber: index + 1,
       installmentTotal: paymentsCount,
-      isInstallmentCharged: status === "posted",
+      isInstallmentCharged: true,
       notes: [base.notes, `paymentsAmountMode=${amountMode}`]
         .filter(Boolean)
         .join(" | "),

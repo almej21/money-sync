@@ -98,6 +98,15 @@ export async function upsertCachedExpenses(expenses) {
   });
 }
 
+export async function deleteCachedExpense(expenseId) {
+  const id = String(expenseId || "").trim();
+  if (!id) return;
+
+  await withStore("readwrite", EXPENSE_STORE, async (store) => {
+    await promisifyRequest(store.delete(id));
+  });
+}
+
 export async function getExpenseCacheMeta() {
   return withStore("readonly", META_STORE, async (store) => {
     const [

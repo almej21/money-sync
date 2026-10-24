@@ -20,6 +20,12 @@ export async function updateExpense(expenseId, payload) {
   });
 }
 
+export async function deleteExpense(expenseId) {
+  return api(`/expenses/${expenseId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function createManualExpense(payload) {
   return api("/expenses/manual", {
     method: "POST",

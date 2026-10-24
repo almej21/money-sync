@@ -30,6 +30,7 @@ import {
 } from "../services/bankService";
 import {
   clearExpenseCache,
+  deleteCachedExpense,
   getCachedExpenses,
   getExpenseCacheMeta,
   replaceCachedExpenses,
@@ -556,6 +557,18 @@ export default function DashboardListPage({ hideTotal = false }) {
         syncCursor: updatedCursor,
       }).catch(() => {});
     }
+  }, []);
+
+  const onExpenseDeleted = useCallback((expenseId) => {
+    const id = String(expenseId || "").trim();
+    if (!id) return;
+
+    setExpenses((prev) => prev.filter((expense) => expense?._id !== id));
+    setExpandedIds((prev) => {
+      const { [id]: _removed, ...remaining } = prev;
+      return remaining;
+    });
+    deleteCachedExpense(id).catch(() => {});
   }, []);
 
   const toggleExpanded = useCallback((expenseId) => {
@@ -1510,7 +1523,12 @@ export default function DashboardListPage({ hideTotal = false }) {
                 label={badge.label}
                 size="small"
                 variant="outlined"
-                sx={{ maxWidth: "100%" }}
+                sx={{
+                  maxWidth: "100%",
+                  color: "background.default",
+                  border: 0,
+                  bgcolor: "primary.main",
+                }}
               />
             ))}
           </Stack>
@@ -1546,6 +1564,7 @@ export default function DashboardListPage({ hideTotal = false }) {
                     isExpanded={Boolean(expandedIds[exp._id])}
                     onToggleExpanded={toggleExpanded}
                     onExpenseUpdated={onExpenseUpdated}
+                    onExpenseDeleted={onExpenseDeleted}
                     direction={direction}
                     locale={locale}
                     t={t}

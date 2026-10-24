@@ -11,7 +11,12 @@ export default function PingPongTypography({
   const contentRef = useRef(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [overflowDistance, setOverflowDistance] = useState(0);
-  const isRtl = String(typographyProps?.dir || "")
+  const [isRtl, setIsRtl] = useState(() =>
+    String(typographyProps?.dir || "")
+      .toLowerCase()
+      .startsWith("rtl"),
+  );
+  const directionFromProp = String(typographyProps?.dir || "")
     .toLowerCase()
     .startsWith("rtl");
 
@@ -26,6 +31,15 @@ export default function PingPongTypography({
       const container = containerRef.current;
       const content = contentRef.current;
       if (!container || !content) return;
+
+      // `dir` is often inherited (for example, from an RTL row), rather than
+      // passed to this component.  The sign must follow the rendered
+      // direction: RTL text starts on the right and needs to travel right to
+      // reveal its hidden left edge.
+      const nextIsRtl = typographyProps?.dir
+        ? directionFromProp
+        : getComputedStyle(container).direction === "rtl";
+      setIsRtl(nextIsRtl);
 
       const nextDistance = Math.max(
         0,
@@ -46,7 +60,7 @@ export default function PingPongTypography({
       resizeObserver.disconnect();
       window.removeEventListener("resize", recalculate);
     };
-  }, [children, enablePingPongEffect]);
+  }, [children, directionFromProp, enablePingPongEffect, typographyProps?.dir]);
 
   const animationDuration = useMemo(() => {
     if (!isOverflowing) return "0s";
@@ -56,8 +70,6 @@ export default function PingPongTypography({
   }, [isOverflowing, overflowDistance]);
 
   const shouldAnimate = enablePingPongEffect && isOverflowing;
-  const distanceSign = isRtl ? 1 : -1;
-
   if (!enablePingPongEffect) {
     return (
       <Typography sx={sx} {...typographyProps}>
@@ -77,7 +89,7 @@ export default function PingPongTypography({
           "@keyframes pingPongMarquee": {
             "0%": { transform: "translateX(0)" },
             "100%": {
-              transform: `translateX(calc(var(--ping-pong-distance, 0px) * ${distanceSign}))`,
+              transform: "translateX(var(--ping-pong-offset, 0px))",
             },
           },
         },
@@ -97,7 +109,7 @@ export default function PingPongTypography({
           animationIterationCount: "infinite",
           animationDirection: "alternate",
           animationFillMode: "both",
-          "--ping-pong-distance": `${overflowDistance}px`,
+          "--ping-pong-offset": `${isRtl ? overflowDistance : -overflowDistance}px`,
         }}
       >
         {children}

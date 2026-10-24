@@ -10,6 +10,7 @@
     "migrate:expense-installments": "node scripts/migrate-expense-installments.js",
     "cleanup:duplicate-expenses": "node scripts/cleanup-duplicate-expenses.js",
     "cleanup:legacy-pending-expenses": "node scripts/cleanup-legacy-pending-expenses.js",
+    "migrate:manual-expenses-posted": "node scripts/migrate-manual-expenses-posted.js",
     "test:bank-scrapers": "node scripts/test-bank-scrapers.js",
     "test:bank-scrapers:interactive": "node scripts/test-bank-scrapers-interactive.js"
   },

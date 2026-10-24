@@ -1,5 +1,6 @@
 import BoltIcon from "@mui/icons-material/Bolt";
 import CancelIcon from "@mui/icons-material/Cancel";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
@@ -13,8 +14,14 @@ import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import {
   Box,
+  Button,
   CircularProgress,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   ListItem,
   MenuItem,
@@ -25,7 +32,10 @@ import {
 } from "@mui/material";
 import { memo, useEffect, useRef, useState } from "react";
 import { formatExpenseDescription } from "../lib/expenseDisplay";
-import { updateExpense as updateExpenseRequest } from "../services/expenseService";
+import {
+  deleteExpense as deleteExpenseRequest,
+  updateExpense as updateExpenseRequest,
+} from "../services/expenseService";
 import AppTextField from "./AppTextField";
 import PingPongTypography from "./PingPongTypography";
 
@@ -125,6 +135,7 @@ function ExpenseItem({
   isExpanded,
   onToggleExpanded,
   onExpenseUpdated,
+  onExpenseDeleted,
   direction,
   locale,
   t,
@@ -136,6 +147,8 @@ function ExpenseItem({
   );
   const [draftCategory, setDraftCategory] = useState(exp.category || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [saveError, setSaveError] = useState("");
   const categoryMenuActionRef = useRef(null);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -259,6 +272,32 @@ function ExpenseItem({
     setIsEditing(false);
   }
 
+  function openDeleteDialog() {
+    if (isDeleting || !exp?._id) return;
+    setIsDeleteDialogOpen(true);
+  }
+
+  function closeDeleteDialog() {
+    if (isDeleting) return;
+    setIsDeleteDialogOpen(false);
+  }
+
+  async function confirmDelete() {
+    if (isDeleting || !exp?._id) return;
+
+    setIsDeleting(true);
+    setSaveError("");
+    try {
+      await deleteExpenseRequest(exp._id);
+      setIsDeleteDialogOpen(false);
+      onExpenseDeleted?.(exp._id);
+    } catch {
+      setSaveError(t("failedDeleteExpense"));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div>
       <ListItem disableGutters sx={{ py: 0.2, overflow: "visible" }}>
@@ -334,31 +373,64 @@ function ExpenseItem({
               gap: 1.5,
             }}
           >
-            <IconButton
-              size="small"
-              aria-label={isEditing ? t("cancel") : t("edit")}
-              onClick={() => {
-                if (isEditing) {
-                  handleCancel();
-                  return;
-                }
-                setSaveError("");
-                setIsEditing(true);
-              }}
+            <Box
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: 0.9,
-                bgcolor: theme.palette.secondary.main,
-                display: "grid",
-                placeItems: "center",
                 flexShrink: 0,
-                alignSelf: isEditing ? "flex-start" : "center",
-                p: 0,
+                alignSelf: isEditing ? "stretch" : "center",
+                position: "relative",
+                width: 38,
+                minHeight: 38,
               }}
             >
-              <CategoryIcon sx={{ fontSize: 28 }} />
-            </IconButton>
+              <IconButton
+                size="small"
+                aria-label={isEditing ? t("cancel") : t("edit")}
+                onClick={() => {
+                  if (isEditing) {
+                    handleCancel();
+                    return;
+                  }
+                  setSaveError("");
+                  setIsEditing(true);
+                }}
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 0.9,
+                  bgcolor: theme.palette.secondary.main,
+                  display: "grid",
+                  placeItems: "center",
+                  p: 0,
+                }}
+              >
+                <CategoryIcon sx={{ fontSize: 28 }} />
+              </IconButton>
+              {isEditing && (
+                <Tooltip title={t("deleteExpense")}>
+                  <span>
+                    <IconButton
+                      size="small"
+                      aria-label={t("deleteExpense")}
+                      onClick={openDeleteDialog}
+                      disabled={isSaving || isDeleting}
+                      color="error"
+                      sx={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: direction === "rtl" ? 6 : "auto",
+                        left: direction === "rtl" ? "auto" : 6,
+                      }}
+                    >
+                      {isDeleting ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <DeleteOutlineIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+            </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               {isEditing ? (
                 <Stack
@@ -692,10 +764,41 @@ function ExpenseItem({
           </Typography>
         </Collapse>
       </Box>
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={closeDeleteDialog}
+        dir={direction}
+        aria-labelledby={`delete-expense-title-${exp._id}`}
+        aria-describedby={`delete-expense-description-${exp._id}`}
+      >
+        <DialogTitle id={`delete-expense-title-${exp._id}`}>
+          {t("deleteExpense")}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id={`delete-expense-description-${exp._id}`}>
+            {t("deleteExpenseConfirm")}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog} disabled={isDeleting}>
+            {t("cancel")}
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            disabled={isDeleting}
+            color="error"
+            variant="contained"
+          >
+            {isDeleting ? (
+              <CircularProgress size={18} color="inherit" />
+            ) : (
+              t("deleteExpense")
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
 
 export default memo(ExpenseItem);
-
-

@@ -184,18 +184,19 @@ export async function summary(req, res) {
 
 export async function createExpense(req, res) {
   const normalizedAmount = Math.abs(Number(req.body.amount || 0));
+  const source = req.body.source || "manual";
   const transactionType =
     String(req.body.transactionType || "").trim().toLowerCase() === "return"
       ? "return"
       : "expense";
-  const status = normalizeExpenseStatus(req.body.status);
+  const status = source === "manual" ? "posted" : normalizeExpenseStatus(req.body.status);
   const normalizedCategory = normalizeExpenseCategory(
     req.body.category,
     "General",
   );
   const expense = await Expense.create({
     householdId: req.user.householdId,
-    source: req.body.source || "manual",
+    source,
     visibilityScope: "shared",
     visibleToUserId: null,
     externalId: req.body.externalId,

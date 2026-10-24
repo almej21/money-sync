@@ -54,7 +54,7 @@ export default function LiquidGlassContainer({
         // Chromium uses Quick Liquid's full SVG-backed refraction path.
         material: "clear",
         borderRadius,
-        blur: 1,
+        blur: 1.2,
         saturation: 1,
         tint: "255, 255, 255",
         tintOpacity: 0.02,
