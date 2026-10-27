@@ -51,7 +51,10 @@ function formatDate(value) {
   const day = String(date.getDate());
   const month = String(date.getMonth() + 1);
   const year = String(date.getFullYear()).slice(-2);
-  return `${day}/${month}/${year}`;
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  if (hours === "00" && minutes === "00") return `${day}/${month}/${year}`;
+  return `${day}/${month}/${year} - ${hours}:${minutes}`;
 }
 
 function detailLine(label, value) {
