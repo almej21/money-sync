@@ -409,29 +409,25 @@ function ExpenseItem({
                 <CategoryIcon sx={{ fontSize: 28 }} />
               </IconButton>
               {isEditing && (
-                <Tooltip title={t("deleteExpense")}>
-                  <span>
-                    <IconButton
-                      size="small"
-                      aria-label={t("deleteExpense")}
-                      onClick={openDeleteDialog}
-                      disabled={isSaving || isDeleting}
-                      color="error"
-                      sx={{
-                        position: "absolute",
-                        bottom: 0,
-                        right: direction === "rtl" ? 6 : "auto",
-                        left: direction === "rtl" ? "auto" : 6,
-                      }}
-                    >
-                      {isDeleting ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <DeleteOutlineIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </span>
-                </Tooltip>
+                <IconButton
+                  size="small"
+                  aria-label={t("deleteExpense")}
+                  onClick={openDeleteDialog}
+                  disabled={isSaving || isDeleting}
+                  color="error"
+                  sx={{
+                    position: "absolute",
+                    bottom: 0,
+                    right: direction === "rtl" ? 6 : "auto",
+                    left: direction === "rtl" ? "auto" : 6,
+                  }}
+                >
+                  {isDeleting ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <DeleteOutlineIcon fontSize="small" />
+                  )}
+                </IconButton>
               )}
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
