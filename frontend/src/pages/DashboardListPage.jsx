@@ -1,5 +1,6 @@
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
+import AddIcon from "@mui/icons-material/Add";
 import {
   alpha,
   Box,
@@ -17,9 +18,11 @@ import {
 } from "@mui/material";
 import NumberFlow from "@number-flow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import AppSnackbar from "../components/AppSnackbar";
 import DashboardFilters from "../components/DashboardFilters";
 import ExpenseItem from "../components/ExpenseItem";
+import ManualExpenseModal from "../components/bankCredentials/ManualExpenseModal";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -252,6 +255,11 @@ export default function DashboardListPage({ hideTotal = false }) {
   const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
   const [isTotalCalculating, setIsTotalCalculating] = useState(true);
   const [listSearchQuery, setListSearchQuery] = useState("");
+  const dashboardContext = useOutletContext();
+  const [localManualExpenseOpen, setLocalManualExpenseOpen] = useState(false);
+  const manualExpenseOpen = dashboardContext?.manualExpenseOpen ?? localManualExpenseOpen;
+  const setManualExpenseOpen = dashboardContext?.setManualExpenseOpen || setLocalManualExpenseOpen;
+  const [manualExpenseError, setManualExpenseError] = useState("");
   const isExpenseBootstrappedRef = useRef(false);
   const hasTriggeredPendingBankConnectionRefreshRef = useRef(false);
   const listContainerRef = useRef(null);
@@ -703,6 +711,24 @@ export default function DashboardListPage({ hideTotal = false }) {
       a.label.localeCompare(b.label, locale),
     );
   }, [bankConnections, expenses, locale, providerLabels, t]);
+  const manualExpenseAccountOptions = useMemo(() =>
+    bankConnections.flatMap((connection) => {
+      const connectionId = String(connection.id || "").trim();
+      const provider = providerLabels[connection.companyId] || connection.companyId || t("bank");
+      const connectionLabel = String(connection.connectionName || "").trim();
+      return (connection.sourceAccounts || []).flatMap((account) => {
+        const accountId = String(account.sourceAccountId || "").trim();
+        if (!connectionId || !accountId) return [];
+        const accountName = String(account.sourceAccountName || "").trim();
+        return [{
+          value: JSON.stringify([connectionId, accountId]),
+          connectionId,
+          accountId,
+          label: [connectionLabel || provider, accountName && accountName !== accountId ? accountName : "", accountId].filter(Boolean).join(" - "),
+        }];
+      });
+    }).sort((a, b) => a.label.localeCompare(b.label, locale)),
+  [bankConnections, providerLabels, t, locale]);
   const loadingBankNames = useMemo(() => {
     const connectedNames = bankConnections
       .filter((connection) => Boolean(connection?.connected))
@@ -1305,6 +1331,9 @@ export default function DashboardListPage({ hideTotal = false }) {
               </>
             )}
           </Box>
+          <IconButton aria-label={t("addManualExpense")} title={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} sx={{ bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } }}>
+            <AddIcon />
+          </IconButton>
         </Typography>
       )}
       <Card
@@ -1578,6 +1607,26 @@ export default function DashboardListPage({ hideTotal = false }) {
           </List>
         </CardContent>
       </Card>
+      <ManualExpenseModal
+        open={manualExpenseOpen}
+        onClose={() => setManualExpenseOpen(false)}
+        categories={categoryOptions}
+        accountOptions={manualExpenseAccountOptions}
+        t={t}
+        onSaved={() => {
+          dashboardContext?.refreshDashboardExpenses().catch(console.error);
+          refreshExpenses({ forceFullFetch: true }).catch((error) =>
+            setManualExpenseError(error?.message || t("failedSaveManualExpense")),
+          );
+        }}
+        onError={setManualExpenseError}
+      />
+      <AppSnackbar
+        open={Boolean(manualExpenseError)}
+        message={manualExpenseError}
+        severity="error"
+        onClose={() => setManualExpenseError("")}
+      />
       <AppSnackbar
         open={isSyncingExpenses}
         message={

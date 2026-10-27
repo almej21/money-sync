@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import AddIcon from "@mui/icons-material/Add";
+import { Box, IconButton } from "@mui/material";
 import DashboardTotalAmount from "../components/DashboardTotalAmount";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
@@ -52,7 +54,7 @@ function normalizeCurrencyAmount(value) {
 export default function DashboardPage() {
   const location = useLocation();
   const { user } = useAuth();
-  const { direction } = useLanguage();
+  const { direction, t } = useLanguage();
   const { filters } = useDashboardFilters();
   const {
     selectedCategories,
@@ -68,6 +70,7 @@ export default function DashboardPage() {
   const [animatedTotalAmount, setAnimatedTotalAmount] = useState(0);
   const [committedTotalAmount, setCommittedTotalAmount] = useState(0);
   const [suppressTotalAnimation, setSuppressTotalAnimation] = useState(false);
+  const [manualExpenseOpen, setManualExpenseOpen] = useState(false);
 
   const refreshExpenses = useCallback(async () => {
     const data = await getExpenses();
@@ -261,6 +264,7 @@ export default function DashboardPage() {
 
   return (
     <>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       <DashboardTotalAmount
         direction={direction}
         shouldShowTotalLoading={shouldShowTotalLoading}
@@ -268,7 +272,13 @@ export default function DashboardPage() {
         animatedTotalAmount={animatedTotalAmount}
         suppressAnimation={suppressTotalAnimation}
       />
-      <Outlet />
+      {location.pathname.replace(/\/$/, "") === "/dashboard/list" && (
+        <IconButton aria-label={t("addManualExpense")} title={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} sx={{ mb: 1.5, bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } }}>
+          <AddIcon />
+        </IconButton>
+      )}
+      </Box>
+      <Outlet context={{ manualExpenseOpen, setManualExpenseOpen, refreshDashboardExpenses: refreshExpenses }} />
     </>
   );
 }

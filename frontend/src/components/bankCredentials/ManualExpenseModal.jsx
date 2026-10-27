@@ -51,7 +51,11 @@ function normalizeDateToIso(value) {
   const day = Number(displayMatch[1]);
   const month = Number(displayMatch[2]);
   const year = Number(displayMatch[3]);
-  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+  if (
+    !Number.isInteger(day) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(year)
+  ) {
     return null;
   }
 
@@ -74,12 +78,7 @@ function formatIsoToDisplay(value) {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-function DateInputWithPicker({
-  label,
-  value,
-  onChange,
-  inputLabelSx,
-}) {
+function DateInputWithPicker({ label, value, onChange, inputLabelSx }) {
   const pickerRef = useRef(null);
   const pickerIsoValue = normalizeDateToIso(value) || "";
 
@@ -145,6 +144,7 @@ export default function ManualExpenseModal({
   onClose,
   sourceConnectionKey,
   sourceAccountId,
+  accountOptions,
   categories,
   t,
   onSaved,
@@ -162,16 +162,22 @@ export default function ManualExpenseModal({
   const [standingStartDate, setStandingStartDate] = useState("");
   const [standingPayments, setStandingPayments] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [categoryMenuHeight, setCategoryMenuHeight] = useState("min(420px, calc(100vh - 120px))");
+  const categoryMenuProps = {
+    anchorOrigin: { vertical: "bottom", horizontal: isRtl ? "right" : "left" },
+    transformOrigin: { vertical: "top", horizontal: isRtl ? "right" : "left" },
+    marginThreshold: null,
+    PaperProps: { sx: { maxHeight: categoryMenuHeight } },
+  };
+  function positionCategoryMenu(event) {
+    const bottom = event.currentTarget.getBoundingClientRect().bottom;
+    setCategoryMenuHeight(Math.max(0, window.innerHeight - bottom - 8));
+  }
   const labelSx = {
     fontSize: "1rem",
     px: 0,
     mx: 0,
-    right: isRtl ? 0 : "auto",
-    left: isRtl ? "auto" : 0,
-    transformOrigin: isRtl ? "top right" : "top left",
-    transform: isRtl
-      ? "translate(0px, -17px) scale(0.75)"
-      : "translate(0px, -17px) scale(0.75)",
   };
 
   useEffect(() => {
@@ -185,11 +191,14 @@ export default function ManualExpenseModal({
     setStandingAmount("");
     setStandingStartDate("");
     setStandingPayments("");
+    setSelectedAccount("");
   }, [open]);
 
   const modalTitle = useMemo(() => {
     const ending = getCardEnding(sourceAccountId);
-    return `${t("addManualExpenseToCardEndingWith")} ${ending}`;
+    return ending
+      ? `${t("addManualExpenseToCardEndingWith")} ${ending}`
+      : t("addManualExpense");
   }, [sourceAccountId, t]);
 
   async function onSubmit() {
@@ -207,12 +216,21 @@ export default function ManualExpenseModal({
         throw new Error("Starting date must be in dd/MM/yyyy format");
       }
 
+      const selectedOption = accountOptions?.find(
+        (option) => option.value === selectedAccount,
+      );
+      const connectionId = accountOptions
+        ? selectedOption?.connectionId
+        : sourceConnectionKey;
+      const accountId = accountOptions
+        ? selectedOption?.accountId
+        : sourceAccountId;
       const payload =
         entryType === "single"
           ? {
               entryType,
-              connectionId: sourceConnectionKey,
-              sourceAccountId,
+              connectionId,
+              sourceAccountId: accountId,
               description,
               category,
               amount: singleAmount,
@@ -220,8 +238,8 @@ export default function ManualExpenseModal({
             }
           : {
               entryType,
-              connectionId: sourceConnectionKey,
-              sourceAccountId,
+              connectionId,
+              sourceAccountId: accountId,
               description,
               category,
               amount: standingAmount,
@@ -246,7 +264,42 @@ export default function ManualExpenseModal({
       headerText={modalTitle}
       width={620}
     >
-      <Stack spacing={2.2} dir={direction} sx={{ px: isRtl ? 0.5 : 0 }}>
+      <Stack
+        spacing={2.2}
+        dir={direction}
+        sx={{
+          px: isRtl ? 0.5 : 0,
+          "& .MuiInputLabel-root.MuiInputLabel-outlined": {
+            left: "auto !important",
+            right: "auto !important",
+            insetInlineEnd: "auto !important",
+            insetInlineStart: "0 !important",
+            transformOrigin: `${isRtl ? "100% 0" : "0% 0"} !important`,
+            textAlign: isRtl ? "right" : "left",
+          },
+          "& .MuiInputLabel-root.MuiInputLabel-outlined.MuiInputLabel-shrink": {
+            transform: `translate(${isRtl ? "12px" : "14px"}, -9px) scale(0.75) !important`,
+          },
+        }}
+      >
+        {accountOptions && (
+          <Dropdown
+            labelId="manual-expense-account"
+            label={t("manualExpenseSourceAccount")}
+            labelShrink
+            inputLabelSx={labelSx}
+            value={selectedAccount}
+            onChange={(event) => setSelectedAccount(event.target.value)}
+            displayEmpty
+          >
+            <MenuItem value="">{t("manualExpenseNoAccount")}</MenuItem>
+            {accountOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Dropdown>
+        )}
         <Dropdown
           labelId="manual-expense-type"
           label={t("manualExpenseType")}
@@ -257,7 +310,9 @@ export default function ManualExpenseModal({
           required
         >
           <MenuItem value="single">{t("manualExpenseSingleItem")}</MenuItem>
-          <MenuItem value="standing">{t("manualExpenseStandingOrder")}</MenuItem>
+          <MenuItem value="standing">
+            {t("manualExpenseStandingOrder")}
+          </MenuItem>
           <MenuItem value="payments">{t("manualExpensePayments")}</MenuItem>
         </Dropdown>
 
@@ -270,6 +325,7 @@ export default function ManualExpenseModal({
               onChange={(event) => setDescription(event.target.value)}
               InputLabelProps={{ shrink: true, sx: labelSx }}
             />
+            <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 1.5 }}>
             <AppTextField
               fullWidth
               type="number"
@@ -286,6 +342,8 @@ export default function ManualExpenseModal({
               inputLabelSx={labelSx}
               value={category}
               onChange={(event) => setCategory(event.target.value)}
+              onOpen={positionCategoryMenu}
+              MenuProps={categoryMenuProps}
             >
               {categories.map((categoryValue) => (
                 <MenuItem key={categoryValue} value={categoryValue}>
@@ -293,6 +351,7 @@ export default function ManualExpenseModal({
                 </MenuItem>
               ))}
             </Dropdown>
+            </Box>
             <DateInputWithPicker
               label={`${t("manualExpenseDate")} (dd/MM/yyyy)`}
               value={date}
@@ -309,6 +368,16 @@ export default function ManualExpenseModal({
               onChange={(event) => setDescription(event.target.value)}
               InputLabelProps={{ shrink: true, sx: labelSx }}
             />
+            <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 1.5 }}>
+            <AppTextField
+              fullWidth
+              type="number"
+              label={t("manualStandingOrderAmount")}
+              value={standingAmount}
+              onChange={(event) => setStandingAmount(event.target.value)}
+              inputProps={{ min: 0, step: "0.01" }}
+              InputLabelProps={{ shrink: true, sx: labelSx }}
+            />
             <Dropdown
               labelId="manual-standing-category"
               label={t("manualExpenseCategory")}
@@ -316,6 +385,8 @@ export default function ManualExpenseModal({
               inputLabelSx={labelSx}
               value={category}
               onChange={(event) => setCategory(event.target.value)}
+              onOpen={positionCategoryMenu}
+              MenuProps={categoryMenuProps}
             >
               {categories.map((categoryValue) => (
                 <MenuItem key={categoryValue} value={categoryValue}>
@@ -323,6 +394,7 @@ export default function ManualExpenseModal({
                 </MenuItem>
               ))}
             </Dropdown>
+            </Box>
             <Dropdown
               labelId="manual-standing-amount-mode"
               label={t("manualStandingOrderAmountMode")}
@@ -339,15 +411,6 @@ export default function ManualExpenseModal({
                 {t("manualStandingOrderAmountModeEach")}
               </MenuItem>
             </Dropdown>
-            <AppTextField
-              fullWidth
-              type="number"
-              label={t("manualStandingOrderAmount")}
-              value={standingAmount}
-              onChange={(event) => setStandingAmount(event.target.value)}
-              inputProps={{ min: 0, step: "0.01" }}
-              InputLabelProps={{ shrink: true, sx: labelSx }}
-            />
             <Stack
               direction="row"
               sx={{
@@ -359,16 +422,7 @@ export default function ManualExpenseModal({
                 alignItems: "start",
               }}
             >
-              <Box
-                sx={{
-                  minWidth: 0,
-                  "& .MuiInputLabel-root": {
-                    right: isRtl ? 0 : "auto",
-                    left: isRtl ? "auto" : 0,
-                    transformOrigin: isRtl ? "top right" : "top left",
-                  },
-                }}
-              >
+              <Box sx={{ minWidth: 0 }}>
                 <DateInputWithPicker
                   label={`${t("manualStandingOrderStartDate")} (dd/MM/yyyy)`}
                   value={standingStartDate}
@@ -385,21 +439,14 @@ export default function ManualExpenseModal({
                   onChange={(event) => setStandingPayments(event.target.value)}
                   inputProps={{ min: 1 }}
                   InputLabelProps={{ shrink: true, sx: labelSx }}
-                  sx={{
-                    minWidth: 0,
-                    "& .MuiInputLabel-root": {
-                      right: isRtl ? 0 : "auto",
-                      left: isRtl ? "auto" : 0,
-                      transformOrigin: isRtl ? "top right" : "top left",
-                    },
-                  }}
+                  sx={{ minWidth: 0 }}
                 />
               )}
             </Stack>
           </>
         )}
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2}>
+        <Stack direction="row" spacing={1.2}>
           <Button type="button" variant="outlined" onClick={onClose} fullWidth>
             {t("cancel")}
           </Button>

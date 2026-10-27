@@ -138,13 +138,12 @@ export async function createManualExpensesForUser(user, payload = {}) {
   }
 
   const sourceConnectionKey = resolveConnectionKey(payload);
-  if (!sourceConnectionKey) {
-    throw toValidationError("sourceConnectionKey is required");
-  }
-
   const sourceAccountId = normalizeText(payload?.sourceAccountId);
-  if (!sourceAccountId) {
+  if (sourceConnectionKey && !sourceAccountId) {
     throw toValidationError("sourceAccountId is required");
+  }
+  if (sourceAccountId && !sourceConnectionKey) {
+    throw toValidationError("sourceConnectionKey is required");
   }
 
   const description = normalizeText(payload?.description);
@@ -177,7 +176,7 @@ export async function createManualExpensesForUser(user, payload = {}) {
     ? household.bankConnections
     : []
   ).find((connection) => String(connection?._id || "") === sourceConnectionKey);
-  if (!matchingConnection) {
+  if (sourceConnectionKey && !matchingConnection) {
     throw toValidationError("Bank connection not found", 404);
   }
 
