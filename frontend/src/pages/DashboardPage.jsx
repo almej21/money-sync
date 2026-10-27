@@ -1,3 +1,4 @@
+import { NO_SOURCE_ACCOUNT_ID } from "../lib/accountFilter";
 import { useMemo } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
@@ -114,8 +115,7 @@ export default function DashboardPage() {
       Array.from(
         new Set(
           expenses
-            .map((expense) => String(expense?.sourceAccountId || "").trim())
-            .filter(Boolean),
+            .map((expense) => String(expense?.sourceAccountId || "").trim() || NO_SOURCE_ACCOUNT_ID),
         ),
       ),
     [expenses],
@@ -187,8 +187,7 @@ export default function DashboardPage() {
         if (!shouldApplyAccountFilter) return true;
 
         const sourceAccountId = String(exp.sourceAccountId || "").trim();
-        if (!sourceAccountId) return false;
-        return selectedConnectionIds.includes(sourceAccountId);
+        return selectedConnectionIds.includes(sourceAccountId || NO_SOURCE_ACCOUNT_ID);
       }),
     [
       expenses,

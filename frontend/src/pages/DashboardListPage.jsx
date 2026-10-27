@@ -1,3 +1,4 @@
+import { NO_SOURCE_ACCOUNT_ID } from "../lib/accountFilter";
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import AddIcon from "@mui/icons-material/Add";
@@ -670,7 +671,14 @@ export default function DashboardListPage({ hideTotal = false }) {
     const optionsByAccountId = new Map();
     expenses.forEach((expense) => {
       const accountId = String(expense.sourceAccountId || "").trim();
-      if (!accountId || optionsByAccountId.has(accountId)) return;
+      if (!accountId) {
+        optionsByAccountId.set(NO_SOURCE_ACCOUNT_ID, {
+          id: NO_SOURCE_ACCOUNT_ID,
+          label: t("manualExpenseNoAccount"),
+        });
+        return;
+      }
+      if (optionsByAccountId.has(accountId)) return;
 
       const sourceConnectionKey = String(
         expense.sourceConnectionKey || "",
@@ -750,7 +758,9 @@ export default function DashboardListPage({ hideTotal = false }) {
   const singleAccountLabel = hasSingleAccountOption
     ? accountFilterOptions[0]?.label || t("allAccounts")
     : t("allAccounts");
-  const hasHouseholdConnections = accountFilterOptions.length > 0;
+  const hasHouseholdConnections = accountFilterOptions.some(
+    (option) => option.id !== NO_SOURCE_ACCOUNT_ID,
+  );
   const shouldApplyAccountFilter =
     shouldShowAccountFilter &&
     selectedConnectionIds.length > 0 &&
@@ -798,8 +808,7 @@ export default function DashboardListPage({ hideTotal = false }) {
         if (!shouldApplyAccountFilter) return true;
 
         const sourceAccountId = String(exp.sourceAccountId || "").trim();
-        if (!sourceAccountId) return false;
-        return selectedConnectionIds.includes(sourceAccountId);
+        return selectedConnectionIds.includes(sourceAccountId || NO_SOURCE_ACCOUNT_ID);
       }),
     [
       customEndDate,

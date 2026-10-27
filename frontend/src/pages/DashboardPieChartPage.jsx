@@ -1,3 +1,4 @@
+import { NO_SOURCE_ACCOUNT_ID } from "../lib/accountFilter";
 import DonutLargeRoundedIcon from "@mui/icons-material/DonutLargeRounded";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -374,7 +375,14 @@ export default function DashboardPieChartPage() {
     const optionsByAccountId = new Map();
     expenses.forEach((expense) => {
       const accountId = String(expense.sourceAccountId || "").trim();
-      if (!accountId || optionsByAccountId.has(accountId)) return;
+      if (!accountId) {
+        optionsByAccountId.set(NO_SOURCE_ACCOUNT_ID, {
+          id: NO_SOURCE_ACCOUNT_ID,
+          label: t("manualExpenseNoAccount"),
+        });
+        return;
+      }
+      if (optionsByAccountId.has(accountId)) return;
 
       const sourceConnectionKey = String(
         expense.sourceConnectionKey || "",
@@ -466,8 +474,7 @@ export default function DashboardPieChartPage() {
         if (!shouldApplyAccountFilter) return true;
 
         const sourceAccountId = String(exp.sourceAccountId || "").trim();
-        if (!sourceAccountId) return false;
-        return selectedConnectionIds.includes(sourceAccountId);
+        return selectedConnectionIds.includes(sourceAccountId || NO_SOURCE_ACCOUNT_ID);
       }),
     [
       expenses,
