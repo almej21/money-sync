@@ -175,6 +175,8 @@ export default function DashboardBottomNav() {
             zIndex: 1,
             borderRadius: "22px",
             backgroundColor: alpha(theme.palette.primary.main, 0.75),
+            backdropFilter: "blur(1px)",
+            WebkitBackdropFilter: "blur(1px)",
             boxShadow: `
               inset 0 0 0 1px ${alpha(theme.palette.common.white, 0.2)},
               inset 1px 1px 0 ${alpha(theme.palette.common.white, 0.24)},
