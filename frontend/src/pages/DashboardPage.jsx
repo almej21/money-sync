@@ -2,9 +2,9 @@ import { NO_SOURCE_ACCOUNT_ID } from "../lib/accountFilter";
 import { useMemo } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import AddIcon from "@mui/icons-material/Add";
-import { Box, IconButton } from "@mui/material";
+import { Box } from "@mui/material";
 import DashboardTotalAmount from "../components/DashboardTotalAmount";
+import ManualExpenseButton from "../components/ManualExpenseButton";
 import { useAuth } from "../context/AuthContext";
 import { useDashboardFilters } from "../context/DashboardFiltersContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -272,9 +272,7 @@ export default function DashboardPage() {
         suppressAnimation={suppressTotalAnimation}
       />
       {location.pathname.replace(/\/$/, "") === "/dashboard/list" && (
-        <IconButton aria-label={t("addManualExpense")} title={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} sx={{ mb: 1.5, bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } }}>
-          <AddIcon />
-        </IconButton>
+        <ManualExpenseButton label={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} sx={{ mb: 1.5 }} />
       )}
       </Box>
       <Outlet context={{ manualExpenseOpen, setManualExpenseOpen, refreshDashboardExpenses: refreshExpenses }} />
