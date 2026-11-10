@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import householdRoutes from "./routes/householdRoutes.js";
 import shoppingListRoutes from "./routes/shoppingListRoutes.js";
+import catalogRoutes from "./routes/catalogRoutes.js";
 const app = express();
 function normalizeOrigin(value) {
   return (value ?? "").trim().replace(/\/+$/, "").toLowerCase();
@@ -58,6 +59,7 @@ app.use(async (req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/shopping-lists", shoppingListRoutes);
+app.use("/api/catalog", catalogRoutes);
 app.use("/api/household", householdRoutes);
 
 let bankRoutesPromise;

@@ -1,20 +1,20 @@
 import { Router } from "express";
-import {
-  createShoppingList,
-  deleteShoppingList,
-  listShoppingLists,
-  toggleShoppingItem,
-  updateShoppingList,
-} from "../controllers/shoppingListController.js";
+import { createShoppingList, listShoppingLists, getShoppingList, renameShoppingList, deleteShoppingList, addShoppingItem, updateShoppingItem, deleteShoppingItem, compareShoppingList, shoppingListErrorHandler, updateLegacyShoppingList, toggleLegacyShoppingItem } from "../controllers/shoppingListController.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
-
+const asyncRoute = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 router.use(requireAuth);
-router.get("/", listShoppingLists);
-router.post("/", createShoppingList);
-router.put("/:id", updateShoppingList);
-router.patch("/:listId/items/:itemId/toggle", toggleShoppingItem);
-router.delete("/:id", deleteShoppingList);
-
+router.get("/", asyncRoute(listShoppingLists));
+router.post("/", asyncRoute(createShoppingList));
+router.get("/:id", asyncRoute(getShoppingList));
+router.put("/:id", asyncRoute(updateLegacyShoppingList));
+router.patch("/:id/items/:itemId/toggle", asyncRoute(toggleLegacyShoppingItem));
+router.patch("/:id", asyncRoute(renameShoppingList));
+router.delete("/:id", asyncRoute(deleteShoppingList));
+router.post("/:id/items", asyncRoute(addShoppingItem));
+router.post("/:id/compare", asyncRoute(compareShoppingList));
+router.patch("/:id/items/:itemId", asyncRoute(updateShoppingItem));
+router.delete("/:id/items/:itemId", asyncRoute(deleteShoppingItem));
+router.use(shoppingListErrorHandler);
 export default router;

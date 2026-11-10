@@ -1,0 +1,752 @@
+{
+  "info": {
+    "name": "Money Sync - Supermarket comparison",
+    "description": "Run the numbered requests in order. Set email and password in collection variables and start the local backend. Login, search, create list, and add item save token and identifiers automatically. Search selects the first result; edit barcode if you prefer another. Optional and cleanup requests are at the end. API data and availability can change.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "query",
+      "value": "חלב"
+    },
+    {
+      "key": "city",
+      "value": "ירושלים"
+    },
+    {
+      "key": "barcode",
+      "value": ""
+    },
+    {
+      "key": "barcodes",
+      "value": "[]"
+    },
+    {
+      "key": "listId",
+      "value": ""
+    },
+    {
+      "key": "itemId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "priceilGroupId",
+      "value": ""
+    },
+    {
+      "key": "localGroupId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        },
+        "description": "No authentication. Confirms the HTTP server is running; it does not test MongoDB.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Set collection variables email and password first. Saves the returned JWT to token.",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.unset('token');",
+              "if (pm.response.code === 200) { const body = pm.response.json(); if (body.token) pm.collectionVariables.set('token', body.token); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Search specific products",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/catalog/search?q={{query}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "catalog",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "{{query}}"
+            },
+            {
+              "key": "cities",
+              "value": "חולון,חיפה",
+              "disabled": true,
+              "description": "Optional comma-separated city names or locality codes."
+            }
+          ]
+        },
+        "description": "Searches PriceIL by at least three characters. Each barcode's stores include store name, city and price. Optionally enable cities to return barcodes with stores in any specified city. lookupFailures lists barcodes whose city availability could not be checked. Saves the first match's barcode."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.unset('barcode'); pm.collectionVariables.unset('barcodes');",
+              "if (pm.response.code === 200) { const products = pm.response.json().data?.products || []; if (products.length && products[0].barcodes?.length) { pm.collectionVariables.set('barcode', products[0].barcodes[0]); pm.collectionVariables.set('barcodes', JSON.stringify(products[0].barcodes)); } else console.warn('No matching products; change query and retry.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - View selected product prices",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/catalog/products/{{barcode}}/prices",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "catalog",
+            "products",
+            "{{barcode}}",
+            "prices"
+          ],
+          "query": [
+            {
+              "key": "city",
+              "value": "{{city}}",
+              "disabled": true,
+              "description": "Enable to filter to an exact city; set the city collection variable first."
+            }
+          ]
+        },
+        "description": "Optional: inspect the selected barcode's prices and branch IDs. Enable the city parameter in Params to filter by city."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Create shopping list",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists"
+          ]
+        },
+        "description": "Creates a new private list and saves listId.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman test list\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.unset('listId'); pm.collectionVariables.unset('itemId'); pm.collectionVariables.unset('productId');",
+              "if (pm.response.code === 201) pm.collectionVariables.set('listId', pm.response.json()._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Add selected same-name products",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/items",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "items"
+          ]
+        },
+        "description": "Uses the selected same-name barcode array from search. Saves itemId from the populated response.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"selectionType\": \"same_name\",\n  \"barcodes\": {{barcodes}},\n  \"quantity\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.unset('itemId'); pm.collectionVariables.unset('productId');",
+              "if (pm.response.code === 201) { const barcode = pm.collectionVariables.get('barcode'); const item = (pm.response.json().items || []).find(i => i.selectionType === 'same_name' && (i.productIds || []).some(p => p?.barcode === barcode)); if (item) pm.collectionVariables.set('itemId', item._id); else console.warn('Could not find the added products in the response.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - List shopping lists",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists"
+          ]
+        },
+        "description": "Returns accessible shopping lists."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Get shopping list",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}"
+          ]
+        },
+        "description": "Returns the newly created list and populated product."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Rename shopping list",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}"
+          ]
+        },
+        "description": "Renames the list.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman updated list\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Update item quantity",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/items/{{itemId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "items",
+            "{{itemId}}"
+          ]
+        },
+        "description": "Changes selected item quantity to 2.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantity\": 2\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Compare basket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/compare",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "compare"
+          ]
+        },
+        "description": "Compares all discovered branches. Complete baskets have totals; incomplete or uncertain results need inspection.",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Compare with filters (optional)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/compare",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "compare"
+          ]
+        },
+        "description": "Edit the city and/or branch IDs based on actual price results before sending. Remove fields you do not want to filter by.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"city\": \"ירושלים\",\n  \"storeIds\": [\n    794\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Duplicate item validation (optional)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/items",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "items"
+          ]
+        },
+        "description": "Sending the same barcode selection twice should return 409.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"selectionType\": \"same_name\",\n  \"barcodes\": {{barcodes}},\n  \"quantity\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - PriceIL group details (optional)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/catalog/groups/{{priceilGroupId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "catalog",
+            "groups",
+            "{{priceilGroupId}}"
+          ]
+        },
+        "description": "Set priceilGroupId to a numeric PriceIL group ID. This differs from a local MongoDB group ID."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - Add generic group (optional)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/items",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "items"
+          ]
+        },
+        "description": "Requires localGroupId to be an existing MongoDB ProductGroup ObjectId; generic groups are not created by product search.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"selectionType\": \"generic\",\n  \"groupId\": \"{{localGroupId}}\",\n  \"quantity\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - Remove selected item",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}/items/{{itemId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}",
+            "items",
+            "{{itemId}}"
+          ]
+        },
+        "description": "Removes the selected item from the test list."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Delete test list",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/shopping-lists/{{listId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "shopping-lists",
+            "{{listId}}"
+          ]
+        },
+        "description": "Deletes the created test list."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

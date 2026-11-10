@@ -29,3 +29,18 @@ export async function updateShoppingList(listId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export const searchCatalogProducts = (query, signal) =>
+  api(`/catalog/search?q=${encodeURIComponent(query)}`, { signal });
+export const renameComparisonList = (id, name) =>
+  api(`/shopping-lists/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
+export const addComparisonItem = (id, barcodes) =>
+  api(`/shopping-lists/${id}/items`, { method: "POST", body: JSON.stringify({ selectionType: "same_name", barcodes, quantity: 1 }) });
+export const changeComparisonQuantity = (id, itemId, quantity) =>
+  api(`/shopping-lists/${id}/items/${itemId}`, { method: "PATCH", body: JSON.stringify({ quantity }) });
+export const removeComparisonItem = (id, itemId) =>
+  api(`/shopping-lists/${id}/items/${itemId}`, { method: "DELETE" });
+export const compareShoppingList = (id, filters) =>
+  api(`/shopping-lists/${id}/compare`, { method: "POST", body: JSON.stringify(filters) });
+
+export const getLocalities = () => api("/catalog/localities");

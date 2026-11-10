@@ -1,0 +1,1300 @@
+{
+  "571515": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "571515",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": "אחים זנו דגים בעמ",
+          "manufactureCountry": null,
+          "manufacturerDescription": null,
+          "unitQty": null,
+          "quantity": null,
+          "isWeighted": false,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 121148,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:59:00.000Z",
+            "storeId": 1456,
+            "storeName": "קניון אשדוד",
+            "city": "אשדוד",
+            "address": "הטיילת 20",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2024-07-01T07:58:00.000Z",
+            "storeId": 1502,
+            "storeName": "שמוטקין",
+            "city": "ראשון לציון",
+            "address": "משה בקר 32",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:02:00.000Z",
+            "storeId": 1503,
+            "storeName": "אשקלון מרכז",
+            "city": "אשקלון",
+            "address": "בן גוריון 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T10:22:00.000Z",
+            "storeId": 1504,
+            "storeName": "קרית אתא",
+            "city": "קרית אתא",
+            "address": "זבולון 14",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:32:00.000Z",
+            "storeId": 1464,
+            "storeName": "טירת הכרמל",
+            "city": "טירת הכרמל",
+            "address": "קרן היסוד 2",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T00:17:00.000Z",
+            "storeId": 1465,
+            "storeName": "עפולה רכבת",
+            "city": "עפולה",
+            "address": "בן גוריון 5",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T09:50:00.000Z",
+            "storeId": 1467,
+            "storeName": "מודיעין",
+            "city": "מודיעין",
+            "address": "מנחם בגין 21",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:35:00.000Z",
+            "storeId": 1468,
+            "storeName": "אשקלון",
+            "city": "אשקלון",
+            "address": "בן צבי 8",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T13:41:00.000Z",
+            "storeId": 1470,
+            "storeName": "קרית מלאכי",
+            "city": "קרית מלאכי",
+            "address": "זבוטינסקי 8",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T06:34:00.000Z",
+            "storeId": 1471,
+            "storeName": "קרית גת",
+            "city": "קרית גת",
+            "address": "הגפן 3",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T09:26:00.000Z",
+            "storeId": 1472,
+            "storeName": "יבנה",
+            "city": "יבנה",
+            "address": "המיסב 7",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T10:22:00.000Z",
+            "storeId": 1474,
+            "storeName": "כפר יונה",
+            "city": "כפר יונה",
+            "address": "הרצל 5",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:06:00.000Z",
+            "storeId": 1475,
+            "storeName": "עפולה",
+            "city": "עפולה",
+            "address": "מנחם בגין 79",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:26:00.000Z",
+            "storeId": 1479,
+            "storeName": "באר שבע",
+            "city": "באר שבע",
+            "address": "בן גוריון 15",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T14:40:00.000Z",
+            "storeId": 1480,
+            "storeName": "רעננה פארק",
+            "city": "רעננה",
+            "address": "אחוזה 114",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T10:01:00.000Z",
+            "storeId": 1481,
+            "storeName": "צור יצחק",
+            "city": "צור יצחק",
+            "address": "דרך איילון 20",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T05:59:00.000Z",
+            "storeId": 1482,
+            "storeName": "ראשון מזרח",
+            "city": "ראשון לציון",
+            "address": "צבי פרנק 39",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T11:14:00.000Z",
+            "storeId": 1483,
+            "storeName": "בית שאן",
+            "city": "בית שאן",
+            "address": "הגלבוע 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:06:00.000Z",
+            "storeId": 1484,
+            "storeName": "שבעת הכוכבים",
+            "city": "הרצליה",
+            "address": "קניון שבעת הכוכבי",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:39:00.000Z",
+            "storeId": 1448,
+            "storeName": "ראש העין",
+            "city": "ראש העין",
+            "address": "שבזי 26",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T09:39:00.000Z",
+            "storeId": 1449,
+            "storeName": "שער העליה",
+            "city": "חיפה",
+            "address": "שלוסברג 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:39:00.000Z",
+            "storeId": 1438,
+            "storeName": "אשדוד",
+            "city": "אשדוד",
+            "address": "דוד המלך 18",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T20:34:00.000Z",
+            "storeId": 1440,
+            "storeName": "לוד",
+            "city": "לוד",
+            "address": "יוספטל 23",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T06:53:00.000Z",
+            "storeId": 1451,
+            "storeName": "רמת גן",
+            "city": "רמת גן",
+            "address": "הרצל 42",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:07:00.000Z",
+            "storeId": 1454,
+            "storeName": "מוצקין",
+            "city": "קרית מוצקין",
+            "address": "שד ירושלים 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T09:08:00.000Z",
+            "storeId": 1457,
+            "storeName": "מבשרת ציון",
+            "city": "מבשרת ציון",
+            "address": "הראל 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T10:33:00.000Z",
+            "storeId": 1486,
+            "storeName": "בת ים",
+            "city": "בת ים",
+            "address": "העמל 11",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T06:43:00.000Z",
+            "storeId": 1487,
+            "storeName": "לוד נתב\"ג",
+            "city": "לוד",
+            "address": "פסח לב 2",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:38:00.000Z",
+            "storeId": 1488,
+            "storeName": "כפר סבא הירוקה",
+            "city": "כפר סבא",
+            "address": "אנגל 78",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-15T10:48:00.000Z",
+            "storeId": 1490,
+            "storeName": "פארק אפק ר\"ע",
+            "city": "ראש העין",
+            "address": "העמל 2",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-16T08:53:00.000Z",
+            "storeId": 1446,
+            "storeName": "חדרה בקניון",
+            "city": "חדרה",
+            "address": "שד רוטשילד 40",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:45:00.000Z",
+            "storeId": 1447,
+            "storeName": "עכו",
+            "city": "עכו",
+            "address": "שלום הגליל 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:16:00.000Z",
+            "storeId": 1441,
+            "storeName": "בית שמש",
+            "city": "בית שמש",
+            "address": "הרצל 7",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-16T12:47:00.000Z",
+            "storeId": 1444,
+            "storeName": "חדרה בפארק",
+            "city": "חדרה",
+            "address": "משמר הגבול",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:36:00.000Z",
+            "storeId": 1462,
+            "storeName": "דימונה",
+            "city": "דימונה",
+            "address": "המלאכה 3",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:55:00.000Z",
+            "storeId": 1463,
+            "storeName": "אופקים",
+            "city": "אופקים",
+            "address": "החיד\"א 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T12:44:00.000Z",
+            "storeId": 1492,
+            "storeName": "רחובות",
+            "city": "רחובות",
+            "address": "אופנהיימר 10",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T08:37:00.000Z",
+            "storeId": 1493,
+            "storeName": "עמק חפר",
+            "city": "מ.א. עמק חפר",
+            "address": "נחל אלכסנדר 3",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:14:00.000Z",
+            "storeId": 1495,
+            "storeName": "צמח",
+            "city": null,
+            "address": "צומת צמח מול כנרת",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:29:00.000Z",
+            "storeId": 1496,
+            "storeName": "איילון",
+            "city": "רמת גן",
+            "address": "אבא הילל 301",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:47:00.000Z",
+            "storeId": 1497,
+            "storeName": "מלחה",
+            "city": "ירושלים",
+            "address": "אגודת הספורט 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-15T14:46:00.000Z",
+            "storeId": 1498,
+            "storeName": "נתניה",
+            "city": "נתניה",
+            "address": "האורזים 4",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:53:00.000Z",
+            "storeId": 1500,
+            "storeName": "נתיבות",
+            "city": "נתיבות",
+            "address": "בעלי המלאכה 5",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2025-12-14T07:53:00.000Z",
+            "storeId": 1501,
+            "storeName": "חריש",
+            "city": "חריש",
+            "address": "ספיר 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T08:42:00.000Z",
+            "storeId": 1458,
+            "storeName": "חולון קוגל",
+            "city": "חולון",
+            "address": "קוגל 40",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-18T14:25:00.000Z",
+            "storeId": 1459,
+            "storeName": "ברנע",
+            "city": "אשקלון",
+            "address": "רחבעם זאבי",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-15T07:41:00.000Z",
+            "storeId": 1445,
+            "storeName": "ראשון פרס נובל",
+            "city": "ראשון לציון",
+            "address": "שמעון פרס 33",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T10:16:00.000Z",
+            "storeId": 1469,
+            "storeName": "רמת ישי",
+            "city": "רמת ישי",
+            "address": "מרכז מסחרי",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-15T13:54:00.000Z",
+            "storeId": 1450,
+            "storeName": "גני תקווה",
+            "city": "גני תקווה",
+            "address": "הכרמל 20",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2024-06-30T10:32:00.000Z",
+            "storeId": 1505,
+            "storeName": "אינטרנט",
+            "city": null,
+            "address": "victoryonline.co.",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T13:36:00.000Z",
+            "storeId": 1494,
+            "storeName": "טבעון",
+            "city": "טבעון",
+            "address": "המרווה 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-15T07:09:00.000Z",
+            "storeId": 1439,
+            "storeName": "הארבעה ת\"א",
+            "city": "תל אבית יפה",
+            "address": "הארבעה 6",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2023-01-25T13:23:00.000Z",
+            "storeId": 1473,
+            "storeName": "סיטי מרגוזה",
+            "city": "תל-אביב",
+            "address": "מרגוזה יהודה 16",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-15T09:46:00.000Z",
+            "storeId": 1437,
+            "storeName": "אורנית",
+            "city": "אורנית",
+            "address": "הערבה 10",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T14:35:00.000Z",
+            "storeId": 1443,
+            "storeName": "רמלה הולצברג",
+            "city": "רמלה",
+            "address": "שמחה הולצברג 16",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-15T12:11:00.000Z",
+            "storeId": 1452,
+            "storeName": "אלקנה",
+            "city": "אלקנה",
+            "address": "שיר השירים 75/1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2024-06-30T12:40:00.000Z",
+            "storeId": 1466,
+            "storeName": "תל מונד",
+            "city": "תל מונד",
+            "address": "השקד 4",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T15:40:00.000Z",
+            "storeId": 1461,
+            "storeName": "רעננה אחוזה 158",
+            "city": "רעננה",
+            "address": "אחוזה 158",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-15T11:04:00.000Z",
+            "storeId": 1476,
+            "storeName": "חולון התנאים",
+            "city": "חולון",
+            "address": "התנאים 5",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T07:42:00.000Z",
+            "storeId": 1477,
+            "storeName": "דיזנגוף",
+            "city": "תל אביב",
+            "address": "דיזנגוף 224",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T07:08:00.000Z",
+            "storeId": 1491,
+            "storeName": "נס ציונה",
+            "city": "נס ציונה",
+            "address": "הפרדסים 1",
+            "chain": "ויקטורי"
+          },
+          {
+            "price": "129.00",
+            "priceUpdateDate": "2025-12-14T06:30:00.000Z",
+            "storeId": 1499,
+            "storeName": "שוהם",
+            "city": "שוהם",
+            "address": "עמק איילון 161",
+            "chain": "ויקטורי"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:07.567Z"
+    }
+  },
+  "957850": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "957850",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": null,
+          "manufactureCountry": null,
+          "manufacturerDescription": "פילה סלמון טרי",
+          "unitQty": null,
+          "quantity": null,
+          "isWeighted": false,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 121148,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "99.90",
+            "priceUpdateDate": "2026-08-18T00:16:00.000Z",
+            "storeId": 292862,
+            "storeName": "נטו חיסכון נתניה הפלדה* ת.",
+            "city": "unknown",
+            "address": "unknown",
+            "chain": "סופר ספיר בע\"מ"
+          },
+          {
+            "price": "110.00",
+            "priceUpdateDate": "2026-08-17T18:55:00.000Z",
+            "storeId": 1302,
+            "storeName": "*זכיין - מעלה אדומים",
+            "city": null,
+            "address": null,
+            "chain": "סופר ספיר בע\"מ"
+          },
+          {
+            "price": "114.90",
+            "priceUpdateDate": "2026-08-18T00:26:00.000Z",
+            "storeId": 1301,
+            "storeName": "סופר ספיר אריאל ב** ת.",
+            "city": "unknown",
+            "address": "unknown",
+            "chain": "סופר ספיר בע\"מ"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:07.753Z"
+    }
+  },
+  "7290000085104": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "7290000085104",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": null,
+          "manufactureCountry": null,
+          "manufacturerDescription": "פילה סלמון טרי",
+          "unitQty": null,
+          "quantity": null,
+          "isWeighted": true,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 121148,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 99,
+            "storeName": "כל בו חצי חינם הכשרת הישוב",
+            "city": "8300",
+            "address": "הכשרת הישוב 3 , ראשון לציון , ישראל",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 100,
+            "storeName": "כל בו חצי חינם כישור",
+            "city": "6600",
+            "address": "כישור 22, חולון, ישראל",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 101,
+            "storeName": "כל בו חצי חינם - רחובות",
+            "city": "8400",
+            "address": "דרך הים 1 , רחובות",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 102,
+            "storeName": "כל בו חצי חינם מרכבה",
+            "city": "6600",
+            "address": "המרכבה 31, חולון, ישראל",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 103,
+            "storeName": "כל בו חצי חינם לחי",
+            "city": "8300",
+            "address": "הלחי 16 ראשל\"צ , ישראל",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 104,
+            "storeName": "כל בו חצי חינם שרונים",
+            "city": "9700",
+            "address": "הרקון 2 הוד השרון",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 105,
+            "storeName": "תוצרת חקלאית ירקות לחי",
+            "city": "8300",
+            "address": "לחי 16 , ראשון לציון , ישראל",
+            "chain": ""
+          },
+          {
+            "price": "89.90",
+            "priceUpdateDate": "2024-01-08T09:47:56.000Z",
+            "storeId": 107,
+            "storeName": "כל בו חצי חינם אם המושבות",
+            "city": "7900",
+            "address": "ראשון לציון 1 , פ\"ת , ישראל",
+            "chain": ""
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:07.926Z"
+    }
+  },
+  "7290008255318": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "7290008255318",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": null,
+          "manufactureCountry": null,
+          "manufacturerDescription": "פילה סלמון טרי",
+          "unitQty": null,
+          "quantity": null,
+          "isWeighted": false,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 121148,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2026-06-22T00:20:00.000Z",
+            "storeId": 194398,
+            "storeName": "יוניברס בית שמש- העליה",
+            "city": "2610",
+            "address": "העליה 1",
+            "chain": ""
+          },
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2024-11-18T00:54:00.000Z",
+            "storeId": 530,
+            "storeName": "שלי ת\"א- ארלוזורוב",
+            "city": "תל אביב",
+            "address": "ארלוזרוב 53",
+            "chain": ""
+          },
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2026-06-01T06:00:00.000Z",
+            "storeId": 534,
+            "storeName": "דיל חיפה- קרית אליעזר",
+            "city": "חיפה",
+            "address": "ככר מאירהוף",
+            "chain": ""
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:08.105Z"
+    }
+  },
+  "7290004244019": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "7290004244019",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": null,
+          "manufactureCountry": null,
+          "manufacturerDescription": "פילה סלמון טרי",
+          "unitQty": "קילוגרם",
+          "quantity": null,
+          "isWeighted": true,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 121148,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "119.00",
+            "priceUpdateDate": "2024-11-10T16:13:01.000Z",
+            "storeId": 104,
+            "storeName": "כל בו חצי חינם שרונים",
+            "city": "9700",
+            "address": "הרקון 2 הוד השרון",
+            "chain": ""
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:08.259Z"
+    }
+  },
+  "7290008255219": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "7290008255219",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": "סקינגסטיד",
+          "manufactureCountry": "NO",
+          "manufacturerDescription": "פילה סלמון טרי",
+          "unitQty": null,
+          "quantity": null,
+          "isWeighted": false,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 121148,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2026-06-05T06:22:00.000Z",
+            "storeId": 728,
+            "storeName": "שופרסל ONLINE",
+            "city": null,
+            "address": "WWW.SHUFERSAL.CO.IL",
+            "chain": ""
+          },
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2024-11-18T01:03:00.000Z",
+            "storeId": 907,
+            "storeName": "דיל בית שאן-ירושלים הבירה",
+            "city": "בית שאן",
+            "address": "ירושלים הבירה",
+            "chain": ""
+          },
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2026-06-01T06:00:00.000Z",
+            "storeId": 908,
+            "storeName": "יוניברס עפולה- כורש",
+            "city": "עפולה",
+            "address": "כורש 5",
+            "chain": ""
+          },
+          {
+            "price": "119.90",
+            "priceUpdateDate": "2025-07-28T08:18:00.000Z",
+            "storeId": 194376,
+            "storeName": "יוניברס עפולה- כורש",
+            "city": "7700",
+            "address": "כורש 5",
+            "chain": ""
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:08.411Z"
+    }
+  },
+  "7290002332329": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "data": {
+        "product": {
+          "itemCode": "7290002332329",
+          "itemName": "פילה סלמון טרי",
+          "itemType": null,
+          "manufacturerName": null,
+          "manufactureCountry": "NO, CL",
+          "manufacturerDescription": "פילה סלמון טרי",
+          "unitQty": null,
+          "quantity": "1.000",
+          "isWeighted": true,
+          "unitOfMeasure": null,
+          "qtyInPackage": null,
+          "groupId": 462403,
+          "normalizedName": "טרי סלמון פילה"
+        },
+        "prices": [
+          {
+            "price": "124.90",
+            "priceUpdateDate": "2025-12-10T08:22:38.000Z",
+            "storeId": 1735,
+            "storeName": "נתיבות מנהטן",
+            "city": null,
+            "address": null,
+            "chain": "מ. יוחננוף ובניו"
+          },
+          {
+            "price": "130.00",
+            "priceUpdateDate": "2026-07-28T08:03:56.000Z",
+            "storeId": 394,
+            "storeName": "אור עקיבא",
+            "city": null,
+            "address": "מיכאל גלהנשטיין 1",
+            "chain": "פוליצר"
+          },
+          {
+            "price": "130.00",
+            "priceUpdateDate": "2026-07-27T14:53:38.000Z",
+            "storeId": 392,
+            "storeName": "נתניה",
+            "city": null,
+            "address": "דודו דותן 10",
+            "chain": "פוליצר"
+          },
+          {
+            "price": "130.00",
+            "priceUpdateDate": "2026-07-27T12:52:49.000Z",
+            "storeId": 388,
+            "storeName": "קיסריה",
+            "city": null,
+            "address": "הרקיע  1 סי סנטר",
+            "chain": "פוליצר"
+          },
+          {
+            "price": "130.00",
+            "priceUpdateDate": "2026-07-28T06:25:32.000Z",
+            "storeId": 391,
+            "storeName": "פרדס חנה",
+            "city": null,
+            "address": "הגלעד 1",
+            "chain": "פוליצר"
+          },
+          {
+            "price": "130.00",
+            "priceUpdateDate": "2026-07-27T12:59:35.000Z",
+            "storeId": 387,
+            "storeName": "ויתקין",
+            "city": null,
+            "address": "דרך הכפר מרכז הכפר",
+            "chain": "פוליצר"
+          },
+          {
+            "price": "134.60",
+            "priceUpdateDate": "2026-03-08T11:54:37.000Z",
+            "storeId": 1737,
+            "storeName": "בית שאן",
+            "city": null,
+            "address": null,
+            "chain": "מ. יוחננוף ובניו"
+          },
+          {
+            "price": "134.90",
+            "priceUpdateDate": "2026-03-11T10:39:00.000Z",
+            "storeId": 1720,
+            "storeName": "תל אביב  נחלת יצחק",
+            "city": null,
+            "address": "unknown",
+            "chain": "מ. יוחננוף ובניו"
+          },
+          {
+            "price": "134.90",
+            "priceUpdateDate": "2026-03-08T14:27:00.000Z",
+            "storeId": 1727,
+            "storeName": "קניון הבאר",
+            "city": null,
+            "address": null,
+            "chain": "מ. יוחננוף ובניו"
+          },
+          {
+            "price": "134.90",
+            "priceUpdateDate": "2026-03-08T11:32:02.000Z",
+            "storeId": 1733,
+            "storeName": "רעננה",
+            "city": null,
+            "address": "נווה זמר",
+            "chain": "מ. יוחננוף ובניו"
+          },
+          {
+            "price": "134.90",
+            "priceUpdateDate": "2026-03-13T17:28:00.000Z",
+            "storeId": 1703,
+            "storeName": "מודיעין כרמים",
+            "city": null,
+            "address": null,
+            "chain": "מ. יוחננוף ובניו"
+          },
+          {
+            "price": "139.00",
+            "priceUpdateDate": "2026-07-16T21:50:00.000Z",
+            "storeId": 1760,
+            "storeName": "ניות- הרצוג",
+            "city": "ירושלים",
+            "address": "הרצוג 61",
+            "chain": "זול ובגדול בע\"מ"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T16:07:05.000Z",
+            "storeId": 1530,
+            "storeName": "וולט מרקט | הרצליה",
+            "city": "הרצליה",
+            "address": "משכית 22, הרצליה",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T08:29:13.000Z",
+            "storeId": 1531,
+            "storeName": "וולט מרקט | רעננה",
+            "city": "רעננה",
+            "address": "התעשיה 8, רעננה",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T19:10:24.000Z",
+            "storeId": 1532,
+            "storeName": "וולט מרקט | רחובות",
+            "city": "רחובות",
+            "address": "הרצל 201, רחובות",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1506,
+            "storeName": "וולט מרקט | מודיעין",
+            "city": "מודיעין-מכבים-רעות",
+            "address": "מתתיהו הכהן 1 מודיעין",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-15T15:43:57.000Z",
+            "storeId": 1507,
+            "storeName": "וולט מרקט | וולפסון",
+            "city": "תל אביב - יפו",
+            "address": "הלוחמים 11 תל אביב",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1509,
+            "storeName": "וולט מרקט | אור יהודה",
+            "city": "אור יהודה",
+            "address": "משה אביב 6, אור יהודה, Israel",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1510,
+            "storeName": "וולט מרקט | אשדוד",
+            "city": "אשדוד",
+            "address": "דוד המלך 18 אשדוד",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T09:52:46.000Z",
+            "storeId": 1518,
+            "storeName": "וולט מרקט | נתניה סנטר",
+            "city": "נתניה",
+            "address": "זנגביל 11, נתניה",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T20:30:26.000Z",
+            "storeId": 1519,
+            "storeName": "וולט מרקט | פלורנטין",
+            "city": "תל אביב - יפו",
+            "address": "קיבוץ גלויות 34 תל אביב",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T09:52:19.000Z",
+            "storeId": 1511,
+            "storeName": "וולט מרקט | קריית אליעזר",
+            "city": "חיפה",
+            "address": "תל אביב 11 חיפה",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T09:21:36.000Z",
+            "storeId": 1533,
+            "storeName": "וולט מרקט | קריית אונו",
+            "city": "קרית אונו",
+            "address": "הדובדבן 9 קריית אונו",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T08:07:19.000Z",
+            "storeId": 1534,
+            "storeName": "וולט מרקט | ירושלים תלפיות",
+            "city": "ירושלים",
+            "address": "האומן 17 ירושלים",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T10:59:18.000Z",
+            "storeId": 1535,
+            "storeName": "וולט מרקט | בן יהודה",
+            "city": "תל אביב - יפו",
+            "address": "בן יהודה 19, תל אביב",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T11:33:20.000Z",
+            "storeId": 1536,
+            "storeName": "וולט מרקט | נתניה פולג",
+            "city": "נס ציונה",
+            "address": "התרופה 4 נתניה",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1521,
+            "storeName": "וולט מרקט | בורסה",
+            "city": "רמת גן",
+            "address": "תובל 40, רמת גן",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1522,
+            "storeName": "וולט מרקט | לב הארץ",
+            "city": "כפר קאסם",
+            "address": "הזית 10, כפר קסאם",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1523,
+            "storeName": "וולט מרקט | סינמה סיטי ירושלים",
+            "city": "ירושלים",
+            "address": "שדרות יצחק רבין 10, ירושלים",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-15T20:36:05.000Z",
+            "storeId": 1524,
+            "storeName": "וולט מרקט | קריון",
+            "city": "קרית ביאליק",
+            "address": "דרך עכו 192 קרית ביאליק",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T10:25:58.000Z",
+            "storeId": 1525,
+            "storeName": "וולט מרקט | טופ דן",
+            "city": "תל אביב - יפו",
+            "address": "פנחס רוזן ,72 תל אביב",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-15T08:44:53.000Z",
+            "storeId": 1520,
+            "storeName": "וולט מרקט | רמת השרון",
+            "city": "רמת השרון",
+            "address": "החרש 8",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1512,
+            "storeName": "וולט מרקט | כפר סבא",
+            "city": "כפר סבא",
+            "address": "הסדנא 17, כפר סבא",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-14T11:54:43.000Z",
+            "storeId": 1513,
+            "storeName": "וולט מרקט | פתח תקווה",
+            "city": "פתח תקווה",
+            "address": "מוטה גור 5, פתח תקווה",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1514,
+            "storeName": "וולט מרקט | אשקלון",
+            "city": "אילון",
+            "address": "צה\"ל 29, אשקלון, Israel",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1515,
+            "storeName": "וולט מרקט | באר שבע",
+            "city": "באר שבע",
+            "address": "שדרות שז״ר 31 באר שבע",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T20:26:11.000Z",
+            "storeId": 1516,
+            "storeName": "וולט מרקט | ביאליק",
+            "city": "תל אביב - יפו",
+            "address": "ביאליק 79, רמת גן, Israel",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T09:39:59.000Z",
+            "storeId": 110034,
+            "storeName": "וולט מרקט | חדרה",
+            "city": "unknown",
+            "address": "מנא\"י 8, חדרה, Israel",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1517,
+            "storeName": "וולט מרקט | נאות שמיר",
+            "city": "רמלה",
+            "address": "רפאל איתן 17",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-15T20:20:33.000Z",
+            "storeId": 1526,
+            "storeName": "וולט מרקט | יד אליהו",
+            "city": null,
+            "address": "חרוץ 10 תל אביב",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1527,
+            "storeName": "וולט מרקט | הרובע",
+            "city": "ראשון לציון",
+            "address": "משה בקר 14",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-13T04:50:27.000Z",
+            "storeId": 1528,
+            "storeName": "וולט מרקט | נס ציונה",
+            "city": null,
+            "address": "החרש 18, נס ציונה, Israel",
+            "chain": "וולט מרקט"
+          },
+          {
+            "price": "152.30",
+            "priceUpdateDate": "2026-08-15T20:32:01.000Z",
+            "storeId": 1529,
+            "storeName": "וולט מרקט | ראשון מערב",
+            "city": null,
+            "address": "נח מוזס 2, ראשון לציון",
+            "chain": "וולט מרקט"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T11:53:08.564Z"
+    }
+  }
+}

@@ -24,6 +24,7 @@ import AppTextField from "../components/AppTextField";
 import GenericModal from "../components/GenericModal";
 import LiquidGlassContainer from "../components/LiquidGlassContainer";
 import ShoppingListCard from "../components/ShoppingListCard";
+import PriceComparison from "../components/PriceComparison";
 import { useLanguage } from "../context/LanguageContext";
 import {
   createShoppingList,
@@ -82,7 +83,7 @@ export default function ShoppingListsPage() {
     setIsLoadingLists(true);
     try {
       const data = await getShoppingLists();
-      setLists(data);
+      setLists(data.filter((list) => !list.ownerId));
     } catch (error) {
       setErrorMessage(error?.message || "Failed to load shopping lists");
     } finally {
@@ -427,6 +428,7 @@ export default function ShoppingListsPage() {
 
   return (
     <Stack spacing={2}>
+      <PriceComparison />
       {isLoadingLists
         ? Array.from({ length: 3 }).map((_, index) => (
             <Card key={`shopping-list-skeleton-${index}`}>
