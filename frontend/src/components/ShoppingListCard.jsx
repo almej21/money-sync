@@ -35,7 +35,6 @@ export default function ShoppingListCard({
   onNoteDraftChange,
   onSaveNote,
   isSavingNote,
-  formatCreatedAt,
   compactInputHeight,
   isRtl,
   direction,
@@ -269,18 +268,6 @@ export default function ShoppingListCard({
               );
             })}
           </List>
-          <Box
-            sx={{
-              mt: 1.25,
-              display: "flex",
-              direction: "ltr",
-              justifyContent: direction === "rtl" ? "flex-start" : "flex-end",
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              {t("createdAtLabel")} {formatCreatedAt(list.createdAt)}
-            </Typography>
-          </Box>
         </Collapse>
       </CardContent>
     </Card>

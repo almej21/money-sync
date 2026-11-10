@@ -63,6 +63,46 @@ export const COLOR_SCHEMES = {
     text: "#5f370e",
     white: "#ffffff",
   },
+  coral: {
+    primary: "#ad454b",
+    secondary: "#d16b70",
+    accent: "#f6d5d0",
+    background: "#fff5f3",
+    text: "#502629",
+    white: "#ffffff",
+  },
+  indigo: {
+    primary: "#494ca2",
+    secondary: "#7376c4",
+    accent: "#dcdcf7",
+    background: "#f5f5ff",
+    text: "#292b58",
+    white: "#ffffff",
+  },
+  teal: {
+    primary: "#176b6b",
+    secondary: "#378f8b",
+    accent: "#bce4df",
+    background: "#f0faf8",
+    text: "#173f3d",
+    white: "#ffffff",
+  },
+  sand: {
+    primary: "#87613d",
+    secondary: "#ad8961",
+    accent: "#ead9bd",
+    background: "#fbf7ef",
+    text: "#483425",
+    white: "#ffffff",
+  },
+  black: {
+    primary: "#000000",
+    secondary: "#666666",
+    accent: "#e1e1e1",
+    background: "#ffffff",
+    text: "#000000",
+    white: "#ffffff",
+  },
 };
 
 export const DEFAULT_COLOR_SCHEME_KEY = "forest";
@@ -70,11 +110,12 @@ export const COLORS = COLOR_SCHEMES[DEFAULT_COLOR_SCHEME_KEY];
 
 export function createThemeColors(base) {
   return {
+    mode: base.mode || "light",
     primary: {
       main: base.primary,
       light: base.secondary,
-      dark: base.text,
-      contrastText: base.white,
+      dark: base.primaryDark || base.text,
+      contrastText: base.primaryContrast || base.white,
     },
     secondary: {
       main: base.accent,
@@ -91,7 +132,7 @@ export function createThemeColors(base) {
       secondary: base.text,
     },
     menu: {
-      background: base.text,
+      background: base.menuBackground || base.text,
       text: base.white,
       selectedBackground: "rgba(255, 255, 255, 0.14)",
       selectedText: base.white,

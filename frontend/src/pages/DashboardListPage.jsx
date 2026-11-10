@@ -1,7 +1,7 @@
 import { NO_SOURCE_ACCOUNT_ID } from "../lib/accountFilter";
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
-import AddIcon from "@mui/icons-material/Add";
+import ManualExpenseButton from "../components/ManualExpenseButton";
 import {
   alpha,
   Box,
@@ -1340,9 +1340,7 @@ export default function DashboardListPage({ hideTotal = false }) {
               </>
             )}
           </Box>
-          <IconButton aria-label={t("addManualExpense")} title={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} sx={{ bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } }}>
-            <AddIcon />
-          </IconButton>
+          <ManualExpenseButton label={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} />
         </Typography>
       )}
       <Card
@@ -1563,9 +1561,9 @@ export default function DashboardListPage({ hideTotal = false }) {
                 variant="outlined"
                 sx={{
                   maxWidth: "100%",
-                  color: "background.default",
+                  color: "text.primary",
                   border: 0,
-                  bgcolor: "primary.main",
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16),
                 }}
               />
             ))}

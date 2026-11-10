@@ -363,19 +363,6 @@ export default function ShoppingListsPage() {
     }
   }
 
-  function formatCreatedAt(value) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleString(locale, {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
   function getItemNoteEditorKey(listId, itemId) {
     return `${String(listId || "").trim()}::${String(itemId || "").trim()}`;
   }
@@ -430,7 +417,7 @@ export default function ShoppingListsPage() {
     <Stack spacing={2}>
       <PriceComparison />
       {isLoadingLists
-        ? Array.from({ length: 3 }).map((_, index) => (
+        ? Array.from({ length: 2 }).map((_, index) => (
             <Card key={`shopping-list-skeleton-${index}`}>
               <CardContent
                 sx={{
@@ -513,7 +500,6 @@ export default function ShoppingListsPage() {
               onNoteDraftChange={onNoteDraftChange}
               onSaveNote={saveItemNote}
               isSavingNote={isSavingNote}
-              formatCreatedAt={formatCreatedAt}
               compactInputHeight={compactInputHeight}
               isRtl={isRtl}
               direction={direction}

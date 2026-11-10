@@ -367,6 +367,7 @@ export default function NavBar() {
               gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
               gap: 1,
               bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
               borderTop: `1px solid ${activePageBorderColor}`,
               transition: "top 180ms ease",
             }}

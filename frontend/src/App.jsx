@@ -164,6 +164,7 @@ function AppContent() {
           tooltip: 100100,
         },
         palette: {
+          mode: themeColors.mode,
           primary: themeColors.primary,
           secondary: themeColors.secondary,
           background: themeColors.background,
