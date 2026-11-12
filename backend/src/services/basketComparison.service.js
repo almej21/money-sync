@@ -23,9 +23,9 @@ function matches(store, filters) {
 export async function compareBasket(list, filters = {}, lookup = getProductPrices, context = {}) {
   if (!list.items.length) { const error = new Error("Shopping list is empty"); error.status = 400; throw error; }
   const items = list.items.map((item) => {
-    const products = item.selectionType === "exact" ? [item.productId] : item.selectionType === "same_name" ? item.productIds || [] : item.groupId?.products || [];
+    const products = item.selectionType === "exact" ? [item.productId] : (item.selectionType === "same_name" || item.selectionType === "canonical") ? item.productIds || [] : item.groupId?.products || [];
     const invalid = !Number.isSafeInteger(item.quantity) || item.quantity < 1 ||
-      (item.selectionType !== "exact" && item.selectionType !== "generic" && item.selectionType !== "same_name") ||
+      (item.selectionType !== "exact" && item.selectionType !== "generic" && item.selectionType !== "same_name" && item.selectionType !== "canonical") ||
       !products.length || products.some((p) => !p || typeof p.barcode !== "string" || !/^\d{1,20}$/.test(p.barcode));
     return { item, products: products.filter((p) => p && typeof p.barcode === "string" && /^\d{1,20}$/.test(p.barcode)), invalid };
   });
@@ -71,8 +71,12 @@ export async function compareBasket(list, filters = {}, lookup = getProductPrice
     return item.selectionType === "same_name" && specs.every(Boolean) ? effectivePriceProducts(specs) : specs;
   }
   function unitError(item, products) {
-    if (products.length < 2) return false;
     const specs = effectiveSpecs(item, products);
+    // PriceIL documents a 100 g basis, while real prices can resemble per-kg
+    // prices. Do not guess a conversion for any weighted selection.
+    if (specs.some((spec) => spec?.isWeighted === true)) return true;
+    if (item.selectionType === "canonical" && specs.some((spec) => spec && spec.isWeighted !== true)) return true;
+    if (products.length < 2) return false;
     if (specs.some((s) => !s)) return false; // Lookup errors are reported separately.
     const first = priceBasis(specs[0]);
     return !first || specs.some((spec) => priceBasis(spec)?.key !== first.key);
@@ -117,5 +121,5 @@ export async function compareBasket(list, filters = {}, lookup = getProductPrice
   for (const comparison of comparisons) { if (comparison.complete && !comparisonIncomplete) comparison.rank = ++rank; delete comparison._total; }
   const lookupFailures = [...results].filter(([, result]) => result.error).map(([barcode, result]) => ({ barcode, reason: result.error }));
   const invalidItems = items.filter(({ invalid }) => invalid).map(({ item }) => String(item._id));
-  return { comparedAt: new Date().toISOString(), currency: "ILS", comparisonIncomplete, stockStatus: "unknown", lookupFailures, invalidItems, stores: comparisons };
+  return { comparedAt: new Date().toISOString(), currency: "ILS", priceCoverage: "priceil_price_without_verified_promotions", comparisonIncomplete, stockStatus: "unknown", lookupFailures, invalidItems, stores: comparisons };
 }

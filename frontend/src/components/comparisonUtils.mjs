@@ -7,7 +7,7 @@ export function validRank(result, comparison) {
 }
 
 export function itemName(item, fallback) {
-  return item.productId?.name || item.productIds?.find((product) => product?.name)?.name || item.groupId?.name || item.description || fallback;
+  return (item.selectionType === "canonical" && item.description) || item.productId?.name || item.productIds?.find((product) => product?.name)?.name || item.groupId?.name || item.description || fallback;
 }
 
 export function selectionExists(items, barcodes) {

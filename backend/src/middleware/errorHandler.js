@@ -4,6 +4,10 @@ export function errorHandler(err, req, res, next) {
     `[ERROR] ${req.method} ${req.originalUrl} ${status} ${err.message || "Server error"}`,
   );
 
+  if (err.wizstore) {
+    console.error("[WIZSTORE] Upstream response", err.wizstore);
+  }
+
   if (err.stack) {
     console.error(err.stack);
   }

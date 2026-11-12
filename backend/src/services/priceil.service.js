@@ -1,6 +1,6 @@
 const BASE_URL = "https://api.priceil.dev";
 const TIMEOUT_MS = 8000;
-const CACHE_TTL_MS = 60_000;
+const CACHE_TTL_MS = 600_000;
 const MAX_CACHE_ENTRIES = 200;
 const cache = new Map();
 const pending = new Map();
@@ -25,16 +25,21 @@ async function request(path, params = {}) {
   if (cached) cache.delete(cacheKey);
   if (pending.has(cacheKey)) return pending.get(cacheKey);
 
-  const now = Date.now();
-  while (requestTimes.length && requestTimes[0] <= now - 60_000) requestTimes.shift();
-  if (requestTimes.length >= 20 || activeRequests >= 3) {
-    console.warn("[PRICEIL] request capacity exceeded", { path, requestsLastMinute: requestTimes.length, activeRequests });
-    throw new PriceilError("PriceIL request capacity exceeded; retry later", 503);
-  }
-  requestTimes.push(now);
-  activeRequests++;
 
   const operation = (async () => {
+    // Queue rather than failing comparisons containing many alternative barcodes.
+    // This limiter is per process; distributed deployments require shared coordination.
+    while (true) {
+      const now = Date.now();
+      while (requestTimes.length && requestTimes[0] <= now - 60_000) requestTimes.shift();
+      if (requestTimes.length < 20 && activeRequests < 3) {
+        requestTimes.push(now);
+        activeRequests++;
+        break;
+      }
+      const delay = requestTimes.length >= 20 ? Math.max(50, requestTimes[0] + 60_000 - now) : 50;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {

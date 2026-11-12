@@ -24,7 +24,7 @@ import AppTextField from "../components/AppTextField";
 import GenericModal from "../components/GenericModal";
 import LiquidGlassContainer from "../components/LiquidGlassContainer";
 import ShoppingListCard from "../components/ShoppingListCard";
-import PriceComparison from "../components/PriceComparison";
+import SelectedOffers from "../components/SelectedOffers";
 import { useLanguage } from "../context/LanguageContext";
 import {
   createShoppingList,
@@ -415,7 +415,7 @@ export default function ShoppingListsPage() {
 
   return (
     <Stack spacing={2}>
-      <PriceComparison />
+      <SelectedOffers />
       {isLoadingLists
         ? Array.from({ length: 2 }).map((_, index) => (
             <Card key={`shopping-list-skeleton-${index}`}>

@@ -1,0 +1,255 @@
+{
+  "info": {
+    "name": "WizStore — פילה סלמון טרי",
+    "description": "Set wizstore_api_key as a secret/current value in a Postman environment. Run requests in order to search and save a barcode; verify the selected product before using its prices. City defaults to חיפה. API documentation: https://wizbi.store/developers",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "wizstore_api_key=wzs_ApnfQDw2BWhuGCCjdpC8zy59y8PbXlNb",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://wizbi.store/api/v1"
+    },
+    {
+      "key": "productName",
+      "value": "פילה סלמון טרי"
+    },
+    {
+      "key": "city",
+      "value": "חיפה"
+    },
+    {
+      "key": "productCode",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Search for fresh salmon fillet",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/search?q={{encodedProduct}}&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["search"],
+          "query": [
+            {
+              "key": "q",
+              "value": "{{encodedProduct}}"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Search for the configured product. The first returned barcode is saved for the next request; check that the selected result is the product you want."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.unset('productCode');",
+              "pm.variables.set('encodedProduct', encodeURIComponent(pm.variables.get('productName')));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('JSON response with WizStore envelope', () => {",
+              "  pm.response.to.be.json;",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('as_of');",
+              "  pm.expect(body).to.have.property('source');",
+              "  pm.expect(body).to.have.property('attribution');",
+              "  pm.expect(body).to.have.property('data');",
+              "});",
+              "pm.collectionVariables.unset('productCode');",
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json().data;",
+              "  pm.test('Search returns product results', () => pm.expect(data.results).to.be.an('array').that.is.not.empty);",
+              "  const first = Array.isArray(data.results) && data.results.find(item => /^[0-9]{6,14}$/.test(String(item.code || '')));",
+              "  pm.test('A result has a valid barcode', () => pm.expect(first, 'No usable barcode in search results').to.exist);",
+              "  if (first) { pm.collectionVariables.set('productCode', String(first.code)); console.log('Selected product:', first.name, first.code); }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get selected product prices",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/products/{{productCode}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["products", "{{productCode}}"]
+        },
+        "description": "Run the search first, or set productCode manually to a known 6–14 digit barcode. Inspect the returned product name and prices."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!/^[0-9]{6,14}$/.test(String(pm.variables.get('productCode') || ''))) { throw new Error('Run the search first or set productCode to a valid barcode.'); }"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('JSON response with WizStore envelope', () => {",
+              "  pm.response.to.be.json;",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('as_of');",
+              "  pm.expect(body).to.have.property('source');",
+              "  pm.expect(body).to.have.property('attribution');",
+              "  pm.expect(body).to.have.property('data');",
+              "});",
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json().data;",
+              "  pm.test('Product matches requested barcode', () => pm.expect(String(data.code)).to.eql(String(pm.variables.get('productCode'))));",
+              "  pm.test('Product has a name', () => pm.expect(data.name).to.be.a('string').and.not.empty);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Compare salmon across chains",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/basket/chains?items={{encodedProduct}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["basket", "chains"],
+          "query": [
+            {
+              "key": "items",
+              "value": "{{encodedProduct}}"
+            }
+          ]
+        },
+        "description": "Compare the salmon item across chains. Matches are chosen by WizStore, so inspect the response for the matched item."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('encodedProduct', encodeURIComponent(pm.variables.get('productName')));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('JSON response with WizStore envelope', () => {",
+              "  pm.response.to.be.json;",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('as_of');",
+              "  pm.expect(body).to.have.property('source');",
+              "  pm.expect(body).to.have.property('attribution');",
+              "  pm.expect(body).to.have.property('data');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Price salmon in a city",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/basket",
+          "host": ["{{baseUrl}}"],
+          "path": ["basket"]
+        },
+        "description": "Compare branches in the configured city. Change city in collection variables; check the response for the matched product.",
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.request.body.update(JSON.stringify({ items: [pm.variables.get('productName')], city: pm.variables.get('city') }));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('JSON response with WizStore envelope', () => {",
+              "  pm.response.to.be.json;",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('as_of');",
+              "  pm.expect(body).to.have.property('source');",
+              "  pm.expect(body).to.have.property('attribution');",
+              "  pm.expect(body).to.have.property('data');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

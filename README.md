@@ -23,6 +23,22 @@ npm install
 npm install --workspaces
 ```
 
+## Store-specific shopping offers
+
+The shopping-list screen lets a user save individual WizStore offers, group them
+by store, and refresh their saved prices. Set WIZSTORE_API_KEY in backend/.env;
+Lambda receives the same variable. Never commit or expose the key to the browser.
+The WizStore developer plan is for development and non-commercial use; check the
+provider terms and attribution requirements before production use.
+
+Choose up to 10 cities per list. Search returns at most 20 products and price
+lookup returns at most five stores for each product in each city. One basket
+request is made per city; opening and refreshing offers consume provider quota.
+Each saved price is a one-unit snapshot, not a live price guarantee. A refresh
+preserves the old snapshot if the selected store no longer appears in the limited
+results. Verify promotion conditions and product units before comparing prices.
+Totals add selected quotes and do not guarantee availability or checkout prices.
+
 ## Catalog API
 
 The authenticated catalog endpoints use PriceIL's public API. Set the optional

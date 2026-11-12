@@ -1,3 +1,4 @@
+import { findCanonical, canonicalCandidates } from "../data/canonicalProducts.js";
 import { effectivePriceProducts, priceBasis } from "../utils/productPriceBasis.js";
 import localities from "../data/israel-localities.json" with { type: "json" };
 import * as priceil from "../services/priceil.service.js";
@@ -14,6 +15,17 @@ export async function searchCatalog(req, res, next) {
   const cities = cityValues?.flatMap((value) => value.split(",").map((city) => city.trim()));
   if (cities && (!cities.length || cities.length > 50 || cities.some((city) => !city || city.length > 100))) return res.status(400).json({ message: "Invalid cities" });
   try {
+    const mappings = findCanonical(q.trim());
+    if (mappings.length) {
+      const products = [];
+      for (const mapping of mappings) {
+        const result = await priceil.searchGroups(mapping.name);
+        const candidates = canonicalCandidates(mapping, result);
+        const eligible = candidates.filter((item) => item.isWeighted === true);
+        products.push({ name: mapping.name, canonicalId: mapping.id, basis: "kg", barcodes: eligible.map((item) => item.itemCode), excludedUnknown: candidates.length - eligible.length });
+      }
+      return res.json({ data: { products, coverage: "canonical_first_page_only" } });
+    }
     const result = await priceil.searchProducts(q.trim());
     if (!result || !Array.isArray(result.allOthers) || !(result.bestMatch === null || typeof result.bestMatch === "object")) {
       const error = new Error("Invalid response from PriceIL"); error.status = 502; throw error;

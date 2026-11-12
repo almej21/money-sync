@@ -1,3 +1,4 @@
+import { updateSelectedCities, addSelectedOffer, refreshSelectedOffer } from "../controllers/shoppingListController.js";
 import { Router } from "express";
 import { createShoppingList, listShoppingLists, getShoppingList, renameShoppingList, deleteShoppingList, addShoppingItem, updateShoppingItem, deleteShoppingItem, compareShoppingList, shoppingListErrorHandler, updateLegacyShoppingList, toggleLegacyShoppingItem } from "../controllers/shoppingListController.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -11,6 +12,9 @@ router.get("/:id", asyncRoute(getShoppingList));
 router.put("/:id", asyncRoute(updateLegacyShoppingList));
 router.patch("/:id/items/:itemId/toggle", asyncRoute(toggleLegacyShoppingItem));
 router.patch("/:id", asyncRoute(renameShoppingList));
+router.put("/:id/cities", asyncRoute(updateSelectedCities));
+router.post("/:id/offers", asyncRoute(addSelectedOffer));
+router.post("/:id/offers/:itemId/refresh", asyncRoute(refreshSelectedOffer));
 router.delete("/:id", asyncRoute(deleteShoppingList));
 router.post("/:id/items", asyncRoute(addShoppingItem));
 router.post("/:id/compare", asyncRoute(compareShoppingList));

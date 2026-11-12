@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 
 const itemSchema = new mongoose.Schema({
-  selectionType: { type: String, enum: ["exact", "generic", "same_name"] },
+  selectionType: { type: String, enum: ["exact", "generic", "same_name", "canonical", "offer"] },
+  offer: { type: mongoose.Schema.Types.Mixed },
+  canonicalId: { type: String },
   description: { type: String },
   note: { type: String, default: "" },
   completed: { type: Boolean, default: false },
@@ -15,13 +17,16 @@ const itemSchema = new mongoose.Schema({
 itemSchema.pre("validate", function (next) {
   if ((this.selectionType === "exact" && (!this.productId || this.groupId)) ||
       (this.selectionType === "generic" && (!this.groupId || this.productId)) ||
-      (this.selectionType === "same_name" && (this.productId || this.groupId || !this.productIds.length))) {
+      ((this.selectionType === "same_name" || this.selectionType === "canonical") && (this.productId || this.groupId || !this.productIds.length)) ||
+      (this.selectionType === "canonical" && !this.canonicalId) ||
+      (this.selectionType === "offer" && (!this.offer || this.productId || this.groupId || this.productIds.length))) {
     this.invalidate("selectionType", "Selection must reference exactly one matching product or group");
   }
   if (!this.selectionType && !this.description) this.invalidate("description", "Description is required");
   next();
 });
 const schema = new mongoose.Schema({
+  selectedCities: [{ type: String }],
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   householdId: { type: mongoose.Schema.Types.ObjectId, ref: "Household" },
   title: { type: String, trim: true },

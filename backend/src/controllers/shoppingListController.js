@@ -1,3 +1,7 @@
+import { getWizOffers } from "../services/wizstore.service.js";
+import { resolveCity } from "./wizstoreController.js";
+import { getCanonical, canonicalCandidates } from "../data/canonicalProducts.js";
+import { searchGroups } from "../services/priceil.service.js";
 import { effectivePriceProducts, priceBasis } from "../utils/productPriceBasis.js";
 import { randomUUID } from "node:crypto";
 import localities from "../data/israel-localities.json" with { type: "json" };
@@ -77,8 +81,62 @@ export async function deleteShoppingList(req, res) {
   if (!deleted) return notFound(res);
   return res.json({ success: true });
 }
+export async function updateSelectedCities(req, res) {
+  if (!allowedKeys(req.body, ["cities"]) || !Array.isArray(req.body.cities) || req.body.cities.length > 10 || new Set(req.body.cities).size !== req.body.cities.length || req.body.cities.some((id) => typeof id !== "string" || !resolveCity(id))) return invalid(res, "Invalid cities");
+  const list = await findOwned(req, res); if (!list) return;
+  list.selectedCities = req.body.cities;
+  await list.save(); return res.json(await populate(list));
+}
+async function lookupOffer(code, cityId, chainKey, storeId) {
+  const city = resolveCity(cityId);
+  if (!/^\d{6,14}$/.test(code || "") || !city || typeof chainKey !== "string" || !chainKey || typeof storeId !== "string" || !storeId) { const e = new Error("Invalid offer"); e.status = 400; throw e; }
+  const result = await getWizOffers(code, city);
+  const offer = result.offers.find((entry) => entry.chainKey === chainKey && entry.storeId === storeId);
+  if (!offer) { const e = new Error("Offer is no longer in the available results; search again"); e.status = 409; throw e; }
+  return { ...offer, cityId, fetchedAt: new Date().toISOString() };
+}
+export async function addSelectedOffer(req, res) {
+  if (!allowedKeys(req.body, ["code", "cityId", "chainKey", "storeId"])) return invalid(res, "Invalid offer fields");
+  const list = await findOwned(req, res); if (!list) return;
+  if (!(list.selectedCities || []).includes(req.body.cityId)) return invalid(res, "Choose a store in a selected city");
+  const offer = await lookupOffer(req.body.code, req.body.cityId, req.body.chainKey, req.body.storeId);
+  if (list.items.some((item) => item.selectionType === "offer" && item.offer?.code === offer.code && item.offer?.cityId === offer.cityId && item.offer?.chainKey === offer.chainKey && item.offer?.storeId === offer.storeId)) return res.status(409).json({ message: "Offer already exists in this list" });
+  list.items.push({ selectionType: "offer", description: offer.name, offer, quantity: 1 });
+  await list.save(); return res.status(201).json(await populate(list));
+}
+export async function refreshSelectedOffer(req, res) {
+  if (!validId(req.params.itemId)) return invalid(res, "Invalid item id");
+  const list = await findOwned(req, res); if (!list) return;
+  const item = list.items.id(req.params.itemId);
+  if (!item || item.selectionType !== "offer" || !item.offer) return res.status(404).json({ message: "Offer not found" });
+  item.offer = await lookupOffer(item.offer.code, item.offer.cityId, item.offer.chainKey, item.offer.storeId);
+  item.markModified("offer"); await list.save(); return res.json(await populate(list));
+}
 export async function addShoppingItem(req, res) {
-  if (!allowedKeys(req.body, ["selectionType", "productId", "groupId", "barcode", "barcodes", "quantity"])) return invalid(res, "Invalid item fields");
+  if (!allowedKeys(req.body, ["selectionType", "productId", "groupId", "barcode", "barcodes", "quantity", "canonicalId"])) return invalid(res, "Invalid item fields");
+  if (req.body.selectionType === "canonical") {
+    if (!allowedKeys(req.body, ["selectionType", "canonicalId", "quantity"]) || !getCanonical(req.body.canonicalId) || (req.body.quantity !== undefined && !validQuantity(req.body.quantity))) return invalid(res, "Invalid canonical product or quantity");
+    const list = await findOwned(req, res);
+    if (!list) return;
+    const mapping = getCanonical(req.body.canonicalId);
+    if (list.items.some((item) => item.selectionType === "canonical" && item.canonicalId === mapping.id)) return res.status(409).json({ message: "Item already exists in this list" });
+    const result = await searchGroups(mapping.name);
+    const sources = canonicalCandidates(mapping, result).filter((item) => item.isWeighted === true);
+    if (!sources.length) return res.status(404).json({ message: "No comparable products with a known weight basis found" });
+    if (sources.length > 100) return res.status(400).json({ message: "Too many matching products to compare" });
+    const products = [];
+    for (const source of sources) {
+      const barcode = source.itemCode;
+      const packageSize = [source.quantity, source.unitQty].filter((part) => typeof part === "string" && part.trim()).join(" ");
+      let product;
+      try { product = await Product.findOneAndUpdate({ barcode }, { $setOnInsert: { barcode, name: source.itemName.trim(), brand: typeof source.manufacturerName === "string" ? source.manufacturerName.trim() : "", packageSize } }, { upsert: true, new: true, runValidators: true }); }
+      catch (err) { if (err.code !== 11000) throw err; product = await Product.findOne({ barcode }); if (!product) throw err; }
+      products.push(product);
+    }
+    list.items.push({ selectionType: "canonical", canonicalId: mapping.id, description: mapping.name, productIds: products.map((p) => p._id), quantity: req.body.quantity ?? 1 });
+    await list.save();
+    return res.status(201).json(await populate(list));
+  }
   if (req.body.selectionType === "same_name") {
     const { barcodes, quantity } = req.body;
     if (!allowedKeys(req.body, ["selectionType", "barcodes", "quantity"]) || !Array.isArray(barcodes) || !barcodes.length || barcodes.length > 21 || new Set(barcodes).size !== barcodes.length || barcodes.some((code) => typeof code !== "string" || !/^\d{1,20}$/.test(code)) || (quantity !== undefined && !validQuantity(quantity))) return invalid(res, "Invalid barcodes or quantity");
@@ -152,7 +210,7 @@ export async function updateShoppingItem(req, res) {
   if (!list) return;
   const item = list.items.id(req.params.itemId);
   if (!item) return res.status(404).json({ message: "Item not found" });
-  if (item.selectionType === "same_name" && Object.keys(req.body).every((key) => key === "quantity")) {
+  if ((item.selectionType === "same_name" || item.selectionType === "canonical") && Object.keys(req.body).every((key) => key === "quantity")) {
     item.quantity = req.body.quantity;
     await list.save();
     return res.json(await populate(list));

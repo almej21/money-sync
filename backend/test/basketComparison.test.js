@@ -52,7 +52,7 @@ test("separates missing prices and failures and never ranks uncertain baskets", 
   assert.deepEqual(failed.lookupFailures, [{ barcode: "222", reason: "lookup_failed" }]);
   const weighted = await compareBasket(basic, {}, async (barcode) => barcode === "222" ? data(barcode, [], true) : lookup(barcode));
   assert.equal(weighted.lookupFailures.length, 0);
-  assert.equal(weighted.stores[0].missingItems[0].reason, "price_unavailable");
+  assert.equal(weighted.stores[0].missingItems[0].reason, "incompatible_or_unknown_units");
   const malformed = await compareBasket(basic, {}, async (barcode) => barcode === "222" ? data(barcode, [entry(1, "0.001")]) : lookup(barcode));
   assert.equal(malformed.lookupFailures[0].reason, "lookup_failed");
 });
@@ -81,27 +81,24 @@ test("same-name selections choose the cheapest compatible barcode and reject unk
   assert.equal(unknown.stores[0].rank, null);
 });
 
-test("weighted products compare prices per kilogram, but mixed selections are rejected", async () => {
+test("weighted products and mixed selections are not ranked when the price basis is unverified", async () => {
   const basket = { items: [{ _id: "a", selectionType: "same_name", productIds: [p("111"), p("222")], quantity: 2 }] };
   const lookup = async (barcode) => data(barcode, [entry(1, barcode === "111" ? "89.90" : "90.00")], true);
   const result = await compareBasket(basket, {}, lookup);
-  assert.equal(result.stores[0].totalPrice, "179.80");
-  assert.equal(result.stores[0].selectedProducts[0].priceBasis, "kg");
-  assert.equal(result.stores[0].rank, 1);
+  assert.equal(result.stores[0].totalPrice, null);
+  assert.equal(result.stores[0].missingItems[0].reason, "incompatible_or_unknown_units");
+  assert.equal(result.stores[0].rank, null);
   const mixed = await compareBasket(basket, {}, async (barcode) => data(barcode, [entry(1, "2.00")], barcode === "111"));
   assert.equal(mixed.comparisonIncomplete, true);
   assert.equal(mixed.stores[0].missingItems[0].reason, "incompatible_or_unknown_units");
 });
 
-test("mixed same-name selection uses inferred weighted basis and most common metadata", async () => {
+test("inferred weighted items are not ranked when the price basis is unverified", async () => {
   const basket = { items: [{ _id: "a", selectionType: "same_name", productIds: [p("111"), p("222"), p("333")], quantity: 2 }] };
   const result = await compareBasket(basket, {}, async (barcode) => ({ product: { itemCode: barcode, itemName: "Salmon", isWeighted: barcode === "111", unitQty: barcode === "333" ? null : "kg", quantity: barcode === "111" ? "1" : null }, prices: [entry(1, barcode === "222" ? "5.00" : "10.00")] }));
-  assert.equal(result.stores[0].totalPrice, "10.00");
-  assert.equal(result.stores[0].selectedProducts[0].product.barcode, "222");
-  assert.equal(result.stores[0].selectedProducts[0].priceBasis, "kg");
-  assert.equal(result.stores[0].selectedProducts[0].inferredWeighted, true);
-  assert.equal(result.stores[0].selectedProducts[0].effectiveUnitQty, "kg");
-  assert.equal(result.stores[0].selectedProducts[0].effectiveProductQuantity, "1");
+  assert.equal(result.stores[0].totalPrice, null);
+  assert.equal(result.stores[0].rank, null);
+  assert.equal(result.stores[0].missingItems[0].reason, "incompatible_or_unknown_units");
 });
 
 test("comparison controller validates filters and scopes lookup to authenticated owner", async (t) => {

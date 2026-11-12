@@ -1,0 +1,153 @@
+{
+  "info": {
+    "name": "Money Sync — current WizStore API requests",
+    "description": "Direct requests to the same WizStore endpoints used by Money Sync. Set wizstore_api_key as a secret current value in a Postman environment (from your WIZSTORE_API_KEY); no API key is stored in this collection. Search returns WizStore’s raw response before Money Sync filters and sorts it. Basket uses one barcode and one city per request; Money Sync makes one basket request per selected city, and repeats it when saving or refreshing an offer. Barcode and city are independent of search, so set barcode to a result you want to inspect. Requests consume WizStore quota.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{wizstore_api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://wizbi.store/api/v1"
+    },
+    {
+      "key": "query",
+      "value": "פילה סלמון טרי"
+    },
+    {
+      "key": "barcode",
+      "value": "7290002114109"
+    },
+    {
+      "key": "city",
+      "value": "חולון"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Search products",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/search?q={{encodedQuery}}&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "{{encodedQuery}}"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Same GET /search request as searchWizProducts. Change query in collection variables. The backend retains results with a valid 6–14 digit barcode and a name; it exposes code, name, manufacturer and min_effective."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('encodedQuery', encodeURIComponent(pm.variables.get('query') || ''));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('WizStore responds with HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response is JSON and contains data', () => { pm.response.to.be.json; pm.expect(pm.response.json()).to.have.property('data'); });",
+              "if (pm.response.code === 200) { pm.test('Search results are an array', () => pm.expect(pm.response.json().data.results).to.be.an('array')); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Find store offers for a product in one city",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/basket",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "basket"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\"{{barcode}}\"],\n  \"city\": \"{{city}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Same POST /basket request as getWizOffers. Set barcode and city in collection variables. The backend checks the matched barcode and retains complete stores with a valid effective_total. This is also the upstream request made when saving or refreshing a selected offer; responses are capped by WizStore."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.request.body.update(JSON.stringify({ items: [String(pm.variables.get('barcode') || '')], city: String(pm.variables.get('city') || '') }));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('WizStore responds with HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response is JSON and contains data', () => { pm.response.to.be.json; pm.expect(pm.response.json()).to.have.property('data'); });",
+              "if (pm.response.code === 200) {",
+              "  const data = pm.response.json().data;",
+              "  pm.test('Basket returns a stores array', () => pm.expect(data.cheapest_stores).to.be.an('array'));",
+              "  pm.test('Basket matched the requested barcode', () => pm.expect(String(data.items?.[0]?.matched?.code)).to.eql(String(pm.variables.get('barcode'))));",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
