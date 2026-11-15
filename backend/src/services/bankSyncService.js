@@ -4,6 +4,7 @@ import { normalizeExpenseCategory } from "../utils/categoryNormalization.js";
 import { assertSupportedNodeVersion } from "../utils/nodeVersion.js";
 import { normalizeScrapedTransactions } from "./bankImporter.js";
 import { decryptValue } from "./credentialCrypto.js";
+import { configureMaxIdChallenge } from "./maxIdChallenge.js";
 import {
   buildExpenseUpsertFilter,
   createExpenseDedupKey,
@@ -922,6 +923,9 @@ async function scrapeWithAutomationFallback({
           attempt.additionalTransactionInformation,
         ...browserLaunchOverrides,
       });
+      if (activeCreds.companyId === "max") {
+        configureMaxIdChallenge(scraper, scrapeCredentials.nationalID);
+      }
       if (typeof scraper.onProgress === "function") {
         scraper.onProgress((companyId, payload) => {
           const progressType = String(payload?.type || "-");
