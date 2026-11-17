@@ -1,0 +1,88 @@
+.horizontal-date-range-picker__window {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.horizontal-date-range-picker__viewport {
+  --picker-item-width: 112px;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  gap: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 4px 0;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 max(0px, calc(50% - var(--picker-item-width) / 2)),
+    #000 min(100%, calc(50% + var(--picker-item-width) / 2)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 max(0px, calc(50% - var(--picker-item-width) / 2)),
+    #000 min(100%, calc(50% + var(--picker-item-width) / 2)),
+    transparent
+  );
+}
+
+.horizontal-date-range-picker__viewport::before,
+.horizontal-date-range-picker__viewport::after {
+  content: "";
+  flex: 0 0 max(0px, calc((100% - var(--picker-item-width)) / 2));
+}
+
+.horizontal-date-range-picker__viewport::-webkit-scrollbar {
+  display: none;
+}
+.horizontal-date-range-picker__viewport.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+
+.horizontal-date-range-picker__item {
+  position: relative;
+  flex: 0 0 min(85%, max(108px, calc(100% / 5 - 20px)));
+  min-width: 0;
+  scroll-snap-align: center;
+}
+
+.horizontal-date-range-picker__option {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    color 160ms,
+    background-color 160ms,
+    border-color 160ms;
+}
+
+.horizontal-date-range-picker__option:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .horizontal-date-range-picker__option {
+    transition: none;
+  }
+}

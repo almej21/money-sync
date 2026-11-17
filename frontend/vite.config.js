@@ -92,6 +92,18 @@ function iconVersionPlugin() {
 
 export default defineConfig({
   plugins: [react(), iconVersionPlugin()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        configure(proxy) {
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.removeHeader("origin");
+          });
+        },
+      },
+    },
+  },
   define: {
     __APP_COMMIT_DATE_ISO__: JSON.stringify(commitDateIso),
     __APP_ICON_VERSION__: JSON.stringify(appIconVersion),

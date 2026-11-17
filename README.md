@@ -23,6 +23,16 @@ npm install
 npm install --workspaces
 ```
 
+## Access the development app from another device
+
+Start the backend with `npm run dev -w backend` and the frontend with
+`npm run dev -w frontend -- --host`. Open the network address printed by Vite
+on a device connected to the same network. Vite forwards `/api` requests to
+the backend on port 4000, so the other device only needs access to the Vite
+port. Restart the frontend after changing environment files. If an existing
+`frontend/.env.local` sets `VITE_API_URL`, remove that setting or set it to
+`/api` for local development.
+
 ## Keep Frontend Prod API URL In Sync
 
 After backend deploys, run:

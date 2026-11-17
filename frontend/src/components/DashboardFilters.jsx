@@ -26,7 +26,9 @@ import {
 import { useMemo, useState } from "react";
 import AppTextField from "./AppTextField";
 import Dropdown from "./Dropdown";
+import HorizontalDateRangePicker from "./HorizontalDateRangePicker";
 import { formatIlsAmount } from "../lib/currency";
+import { useLanguage } from "../context/LanguageContext";
 
 const ltrSliderCache = createCache({ key: "mui-slider-ltr" });
 
@@ -53,7 +55,6 @@ export default function DashboardFilters({
   customEndDate,
   onCustomStartDateChange,
   onCustomEndDateChange,
-  lastSixMonthOptions,
   sortBy,
   onSortByChange,
   showSort = true,
@@ -69,6 +70,7 @@ export default function DashboardFilters({
   footerContent,
 }) {
   const theme = useTheme();
+  const { locale } = useLanguage();
   const [isWindowOpen, setIsWindowOpen] = useState(false);
   const ltrSliderTheme = useMemo(
     () =>
@@ -202,23 +204,24 @@ export default function DashboardFilters({
                   ))}
                 </Dropdown>
 
-                <Dropdown
-                    labelId="time-range-label"
-                    value={timeRange}
-                    label={labelWithIcon(t("timeRange"), AccessTimeOutlinedIcon)}
-                    labelShrink
-                    onChange={(event) => onTimeRangeChange(event.target.value)}
-                    sx={{ width: "100%" }}
-                >
-                  <MenuItem value="this_month">{t("thisMonth")}</MenuItem>
-                  <MenuItem value="custom_range">{t("customRange")}</MenuItem>
-                  <MenuItem value="all_time">{t("allTime")}</MenuItem>
-                  {lastSixMonthOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Dropdown>
+                <Box sx={{ gridColumn: { sm: "1 / -1" }, minWidth: 0 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    {labelWithIcon(t("timeRange"), AccessTimeOutlinedIcon)}
+                  </Typography>
+                  <HorizontalDateRangePicker
+                    value={timeRange.replace(/^month_(\d{4})_(\d{2})$/, "$1-$2")}
+                    onChange={(nextValue) => onTimeRangeChange(
+                      nextValue.replace(/^(\d{4})-(\d{2})$/, "month_$1_$2"),
+                    )}
+                    locale={locale}
+                    labels={{
+                      thisMonth: t("thisMonth"),
+                      customRange: t("customRange"),
+                      allTime: t("allTime"),
+                      dateRange: t("timeRange"),
+                    }}
+                  />
+                </Box>
                 {timeRange === "custom_range" && (
                   <Stack
                     direction="row"
