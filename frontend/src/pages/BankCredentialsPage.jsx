@@ -132,7 +132,6 @@ export default function BankCredentialsPage() {
     visibilityScope: "shared",
     credentials: {},
   });
-  const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncingConnectionId, setSyncingConnectionId] = useState("");
@@ -174,6 +173,12 @@ export default function BankCredentialsPage() {
   const [isManualExpenseEditModalOpen, setIsManualExpenseEditModalOpen] =
     useState(false);
   const canManageBankConnections = (user?.role || "manager") === "manager";
+  const lastSuccessfulSyncAt = useMemo(() => {
+    const timestamps = connections
+      .map((connection) => new Date(connection?.lastBankFetchAt || "").getTime())
+      .filter(Number.isFinite);
+    return timestamps.length ? new Date(Math.max(...timestamps)) : null;
+  }, [connections]);
 
   const selectedProvider = useMemo(
     () =>
@@ -232,7 +237,6 @@ export default function BankCredentialsPage() {
             nextConnections.filter((item) => item.connected).length,
         ),
       );
-      setUpdatedAt(statusData.updatedAt || null);
       setForm({
         companyId,
         connectionName: "",
@@ -555,6 +559,7 @@ export default function BankCredentialsPage() {
       });
 
       setSuccess(t("bankConnectionSaved"));
+      setIsAddAccountExpanded(false);
       setForm((prev) => ({
         ...prev,
         connectionName: "",
@@ -712,9 +717,9 @@ export default function BankCredentialsPage() {
                 <Typography>{`${t("connectedAccounts")} ${connectedCount}`}</Typography>
               )}
             </Stack>
-            {!loading && updatedAt && (
+            {!loading && lastSuccessfulSyncAt && (
               <Typography color="text.primary">
-                {t("lastUpdated")}: {formatFetchTimestamp(updatedAt)}
+                {t("lastUpdated")}: {formatFetchTimestamp(lastSuccessfulSyncAt)}
               </Typography>
             )}
           </Stack>

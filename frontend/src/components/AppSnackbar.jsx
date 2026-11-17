@@ -33,7 +33,7 @@ export default function AppSnackbar({
           {
             zIndex: (theme) =>
               Math.max(theme.zIndex.snackbar, theme.zIndex.modal + 1000),
-            left: { xs: 8, sm: "auto" },
+            left: { xs: 8, sm: "50%" },
             right: { xs: 8, sm: "auto" },
             maxWidth: {
               xs: "calc(100vw - 16px)",

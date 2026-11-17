@@ -25,15 +25,23 @@ npm install --workspaces
 
 ## Store-specific shopping offers
 
-The shopping-list screen lets a user save individual WizStore offers, group them
-by store, and refresh their saved prices. Set WIZSTORE_API_KEY in backend/.env;
+Product search uses WizStore. Store discovery uses Open Israeli Supermarkets for
+Hazi Hinam, Osher Ad, Rami Levy, Yohananof and Super Sapir in the selected cities.
+Set `OPEN_SUPERMARKETS_API_TOKEN` in `backend/.env` and in the Lambda deployment
+environment; get the token from the provider. Store listings do not guarantee
+stock and the WizStore national minimum is not a store-specific quote. An
+optional separate WizStore lookup returns priced offers that can be saved.
+Existing saved quotes remain visible and can still be refreshed through WizStore.
+
+Saved WizStore offers are grouped by store and can be refreshed.
+Set WIZSTORE_API_KEY in backend/.env;
 Lambda receives the same variable. Never commit or expose the key to the browser.
 The WizStore developer plan is for development and non-commercial use; check the
 provider terms and attribution requirements before production use.
 
-Choose up to 10 cities per list. Search returns at most 20 products and price
-lookup returns at most five stores for each product in each city. One basket
-request is made per city; opening and refreshing offers consume provider quota.
+Choose up to 10 cities per list. Search returns at most 20 products. Requesting
+priced offers and saving or refreshing an offer uses WizStore basket requests;
+the provider returns at most five stores per product and city for those requests.
 Each saved price is a one-unit snapshot, not a live price guarantee. A refresh
 preserves the old snapshot if the selected store no longer appears in the limited
 results. Verify promotion conditions and product units before comparing prices.

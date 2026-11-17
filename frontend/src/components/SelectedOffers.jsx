@@ -1,3 +1,5 @@
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import ShoppingBasketOutlinedIcon from "@mui/icons-material/ShoppingBasketOutlined";
@@ -23,6 +25,7 @@ import {
   createShoppingList,
   deleteShoppingList,
   getLocalities,
+  getProductStores,
   getShoppingLists,
   getWizOffers,
   refreshSelectedOffer,
@@ -35,7 +38,7 @@ import {
 const copy = {
   he: {
     title: "רשימת קניות לפי חנות",
-    subtitle: "בחרו מוצר, סניף ומחיר לכל פריט.",
+    subtitle: "חפשו מוצר והציגו סניפים בערים שנבחרו.",
     newList: "שם רשימה חדשה",
     create: "יצירת רשימה",
     chooseList: "בחירת רשימה",
@@ -48,14 +51,22 @@ const copy = {
     searching: "מחפש…",
     noProducts: "לא נמצאו מוצרים.",
     showMore: "הצגת מוצרים נוספים",
+    showLess: "הצגת פחות מוצרים",
     choose: "הצגת חנויות",
     close: "סגירה",
-    offers: "חנויות ומחירים",
+    offers: "חנויות מדווחות",
+    storeNote:
+      "נתוני הסניפים מ-Open Israeli Supermarkets. המחיר הארצי אינו מחיר לסניף, והרישום אינו מבטיח מלאי.",
+    loadQuotes: "הצגת הצעות מחיר מ-WizStore",
+    quoteNote: "הצעות אלה נשלפות בנפרד מ-WizStore וצורכות ממכסת הבקשות.",
     add: "הוספה לרשימה",
-    noOffers: "לא נמצאו הצעות בערים שנבחרו.",
+    noOffers: "לא נמצאו סניפים מדווחים בערים שנבחרו.",
     noCities: "בחרו ערים לפני חיפוש מחירים.",
     limit: "מוצגות עד 5 חנויות לכל מוצר ועיר; ייתכנו חנויות נוספות.",
-    national: "מחיר מינימלי ארצי",
+    national: "מחיר",
+    priceBasisUnknown: "נתוני המקור אינם מציינים את יחידת המחיר; יש לוודא את המשקל במוצרים הנמכרים לפי משקל.",
+    barcode: "ברקוד",
+    storeObserved: "פרטי הסניף נצפו",
     openPromo: "כרגע במבצע",
     shelf: "מחיר רגיל",
     price: "מחיר",
@@ -69,7 +80,7 @@ const copy = {
     subtotal: "סה״כ בחנות",
     unknown: "לא ידוע",
     disclaimer:
-      "המחיר הוא הצעה שנשמרה עבור יחידה אחת לפי נתוני WizStore; תנאי המבצע והמחיר בקופה עשויים להשתנות. יש לוודא את יחידת המידה לפני הקנייה.",
+      "המחיר הוא הצעה שנשמרה לפי נתוני WizStore; יחידת המחיר או המשקל אינם ידועים. תנאי המבצע והמחיר בקופה עשויים להשתנות.",
     source: "מקור: WizStore",
     partial: "חלק מהערים לא הוחזרו:",
     error: "אירעה שגיאה.",
@@ -82,7 +93,8 @@ const copy = {
   },
   en: {
     title: "Shopping list by store",
-    subtitle: "Choose a product, store and price for each item.",
+    subtitle:
+      "Search for a product and see reported stores in selected cities.",
     newList: "New list name",
     create: "Create list",
     chooseList: "Choose list",
@@ -95,15 +107,23 @@ const copy = {
     searching: "Searching…",
     noProducts: "No products found.",
     showMore: "Show more",
-    choose: "View store prices",
+    showLess: "Show less",
+    choose: "View stores",
     close: "Close",
-    offers: "Stores and prices",
+    offers: "Reported stores",
+    storeNote:
+      "Store data: Open Israeli Supermarkets. The national price is not a store price, and a listing does not guarantee stock.",
+    loadQuotes: "View WizStore price offers",
+    quoteNote:
+      "These offers are fetched separately from WizStore and use its request quota.",
     add: "Add to list",
-    noOffers: "No offers found in the selected cities.",
+    noOffers: "No reported stores found in the selected cities.",
     noCities: "Choose cities before looking up offers.",
     limit:
       "Up to 5 stores per product and city; other stores may be available.",
-    national: "National minimum",
+    national: "Price",
+    barcode: "Barcode",
+    storeObserved: "Store record observed",
     openPromo: "After open promotions",
     shelf: "Shelf price",
     price: "Price",
@@ -117,7 +137,7 @@ const copy = {
     subtotal: "Store subtotal",
     unknown: "Unknown",
     disclaimer:
-      "Each saved quote is for one unit as reported by WizStore; promotion terms and checkout prices may change. Verify the unit of measure before buying.",
+      "Saved quotes are reported by WizStore; the price unit or weight is unknown. Promotion terms and checkout prices may change.",
     source: "Source: WizStore",
     partial: "Some cities could not be searched:",
     error: "Something went wrong.",
@@ -148,12 +168,15 @@ export default function SelectedOffers() {
     [name, setName] = useState(""),
     [query, setQuery] = useState(""),
     [products, setProducts] = useState([]),
-    [visibleCount, setVisibleCount] = useState(7),
+    [visibleCount, setVisibleCount] = useState(5),
     [product, setProduct] = useState(null),
     [offers, setOffers] = useState([]),
+    [pricedOffers, setPricedOffers] = useState([]),
     [failures, setFailures] = useState([]),
     [busy, setBusy] = useState(false),
     [searching, setSearching] = useState(false),
+    [loadingStores, setLoadingStores] = useState(false),
+    [usedWizFallback, setUsedWizFallback] = useState(false),
     [lookedUp, setLookedUp] = useState(false),
     [searched, setSearched] = useState(false),
     [error, setError] = useState("");
@@ -208,10 +231,11 @@ export default function SelectedOffers() {
   }, []);
   useEffect(() => {
     const q = query.trim();
-    setVisibleCount(7);
+    setVisibleCount(5);
     setProducts([]);
     setProduct(null);
     setOffers([]);
+    setPricedOffers([]);
     setFailures([]);
     setLookedUp(false);
     setSearched(false);
@@ -226,7 +250,9 @@ export default function SelectedOffers() {
       try {
         const r = await searchWizProducts(q, controller.signal);
         if (!controller.signal.aborted) {
-          setProducts([...(r.data || [])].sort(byPrice("minEffective")));
+          const results = [...(r.data || [])].sort(byPrice("minEffective"));
+          setProducts(results);
+          setProduct(results[0] || null);
           setSearched(true);
         }
       } catch (e) {
@@ -240,10 +266,47 @@ export default function SelectedOffers() {
       controller.abort();
     };
   }, [query]);
+  useEffect(() => {
+    if (!product || !cities.length) {
+      setLoadingStores(false);
+      return;
+    }
+    const controller = new AbortController();
+    setOffers([]);
+    setPricedOffers([]);
+    setFailures([]);
+    setLookedUp(false);
+    setLoadingStores(true);
+    setUsedWizFallback(false);
+    async function loadStores() {
+      try {
+        const cityIds = cities.map((c) => c.id);
+        const r = await getProductStores(product.code, cityIds, controller.signal);
+        if (controller.signal.aborted) return;
+        const stores = r.data.stores || [];
+        setOffers(stores);
+        if (!stores.length) {
+          setUsedWizFallback(true);
+          const quotes = await getWizOffers(product.code, cityIds, controller.signal);
+          if (controller.signal.aborted) return;
+          setPricedOffers([...(quotes.data.offers || [])].sort(byPrice("price")));
+          setFailures(quotes.data.failedCities || []);
+        }
+        setLookedUp(true);
+      } catch (e) {
+        if (!controller.signal.aborted) setError(e.message || t.error);
+      } finally {
+        if (!controller.signal.aborted) setLoadingStores(false);
+      }
+    }
+    loadStores();
+    return () => controller.abort();
+  }, [product, cities]);
   function asOfDate(value) {
     if (!value) return t.unknown;
     const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T| )/);
-    if (match) return `${Number(match[3])}/${Number(match[2])}/${match[1].slice(-2)}`;
+    if (match)
+      return `${Number(match[3])}/${Number(match[2])}/${match[1].slice(-2)}`;
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
     return `${parsed.getDate()}/${parsed.getMonth() + 1}/${String(parsed.getFullYear()).slice(-2)}`;
@@ -338,6 +401,7 @@ export default function SelectedOffers() {
                   onChange={(e) => {
                     setSelectedId(e.target.value);
                     setOffers([]);
+                    setPricedOffers([]);
                     setProduct(null);
                     setLookedUp(false);
                   }}
@@ -411,7 +475,7 @@ export default function SelectedOffers() {
           </Box>
           {selected && (
             <>
-              <Box>
+              {!!cities.length && <Box>
                 <Stack
                   direction="row"
                   spacing={1}
@@ -457,6 +521,11 @@ export default function SelectedOffers() {
                     {t.results}
                   </Typography>
                 )}
+                {!!products.length && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                    {t.priceBasisUnknown}
+                  </Typography>
+                )}
                 <Stack spacing={1}>
                   {products.slice(0, visibleCount).map((p) => (
                     <Box
@@ -487,13 +556,12 @@ export default function SelectedOffers() {
                             <Typography
                               variant="body2"
                               fontWeight={700}
-                              color="primary.main"
                               sx={{
                                 whiteSpace: "nowrap",
                                 fontVariantNumeric: "tabular-nums",
                               }}
                             >
-                              {money(p.minEffective)}
+                              {t.national}: {money(p.minEffective)}
                             </Typography>
                           )}
                         </Stack>
@@ -505,29 +573,12 @@ export default function SelectedOffers() {
                           sx={{ alignSelf: { xs: "stretch", sm: "flex-end" } }}
                           disabled={busy || !cities.length}
                           aria-expanded={product?.code === p.code}
-                          onClick={() => {
-                            if (product?.code === p.code) {
-                              setProduct(null);
-                              return;
-                            }
-                            run(async () => {
-                              setProduct(p);
-                              setOffers([]);
-                              setFailures([]);
-                              setLookedUp(false);
-                              const r = await getWizOffers(
-                                p.code,
-                                cities.map((c) => c.id),
-                              );
-                              setOffers(
-                                [...(r.data.offers || [])].sort(
-                                  byPrice("price"),
-                                ),
-                              );
-                              setFailures(r.data.failedCities || []);
-                              setLookedUp(true);
-                            });
-                          }}
+                          endIcon={
+                            product?.code === p.code ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                          }
+                          onClick={() =>
+                            setProduct(product?.code === p.code ? null : p)
+                          }
                         >
                           {product?.code === p.code ? t.close : t.choose}
                         </Button>
@@ -542,11 +593,14 @@ export default function SelectedOffers() {
                             borderColor: "divider",
                           }}
                         >
-                          <Typography fontWeight={700}>{t.offers}</Typography>
+                          {/* <Typography fontWeight={700}>{t.offers}</Typography> */}
+                          {/* <Typography variant="caption" color="text.secondary">
+                            {t.storeNote}
+                          </Typography> */}
                           {/* <Typography variant="caption" color="text.secondary">
                             {t.limit}
                           </Typography> */}
-                          {busy && <CircularProgress size={20} />}
+                          {loadingStores && <CircularProgress size={20} />}
                           {!!failures.length && (
                             <Alert severity="warning">
                               {t.partial}{" "}
@@ -555,12 +609,12 @@ export default function SelectedOffers() {
                                 .join("; ")}
                             </Alert>
                           )}
-                          {lookedUp && !offers.length && (
+                          {lookedUp && !offers.length && !pricedOffers.length && (
                             <Typography>{t.noOffers}</Typography>
                           )}
                           {offers.map((o) => (
                             <Stack
-                              key={`${o.cityId}:${o.chainKey}:${o.storeId}`}
+                              key={`${o.cityId}:${o.storeId}`}
                               direction={{ xs: "column", sm: "row" }}
                               spacing={1}
                               justifyContent="space-between"
@@ -575,21 +629,57 @@ export default function SelectedOffers() {
                                 <Typography fontWeight={600}>
                                   {o.chainName} · {o.storeName} · {o.city}
                                 </Typography>
-                                <Typography
+                                {/* <Typography
                                   variant="body2"
                                   color="text.secondary"
                                 >
-                                  {o.price != null && o.shelfPrice != null && Number(o.price) === Number(o.shelfPrice)
-                                    ? `${t.price}: ${money(o.shelfPrice)}`
-                                    : `${t.openPromo}: ${money(o.price)}${o.shelfPrice != null ? ` · ${t.shelf}: ${money(o.shelfPrice)}` : ""}`}{" "}
-                                  · {t.asOf}: {asOfDate(o.asOf)}
-                                </Typography>
+                                  {o.address}{" "}
+                                  {o.lastObservedAt
+                                    ? ` · ${t.storeObserved}: ${date(o.lastObservedAt)}`
+                                    : ""}
+                                </Typography> */}
                               </Box>
+                            </Stack>
+                          ))}
+                          {/* <Button
+                            size="small"
+                            variant="outlined"
+                            disabled={busy}
+                            onClick={() =>
+                              run(async () => {
+                                const r = await getWizOffers(
+                                  p.code,
+                                  cities.map((c) => c.id),
+                                );
+                                setPricedOffers(
+                                  [...(r.data.offers || [])].sort(
+                                    byPrice("price"),
+                                  ),
+                                );
+                                setFailures(r.data.failedCities || []);
+                              })
+                            }
+                          >
+                            {t.loadQuotes}
+                          </Button> */}
+                          {/* <Typography variant="caption" color="text.secondary">
+                            {t.quoteNote}
+                          </Typography> */}
+                          {pricedOffers.map((o) => (
+                            <Stack
+                              key={`${o.cityId}:${o.chainKey}:${o.storeId}`}
+                              direction="row"
+                              spacing={1}
+                              justifyContent="space-between"
+                              alignItems="center"
+                            >
+                              <Typography variant="body2">
+                                {o.chainName} · {o.storeName} · {o.city} ·{" "}
+                                {money(o.price)} · {t.asOf}: {asOfDate(o.asOf)}
+                              </Typography>
                               <Button
-                                disabled={busy}
                                 size="small"
-                                variant="outlined"
-                                sx={{ flexShrink: 0 }}
+                                disabled={busy}
                                 onClick={() =>
                                   run(async () => {
                                     replace(
@@ -608,13 +698,25 @@ export default function SelectedOffers() {
                     </Box>
                   ))}
                 </Stack>
-                {visibleCount < products.length && (
-                  <Button
-                    size="small"
-                    onClick={() => setVisibleCount((count) => count + 7)}
-                  >
-                    {t.showMore}
-                  </Button>
+                {products.length > 5 && (
+                  <Box sx={{ display: "flex", justifyContent: "center" }}>
+                    <Button
+                      size="small"
+                      endIcon={visibleCount < products.length ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+                      onClick={() => {
+                        if (visibleCount < products.length) {
+                          setVisibleCount(products.length);
+                        } else {
+                          setVisibleCount(5);
+                          if (!products.slice(0, 5).some((p) => p.code === product?.code)) {
+                            setProduct(null);
+                          }
+                        }
+                      }}
+                    >
+                      {visibleCount < products.length ? t.showMore : t.showLess}
+                    </Button>
+                  </Box>
                 )}
                 {!cities.length && (
                   <Typography
@@ -625,7 +727,7 @@ export default function SelectedOffers() {
                     {t.noCities}
                   </Typography>
                 )}
-              </Box>
+              </Box>}
               <Divider />
               <Box>
                 <Stack

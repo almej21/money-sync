@@ -1,5 +1,6 @@
 import localities from "../data/israel-localities.json" with { type: "json" };
 import { searchWizProducts, getWizOffers } from "../services/wizstore.service.js";
+import { findStores } from "../services/openSupermarkets.service.js";
 const cityById = new Map(localities.filter((c) => c.english).map((c) => [c.id, c.name]));
 export async function searchWiz(req, res, next) {
   const q = req.query.q;
@@ -21,3 +22,9 @@ export async function wizOffers(req, res, next) {
   return res.json({ data: { offers, failedCities, perCityLimit: 5 } });
 }
 export const resolveCity = (id) => cityById.get(id);
+export async function findProductStores(req, res, next) {
+  const { code, cities } = req.query;
+  const ids = typeof cities === 'string' ? cities.split(',') : [];
+  if (typeof code !== 'string' || !/^\d{6,14}$/.test(code) || !ids.length || ids.length > 10 || new Set(ids).size !== ids.length || ids.some(id => !cityById.has(id))) return res.status(400).json({ message: 'Invalid product or cities' });
+  try { return res.json({ data: { stores: await findStores(code, ids.map(id => ({ id, name: cityById.get(id) }))) } }); } catch (e) { next(e); }
+}

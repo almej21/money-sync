@@ -65,7 +65,7 @@ function getApiLoginFields(companyId = "") {
   const scraper = getCompany(companyId);
   if (!scraper) return [];
 
-  return scraper.loginFields
+  const fields = scraper.loginFields
     .filter((field) => field !== "otpCodeRetriever")
     .map((field) => ({
       name: field,
@@ -75,6 +75,10 @@ function getApiLoginFields(companyId = "") {
           : true,
       ...FIELD_META[field],
     }));
+  if (companyId === "max") {
+    fields.push({ name: "nationalID", required: false, ...FIELD_META.nationalID });
+  }
+  return fields;
 }
 
 function getProviders() {

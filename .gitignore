@@ -9,3 +9,5 @@ coverage
 .DS_Store
 backend/reports
 backend/scripts
+scripts/test-supermarket-barcode.ps1
+supermarket-report-*.json

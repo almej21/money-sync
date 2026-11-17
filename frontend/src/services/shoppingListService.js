@@ -48,6 +48,7 @@ export const compareShoppingList = (id, filters) =>
 export const getLocalities = () => api("/catalog/localities");
 export const searchWizProducts = (query, signal) => api(`/catalog/wizstore/search?q=${encodeURIComponent(query)}`, { signal });
 export const getWizOffers = (code, cities, signal) => api(`/catalog/wizstore/offers?code=${encodeURIComponent(code)}&cities=${encodeURIComponent(cities.join(','))}`, { signal });
+export const getProductStores = (code, cities, signal) => api(`/catalog/product-stores?code=${encodeURIComponent(code)}&cities=${encodeURIComponent(cities.join(','))}`, { signal });
 export const setListCities = (id, cities) => api(`/shopping-lists/${id}/cities`, { method: 'PUT', body: JSON.stringify({ cities }) });
 export const saveSelectedOffer = (id, offer) => api(`/shopping-lists/${id}/offers`, { method: 'POST', body: JSON.stringify({ code: offer.code, cityId: offer.cityId, chainKey: offer.chainKey, storeId: offer.storeId }) });
 export const refreshSelectedOffer = (id, itemId) => api(`/shopping-lists/${id}/offers/${itemId}/refresh`, { method: 'POST' });

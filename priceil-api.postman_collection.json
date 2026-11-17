@@ -1,0 +1,482 @@
+{
+  "info": {
+    "_postman_id": "1331a603-a796-4d2d-a4be-14fb15b1f8f2",
+    "name": "PriceIL API - Documented endpoints",
+    "description": "Raw requests for the 15 routes listed on https://priceil.dev/developers. Edit literal values in each URL, Params tab or request body. No variables or scripts. Prices may be stale and do not establish stock availability. Anonymous limit: 20 requests per 60 seconds. An API key can be sent as an x-api-key header.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Account",
+      "item": [
+        {
+          "name": "My API plan and usage",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "YOUR_API_KEY",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "https://api.priceil.dev/me",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "me"
+              ]
+            },
+            "description": "Returns the API key plan, usage and remaining quota. Enable the x-api-key header and replace YOUR_API_KEY with your key. Without a key the live API returned 401. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Search products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products?q=%D7%A1%D7%9C%D7%9E%D7%95%D7%9F&page=1&limit=5",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "סלמון"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Edit q to search by name; page and limit control pagination. Remove q to list products. Product entries include itemCode, itemName, manufacturerName, quantity and groupId. The data object contains bestMatch, allOthers, total, page and limit. Results can be empty; fields may be null. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Search products in a store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/search?q=%D7%A1%D7%9C%D7%9E%D7%95%D7%9F&storeId=1456&page=1&limit=5",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "סלמון"
+                },
+                {
+                  "key": "storeId",
+                  "value": "1456"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Edit q and storeId (the internal store id, as returned by /stores), plus page and limit. Entries can contain itemCode, itemName, price, priceUpdateDate, storeId, storeName, city, address and chain. The data object contains bestMatch, allOthers, total, page and limit. Results can be empty; fields may be null. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Ranked search in a store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/1456/like?q=%D7%A1%D7%9C%D7%9E%D7%95%D7%9F&page=1&limit=5",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "1456",
+                "like"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "סלמון"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Replace 1456 with the internal store id; edit q, page and limit. Uses a ranked search. Entries contain product details, price and store information. The data object contains bestMatch, allOthers, total, page and limit. Results can be empty; fields may be null. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Product by barcode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/571515",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "571515"
+              ]
+            },
+            "description": "Replace 571515 with a barcode or item code. data is a product object with itemCode, itemName, manufacturerName, quantity and groupId. The example 571515 is a retailer item code. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Product prices in all stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/7290002114109/prices",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "7290002114109",
+                "prices"
+              ]
+            },
+            "description": "Replace 7290002114109 with the desired barcode. data contains product and prices. Each prices entry can include price, priceUpdateDate, storeId, storeName, city, address and chain. The API returns its available stores; its developer page does not document city filtering on this route. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Product price in one store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/571515/prices/1456",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "571515",
+                "prices",
+                "1456"
+              ]
+            },
+            "description": "Replace 571515 with a barcode or item code and 1456 with the internal store id. data is a price object containing price, priceUpdateDate, storeId, storeName, city, address and chain. This example uses a retailer item code. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Product groups",
+      "item": [
+        {
+          "name": "Search product groups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/groups?q=%D7%A1%D7%9C%D7%9E%D7%95%D7%9F&page=1&limit=5",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "groups"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "סלמון"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Edit q, page and limit. Groups combine product codes under normalized names. Each group can contain id, name, normalizedName and products. The data object contains bestMatch, allOthers, total, page and limit. Results can be empty; fields may be null. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Product group details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/groups/121148",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "groups",
+                "121148"
+              ]
+            },
+            "description": "Replace 121148 with a group id from the group search. data contains id, name, normalizedName and a products array with member itemCode and other product fields. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Cheapest group price in a store",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/products/groups/121148/prices/1456",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "products",
+                "groups",
+                "121148",
+                "prices",
+                "1456"
+              ]
+            },
+            "description": "Replace 121148 with a group id and 1456 with an internal store id. data can include groupId, groupName, itemCode, itemName, price, priceUpdateDate, storeName, city, address and chain. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stores",
+      "item": [
+        {
+          "name": "List chains",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/stores/chains",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "stores",
+                "chains"
+              ]
+            },
+            "description": "Returns data as an array of chains. Entries include chainId, chainName and storeCount. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "List stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/stores?city=%D7%90%D7%A9%D7%93%D7%95%D7%93&chain=%D7%95%D7%99%D7%A7%D7%98%D7%95%D7%A8%D7%99&page=1&limit=5",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "stores"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "אשדוד"
+                },
+                {
+                  "key": "chain",
+                  "value": "ויקטורי"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Edit or disable city and chain in Params to filter or broaden the results; page and limit control pagination. data includes items, total, page and limit. Store items can include id, storeName, city, address and chain. Use id as the internal store id in other requests. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        },
+        {
+          "name": "Store details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://api.priceil.dev/stores/1456",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "stores",
+                "1456"
+              ]
+            },
+            "description": "Replace 1456 with the internal store id. data is a store object with id, storeName, city, address and a chain object; it can also include zipcode, coordinates and dates. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Basket",
+      "item": [
+        {
+          "name": "Compare basket across stores",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "https://api.priceil.dev/basket/compare",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "basket",
+                "compare"
+              ]
+            },
+            "description": "Edit the raw JSON body: barcodes is an array of item codes. data is an array of store comparisons with storeId, storeName, chain, city, address, total, found and missing. This example uses a retailer item code. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcodes\": [\n    \"571515\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Basket total at one store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "https://api.priceil.dev/basket/total",
+              "protocol": "https",
+              "host": [
+                "api",
+                "priceil",
+                "dev"
+              ],
+              "path": [
+                "basket",
+                "total"
+              ]
+            },
+            "description": "Edit the raw JSON body: barcodes is an array of item codes and storeId is the internal store id. data contains storeId, storeName, chain, city, address, total, found, missing and items. This example uses a retailer item code. Successful responses use {\"success\":true,\"data\":...,\"timestamp\":\"...\"}; failures include success:false, statusCode and message. Actual data can change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcodes\": [\n    \"571515\"\n  ],\n  \"storeId\": 1456\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

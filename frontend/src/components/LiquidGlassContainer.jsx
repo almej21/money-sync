@@ -55,7 +55,7 @@ export default function LiquidGlassContainer({
         material: "clear",
         borderRadius,
         blur: 0.3,
-        saturation: .5,
+        saturation: .3,
         tint: "255, 255, 255",
         tintOpacity: 0.05,
         refractionStrength: 15,
