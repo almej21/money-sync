@@ -42,6 +42,10 @@ export async function triggerBankConnectionSync(connectionId) {
   });
 }
 
+export async function getManualBankSyncStatus(connectionId, jobId) {
+  return api(`/bank/credentials/${connectionId}/sync/${jobId}`);
+}
+
 export async function removeAllBankConnections() {
   return api("/bank/credentials", { method: "DELETE" });
 }

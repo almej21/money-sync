@@ -25,6 +25,7 @@ import { useLanguage } from "../context/LanguageContext";
 import {
   getBankCredentialStatus,
   getBankProviders,
+  getManualBankSyncStatus,
   removeAllBankConnections,
   removeBankConnection,
   saveBankCredentials,
@@ -635,7 +636,21 @@ export default function BankCredentialsPage() {
     try {
       for (let attempt = 0; attempt <= SYNC_LOCK_RETRY_COUNT; attempt += 1) {
         try {
-          await triggerBankConnectionSync(normalizedConnectionId);
+          const started = await triggerBankConnectionSync(normalizedConnectionId);
+          if (started?.jobId) {
+            const deadline = Date.now() + 16 * 60 * 1000;
+            let completed = false;
+            while (Date.now() < deadline) {
+              await wait(3_000);
+              const job = await getManualBankSyncStatus(normalizedConnectionId, started.jobId);
+              if (job.status === "failed") throw new Error(job.error || t("failedTriggerConnectionSync"));
+              if (job.status === "completed") {
+                completed = true;
+                break;
+              }
+            }
+            if (!completed) throw new Error(t("failedTriggerConnectionSync"));
+          }
           break;
         } catch (err) {
           const shouldRetry =

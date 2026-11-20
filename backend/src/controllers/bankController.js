@@ -3,6 +3,7 @@ import Expense from "../models/Expense.js";
 import Household from "../models/Household.js";
 import { encryptValue } from "../services/credentialCrypto.js";
 import { triggerExpenseSyncForUser } from "../services/expenseSyncCoordinator.js";
+import { enqueueManualBankSync } from "../services/manualBankSyncJob.js";
 import {
   buildHouseholdConnectionVisibilityMap,
   normalizeVisibilityScope,
@@ -949,6 +950,19 @@ export async function triggerBankConnectionSync(req, res) {
     });
   }
 
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    try {
+      const jobId = await enqueueManualBankSync(req.user, connectionId);
+      if (!jobId) {
+        return res.status(423).json({ message: "Bank sync is already running. Please try again shortly.", reason: "lock_held" });
+      }
+      return res.status(202).json({ jobId, status: "queued" });
+    } catch (error) {
+      console.error("Unable to enqueue manual bank sync", error);
+      return res.status(500).json({ message: "Unable to start bank sync" });
+    }
+  }
+
   const syncState = await triggerExpenseSyncForUser(
     {
       _id: req.user?._id,
@@ -992,6 +1006,17 @@ export async function triggerBankConnectionSync(req, res) {
     connectionId,
     lastBankFetchAt: refreshedConnection?.lastBankFetchAt || null,
   });
+}
+
+export async function getManualBankSyncStatus(req, res) {
+  if (!isHouseholdManager(req.user)) return res.status(403).json({ message: "Only household managers can view bank sync status" });
+  const household = await Household.findById(req.user.householdId).select("manualBankSync").lean();
+  const job = household?.manualBankSync;
+  if (!job || job.jobId !== req.params.jobId || job.connectionId !== req.params.connectionId) {
+    return res.status(404).json({ message: "Bank sync job not found" });
+  }
+  const expired = ["queued", "running"].includes(job.status) && new Date(job.expiresAt).getTime() <= Date.now();
+  return res.json({ status: expired ? "failed" : job.status, error: expired ? "Bank sync timed out" : job.error || "" });
 }
 
 export async function deleteBankCredentials(req, res) {

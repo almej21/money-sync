@@ -8,8 +8,21 @@ provider:
   region: us-east-1
   timeout: ${env:LAMBDA_TIMEOUT_SECONDS, 180}
   memorySize: ${env:LAMBDA_MEMORY_SIZE, 2048}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: lambda:InvokeFunction
+          Resource:
+            Fn::Join:
+              - ':'
+              - - arn:aws:lambda
+                - Ref: AWS::Region
+                - Ref: AWS::AccountId
+                - function
+                - ${self:service}-${sls:stage}-api
   environment:
-    LAMBDA_TIMEOUT_SECONDS: ${env:LAMBDA_TIMEOUT_SECONDS, '180'}
+    LAMBDA_TIMEOUT_SECONDS: ${env:LAMBDA_TIMEOUT_SECONDS, '900'}
     MONGODB_URI: ${env:MONGODB_URI}
     JWT_SECRET: ${env:JWT_SECRET}
     JWT_EXPIRES_IN: ${env:JWT_EXPIRES_IN}
@@ -34,7 +47,7 @@ provider:
 functions:
   api:
     handler: src/lambda.handler
-    timeout: 30
+    timeout: ${env:LAMBDA_TIMEOUT_SECONDS, 900}
     events:
       - httpApi:
           path: /{proxy+}

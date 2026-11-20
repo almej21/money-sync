@@ -72,6 +72,13 @@ const householdSchema = new mongoose.Schema(
       lastReason: { type: String, default: "" },
       updatedAt: { type: Date, default: null },
     },
+    manualBankSync: {
+      jobId: { type: String, default: "" },
+      connectionId: { type: String, default: "" },
+      status: { type: String, default: "" },
+      expiresAt: { type: Date, default: null },
+      error: { type: String, default: "" },
+    },
     lastActiveAt: { type: Date, default: null },
   },
   { timestamps: true },

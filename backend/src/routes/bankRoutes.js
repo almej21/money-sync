@@ -4,6 +4,7 @@ import {
   deleteBankCredentials,
   getBankCredentialStatus,
   getBankProviders,
+  getManualBankSyncStatus,
   setBankConnectionAccountVisibility,
   setBankCredentials,
   triggerBankConnectionSync,
@@ -25,6 +26,7 @@ router.patch(
   setBankConnectionAccountVisibility,
 );
 router.post("/credentials/:connectionId/sync", triggerBankConnectionSync);
+router.get("/credentials/:connectionId/sync/:jobId", getManualBankSyncStatus);
 router.delete("/credentials/:connectionId", deleteBankCredentials);
 router.delete("/credentials", deleteBankCredentials);
 
