@@ -35,6 +35,7 @@ export default function HorizontalDateRangePicker({
     dateRange = "Date range" } = labels;
   const [currentMonth, setCurrentMonth] = useState(() => monthKey(new Date()));
   const [internalValue, setInternalValue] = useState(defaultValue);
+  const [isScrolling, setIsScrolling] = useState(false);
   const controlled = value !== undefined;
   const options = useMemo(() => {
     const [year, month] = currentMonth.split("-").map(Number);
@@ -54,6 +55,7 @@ export default function HorizontalDateRangePicker({
   const controlledRef = useRef(controlled);
   const disabledRef = useRef(disabled);
   const settleTimer = useRef(null);
+  const scrollAnimationTimer = useRef(null);
   const reconcileTimer = useRef(null);
   const interactionRef = useRef(null);
   const targetRef = useRef(null);
@@ -141,6 +143,12 @@ export default function HorizontalDateRangePicker({
     settleTimer.current = setTimeout(settle, 180);
   }, [settle]);
 
+  const animateScroll = useCallback(() => {
+    setIsScrolling(true);
+    clearTimeout(scrollAnimationTimer.current);
+    scrollAnimationTimer.current = setTimeout(() => setIsScrolling(false), 180);
+  }, []);
+
   const navigate = useCallback((index) => {
     if (disabledRef.current) return;
     const target = Math.max(0, Math.min(optionsRef.current.length - 1, index));
@@ -216,6 +224,7 @@ export default function HorizontalDateRangePicker({
     const viewport = viewportRef.current;
     const supportsScrollEnd = "onscrollend" in viewport;
     const onScroll = () => {
+      animateScroll();
       if (!interactionRef.current && !disabledRef.current) interactionRef.current = "user";
       if (supportsScrollEnd) {
         // Let native momentum and snap finish before committing a selection.
@@ -224,15 +233,24 @@ export default function HorizontalDateRangePicker({
         scheduleSettle();
       }
     };
+    const onScrollEnd = () => {
+      // Setting scrollLeft during a mouse drag can emit scrollend between
+      // pointer moves. Keep the movement debounce in charge until release.
+      if (dragRef.current?.moved) return;
+      clearTimeout(scrollAnimationTimer.current);
+      setIsScrolling(false);
+      settle();
+    };
     viewport.addEventListener("scroll", onScroll, { passive: true });
-    viewport.addEventListener("scrollend", settle);
+    viewport.addEventListener("scrollend", onScrollEnd);
     return () => {
       viewport.removeEventListener("scroll", onScroll);
-      viewport.removeEventListener("scrollend", settle);
+      viewport.removeEventListener("scrollend", onScrollEnd);
       clearTimeout(settleTimer.current);
+      clearTimeout(scrollAnimationTimer.current);
       clearTimeout(reconcileTimer.current);
     };
-  }, [scheduleSettle, settle]);
+  }, [animateScroll, scheduleSettle, settle]);
 
   const startUserScroll = () => {
     if (!disabled) { interactionRef.current = "user"; targetRef.current = null; }
@@ -255,6 +273,7 @@ export default function HorizontalDateRangePicker({
     }
     if (drag.moved) {
       event.preventDefault();
+      animateScroll();
       event.currentTarget.scrollLeft = drag.scrollLeft - delta;
     }
   };
@@ -287,18 +306,23 @@ export default function HorizontalDateRangePicker({
     <Box className={className} role="group" aria-label={dateRange} dir="ltr" onKeyDown={onKeyDown}
       sx={{ display: "flex", alignItems: "center", minWidth: 0, width: "100%", gap: { xs: 0, sm: 0.5 } }}>
       <Box className="horizontal-date-range-picker__window">
-      <LiquidGlassContainer aria-hidden="true"
-        cardSx={{ position: "absolute", top: 4, bottom: 4, left: "50%", transform: "translateX(-50%)",
-          width: "min(85%, max(112px, calc(100% / 5 - 16px)))", borderRadius: "10px", pointerEvents: "none", zIndex: 2 }}
-        contentSx={{ p: 0 }} />
+      <Box aria-hidden="true"
+        sx={{ position: "absolute", top: 4, bottom: 4, left: "50%",
+          transform: `translateX(-50%) scale(${isScrolling ? 1.08 : 1})`,
+          boxShadow: isScrolling ? "0 8px 20px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12)" : "0 0 0 rgba(0, 0, 0, 0)",
+          transition: "transform 220ms ease-in-out, box-shadow 220ms ease-in-out",
+          "@media (prefers-reduced-motion: reduce)": { transition: "none", transform: "translateX(-50%)" },
+          width: "min(85%, max(112px, calc(100% / 5 - 16px)))", borderRadius: "10px", pointerEvents: "none", zIndex: 2 }}>
+        <LiquidGlassContainer cardSx={{ position: "absolute", inset: 0, borderRadius: "10px" }} contentSx={{ p: 0 }} />
+      </Box>
       <Box ref={viewportRef} className="horizontal-date-range-picker__viewport" dir="ltr" aria-disabled={disabled || undefined}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer}
         onPointerCancel={endPointer} onLostPointerCapture={endPointer} onWheel={startUserScroll}
         onPointerLeave={(event) => { if (dragRef.current && !dragRef.current.moved) endPointer(event); }}
         onClickCapture={(event) => { if (suppressClickRef.current) { event.preventDefault(); event.stopPropagation(); suppressClickRef.current = false; } }}
         sx={{ overflowX: disabled ? "hidden" : "auto", "& .horizontal-date-range-picker__option": {
-          color: "text.secondary", bgcolor: "background.paper",
-          "&[aria-pressed='true']": { color: "primary.main", bgcolor: "transparent", fontWeight: 700 },
+          color: "text.secondary", bgcolor: "background.paper", fontWeight: 700,
+          "&[aria-pressed='true']": { color: "primary.main", bgcolor: "transparent" },
           "&:focus-visible": { outline: (theme) => `2px solid ${theme.palette.primary.main}`, outlineOffset: "-3px" },
         } }}>
         {options.map((option, index) => (
