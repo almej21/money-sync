@@ -50,7 +50,7 @@
 
 .horizontal-date-range-picker__item {
   position: relative;
-  flex: 0 0 min(85%, max(108px, calc(100% / 5 - 20px)));
+  flex: 0 0 min(75%, max(92px, calc(100% / 5 - 36px)));
   min-width: 0;
   scroll-snap-align: center;
 }

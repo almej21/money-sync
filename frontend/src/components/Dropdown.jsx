@@ -86,6 +86,9 @@ export default function Dropdown({
           bgcolor: theme.palette.primary.dark,
           color: theme.palette.primary.contrastText,
           "& .MuiMenuItem-root": [baseMenuItemSx, ...toSxArray(menuItemSx)],
+          "& .MuiCheckbox-root, & .MuiCheckbox-root.Mui-checked, & .MuiCheckbox-root.MuiCheckbox-indeterminate": {
+            color: theme.palette.primary.contrastText,
+          },
         },
         ...toSxArray(incomingMenuProps?.PaperProps?.sx),
         ...toSxArray(menuPaperSx),
