@@ -263,7 +263,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Box dir={direction} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       <DashboardTotalAmount
         direction={direction}
         shouldShowTotalLoading={shouldShowTotalLoading}

@@ -9,10 +9,10 @@ function monthKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function makeOptions(date, locale, thisMonthLabel, customRangeLabel, allTimeLabel) {
+function makeOptions(date, locale, customRangeLabel, allTimeLabel) {
   const formatter = new Intl.DateTimeFormat(locale, { month: "short", year: "2-digit" });
   return [
-    { value: FIRST_VALUE, label: thisMonthLabel },
+    { value: FIRST_VALUE, label: formatter.format(date) },
     { value: "custom_range", label: customRangeLabel },
     { value: "all_time", label: allTimeLabel },
     ...Array.from({ length: 6 }, (_, index) => {
@@ -31,15 +31,15 @@ export default function HorizontalDateRangePicker({
   className,
   labels = {},
 }) {
-  const { thisMonth = "This month", customRange = "Custom range", allTime = "All time",
+  const { customRange = "Custom range", allTime = "All time",
     dateRange = "Date range" } = labels;
   const [currentMonth, setCurrentMonth] = useState(() => monthKey(new Date()));
   const [internalValue, setInternalValue] = useState(defaultValue);
   const controlled = value !== undefined;
   const options = useMemo(() => {
     const [year, month] = currentMonth.split("-").map(Number);
-    return makeOptions(new Date(year, month - 1, 1), locale, thisMonth, customRange, allTime);
-  }, [currentMonth, locale, thisMonth, customRange, allTime]);
+    return makeOptions(new Date(year, month - 1, 1), locale, customRange, allTime);
+  }, [currentMonth, locale, customRange, allTime]);
   const requestedValue = controlled ? value : internalValue;
   const selectedValue = options.some((option) => option.value === requestedValue)
     ? requestedValue : FIRST_VALUE;

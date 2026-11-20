@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import AddIcon from "@mui/icons-material/Add";
 import { Box, IconButton } from "@mui/material";
 import LiquidGlassContainer from "./LiquidGlassContainer";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function ManualExpenseButton({ label, onClick, sx }) {
+  const { direction } = useLanguage();
   const anchorRef = useRef(null);
   const [position, setPosition] = useState(null);
 
@@ -27,7 +29,7 @@ export default function ManualExpenseButton({ label, onClick, sx }) {
       observer.disconnect();
       window.removeEventListener("resize", updatePosition);
     };
-  }, []);
+  }, [direction]);
 
   return (
     <>

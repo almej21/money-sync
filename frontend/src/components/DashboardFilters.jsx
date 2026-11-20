@@ -215,7 +215,6 @@ export default function DashboardFilters({
                     )}
                     locale={locale}
                     labels={{
-                      thisMonth: t("thisMonth"),
                       customRange: t("customRange"),
                       allTime: t("allTime"),
                       dateRange: t("timeRange"),

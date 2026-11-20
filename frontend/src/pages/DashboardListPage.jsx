@@ -1340,7 +1340,7 @@ export default function DashboardListPage({ hideTotal = false }) {
               </>
             )}
           </Box>
-          <ManualExpenseButton label={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} />
+          <ManualExpenseButton label={t("addManualExpense")} onClick={() => setManualExpenseOpen(true)} sx={direction === "ltr" ? { marginLeft: "auto" } : undefined} />
         </Typography>
       )}
       <Card
