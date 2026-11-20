@@ -1,7 +1,6 @@
 import { NO_SOURCE_ACCOUNT_ID } from "../lib/accountFilter";
-import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
-import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import ManualExpenseButton from "../components/ManualExpenseButton";
+import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import {
   alpha,
   Box,
@@ -1074,10 +1073,11 @@ export default function DashboardListPage({ hideTotal = false }) {
   const isAmountSortActive =
     sortBy === "amount_desc" || sortBy === "amount_asc";
 
-  const handleAmountSortToggle = useCallback(() => {
+  const handleQuickSortToggle = useCallback(() => {
     setSortBy((prev) => {
       if (prev === "amount_desc") return "amount_asc";
-      if (prev === "amount_asc") return "amount_desc";
+      if (prev === "amount_asc") return "date_desc";
+      if (prev === "date_desc") return "date_asc";
       return "amount_desc";
     });
   }, []);
@@ -1462,14 +1462,23 @@ export default function DashboardListPage({ hideTotal = false }) {
             >
               <IconButton
                 className="amount-sort-button"
-                onClick={handleAmountSortToggle}
+                onClick={handleQuickSortToggle}
                 disableRipple
                 disableFocusRipple
                 aria-label={
-                  sortBy === "amount_asc"
-                    ? t("sortPriceLowToHigh")
-                    : t("sortPriceHighToLow")
+                  t({
+                    amount_asc: "sortPriceLowToHigh",
+                    amount_desc: "sortPriceHighToLow",
+                    date_asc: "sortDateOldest",
+                    date_desc: "sortDateNewest",
+                  }[sortBy] || "sortDateNewest")
                 }
+                title={t({
+                  amount_asc: "sortPriceLowToHigh",
+                  amount_desc: "sortPriceHighToLow",
+                  date_asc: "sortDateOldest",
+                  date_desc: "sortDateNewest",
+                }[sortBy] || "sortDateNewest")}
                 sx={{
                   border: `2px solid ${isAmountSortActive ? theme.palette.primary.main : "transparent"}`,
                   bgcolor: "background.paper",
@@ -1520,27 +1529,27 @@ export default function DashboardListPage({ hideTotal = false }) {
                     },
                 }}
               >
-                {sortBy === "amount_asc" ? (
-                  <ArrowUpwardRoundedIcon
-                    fontSize="small"
-                    sx={{
-                      color: theme.palette.text.primary,
-                      opacity: "1 !important",
-                      transition: "none !important",
-                      fill: "currentColor",
-                    }}
-                  />
+                {isAmountSortActive ? (
+                  <Box component="span" aria-hidden="true" sx={{ fontSize: 18, lineHeight: 1 }}>
+                    ₪
+                  </Box>
                 ) : (
-                  <ArrowDownwardRoundedIcon
-                    fontSize="small"
-                    sx={{
-                      color: theme.palette.text.primary,
-                      opacity: "1 !important",
-                      transition: "none !important",
-                      fill: "currentColor",
-                    }}
-                  />
+                  <CalendarTodayRoundedIcon aria-hidden="true" sx={{ fontSize: 16 }} />
                 )}
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ transform: sortBy === "amount_asc" || sortBy === "date_asc" ? undefined : "scaleY(-1)" }}
+                >
+                  <path d="M6 21V3M1.5 7.5 6 3l4.5 4.5M12 12h4M12 16.5h7M12 21h10" />
+                </svg>
               </IconButton>
             </Box>
           </Box>
